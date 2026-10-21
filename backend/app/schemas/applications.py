@@ -104,7 +104,13 @@ class ApplicationDetail(BaseModel):
     status_changed_at: datetime = Field(description=_STATUS_CHANGED_AT)
     version: int
     submitted_at: datetime | None
-    active_offer: Offer | None = Field(description="Активный оффер, если он есть.")
+    active_offer: Offer | None = Field(
+        description=(
+            "Последний оффер по заявке; его `status` говорит, действует он (`active`), "
+            "принят (`accepted`) или отклонён (`declined`). После принятия поле не обнуляется: "
+            "условия нужны на экранах подписания и выдачи. null — оффера не было."
+        )
+    )
     decision: ClientDecision | None = Field(
         description="Последнее кредитное решение; null, пока решения не было."
     )
