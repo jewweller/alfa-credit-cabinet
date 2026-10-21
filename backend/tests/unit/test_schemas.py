@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import uuid4
 
@@ -8,7 +9,10 @@ from app.domain.state_machine import ApplicationStatus
 from app.schemas.applications import ApplicationCreate, ApplicationSummary, ApplicationUpdate
 from app.schemas.auth import LoginRequest
 from app.schemas.companies import CompanyLookupResponse
+from app.schemas.decisions import REJECT_REASON_DESCRIPTIONS, RejectReason
+from app.schemas.documents import MAX_UPLOAD_BYTES, DocumentInfo
 from app.schemas.products import Product
+from app.schemas.schedule import PaymentScheduleItem
 
 
 def _product(**overrides: object) -> Product:
@@ -53,6 +57,8 @@ def _summary(amount: Decimal) -> ApplicationSummary:
         amount=amount,
         term_months=12,
         submitted_at=None,
+        status_changed_at=datetime.now(UTC),
+        info_request=None,
     )
 
 
@@ -110,3 +116,42 @@ def test_company_lookup_rejects_malformed_inn(inn: str) -> None:
                 "region": "77",
             }
         )
+
+
+def test_every_reject_reason_has_explanation() -> None:
+    assert set(REJECT_REASON_DESCRIPTIONS) == set(RejectReason)
+    assert all(text.strip() for text in REJECT_REASON_DESCRIPTIONS.values())
+
+
+def _document(size: int) -> DocumentInfo:
+    return DocumentInfo.model_validate(
+        {
+            "id": uuid4(),
+            "kind": "tax_return",
+            "filename": "declaration.pdf",
+            "mime": "application/pdf",
+            "size_bytes": size,
+            "info_request_id": None,
+            "uploaded_at": "2026-10-22T10:00:00Z",
+        }
+    )
+
+
+def test_document_size_is_limited_to_10_mb() -> None:
+    assert _document(MAX_UPLOAD_BYTES).size_bytes == MAX_UPLOAD_BYTES
+    with pytest.raises(ValidationError):
+        _document(MAX_UPLOAD_BYTES + 1)
+
+
+def test_schedule_item_money_serializes_as_strings() -> None:
+    item = PaymentScheduleItem(
+        number=1,
+        due_date="2026-11-22",
+        payment=Decimal("275040.00"),
+        principal=Decimal("230040.00"),
+        interest=Decimal("45000.00"),
+        balance=Decimal("2769960.00"),
+    )
+    dumped = item.model_dump(mode="json")
+    assert dumped["payment"] == "275040.00"
+    assert dumped["balance"] == "2769960.00"

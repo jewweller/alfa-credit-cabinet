@@ -24,6 +24,14 @@ def _app_with_test_routes() -> FastAPI:
     def forbidden_route() -> None:
         raise HTTPException(status_code=403, detail="Нет доступа")
 
+    @app.get("/_test/too-large")
+    def too_large_route() -> None:
+        raise HTTPException(status_code=413, detail="Файл больше 10 МБ")
+
+    @app.get("/_test/media-type")
+    def media_type_route() -> None:
+        raise HTTPException(status_code=415, detail="Допустимы PDF, JPG, PNG")
+
     @app.get("/_test/transition")
     def transition_route() -> None:
         ensure_transition(ApplicationStatus.DRAFT, ApplicationStatus.ISSUED)
@@ -63,3 +71,13 @@ def test_invalid_transition_maps_to_409() -> None:
 
     assert response.status_code == 409
     assert response.json()["code"] == "invalid_transition"
+
+
+def test_upload_limits_map_to_specific_codes() -> None:
+    too_large = client.get("/_test/too-large")
+    assert too_large.status_code == 413
+    assert too_large.json() == {"code": "file_too_large", "message": "Файл больше 10 МБ"}
+
+    media_type = client.get("/_test/media-type")
+    assert media_type.status_code == 415
+    assert media_type.json()["code"] == "unsupported_media_type"

@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.companies import CompanyBrief
+
 
 class UserRole(StrEnum):
     CLIENT = "client"
@@ -30,6 +32,6 @@ class MeResponse(BaseModel):
     email: str
     full_name: str
     role: UserRole
-    company_id: UUID | None = Field(
+    company: CompanyBrief | None = Field(
         description="Компания клиента. У сотрудников банка (underwriter, admin) — null."
     )
