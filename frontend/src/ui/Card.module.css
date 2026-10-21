@@ -1,0 +1,23 @@
+.card {
+  background: var(--surface-fill);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  animation: enter-up var(--duration-slow) var(--ease-out) both;
+  animation-delay: calc(var(--stagger) * var(--i, 0));
+  transition:
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out);
+}
+
+.interactive:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 600px) {
+  .card {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+  }
+}

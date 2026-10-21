@@ -1,0 +1,65 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  animation: pop var(--duration-base) var(--ease-out) both;
+}
+
+.action {
+  background: var(--status-action-bg);
+  color: var(--status-action);
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
+.progress {
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+
+.success {
+  background: var(--status-approved-bg);
+  color: var(--status-approved);
+}
+
+.danger {
+  background: var(--status-rejected-bg);
+  color: var(--status-rejected);
+}
+
+.neutral {
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral);
+}
+
+/* У «в работе» — маленький живой индикатор. */
+.progress::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: blink 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
