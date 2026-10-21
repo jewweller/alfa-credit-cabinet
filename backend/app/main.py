@@ -2,7 +2,10 @@
 
 from fastapi import FastAPI
 
+from app.api.errors import install_error_handlers
+from app.api.v1.router import api_v1_router
 from app.config import get_settings
+from app.openapi import install_openapi
 
 
 def create_app() -> FastAPI:
@@ -20,6 +23,9 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    app.include_router(api_v1_router)
+    install_error_handlers(app)
+    install_openapi(app)
     return app
 
 
