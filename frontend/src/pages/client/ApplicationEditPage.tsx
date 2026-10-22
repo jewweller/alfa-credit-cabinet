@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ApiError, apiPost, newIdempotencyKey } from '../../api/client';
 import type { ApplicationDetail, Product } from '../../api/types';
@@ -71,6 +71,11 @@ function DraftWizard({ app, products }: { app: ApplicationDetail; products: Prod
   const requested = WIZARD_STEPS.indexOf(params.get('step') as WizardStep);
   const index = requested >= 0 ? Math.min(requested, reached) : 0;
   const step = WIZARD_STEPS[index];
+
+  // Адрес всегда показывает шаг, который на экране: ?step=review у незаполненной заявки исправляем.
+  useEffect(() => {
+    if (requested !== index) setParams({ step }, { replace: true });
+  }, [requested, index, step, setParams]);
 
   // Ошибки показываем после попытки пройти шаг; ошибку сервера — пока поле не изменили.
   const [attempted, setAttempted] = useState<ReadonlySet<WizardStep>>(new Set());
