@@ -4,16 +4,20 @@
 // начинает с исходных данных, ?reset=1 сбрасывает текущую. Загруженные файлы
 // живут только до перезагрузки (в списке остаются, скачать уже нельзя).
 import type {
+  ApplicationCreate,
   ApplicationDetail,
   ApplicationStatus,
   ApplicationSummary,
   DocumentInfo,
   DocumentKind,
+  ApplicationUpdate,
   FeedItem,
+  Me,
   Offer,
   StatusActor,
 } from '../api/types';
-import { makeOffer, seedApplications, seedFeed, type MockApplication } from './data';
+import { formatMoney } from '../features/format';
+import { makeOffer, me as bakery, products, seedApplications, seedFeed, type MockApplication } from './data';
 
 /** Как в backend/app/domain/state_machine.py. */
 const TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
@@ -50,7 +54,7 @@ export class MockHttpError extends Error {
   }
 }
 
-const STORAGE_KEY = 'mock-db-v1';
+const STORAGE_KEY = 'mock-db-v2';
 const apps = new Map<string, MockApplication>();
 const files = new Map<string, Blob>();
 const idempotent = new Map<string, unknown>();
@@ -220,6 +224,34 @@ function setOfferStatus(app: MockApplication, offerId: string, status: Offer['st
   app.detail = { ...app.detail, active_offer: app.offers.find((o) => o.id === offerId) ?? null };
 }
 
+/** Проверка полноты перед отправкой (план, раздел 4, этап 2): первая ошибка — с полем. */
+function checkComplete(detail: ApplicationDetail) {
+  const fail = (field: string, message: string) => {
+    throw new MockHttpError(422, 'validation_error', message, field);
+  };
+  const product = products.find((p) => p.id === detail.product_id);
+  if (!product) return fail('product_id', 'Выберите продукт');
+  if (!detail.purpose) return fail('purpose', 'Укажите, на что нужны деньги');
+  const amount = Number(detail.amount ?? 0);
+  if (amount < Number(product.min_amount) || amount > Number(product.max_amount)) {
+    return fail(
+      'amount',
+      `Сумма для «${product.name}» — от ${formatMoney(product.min_amount)} до ${formatMoney(product.max_amount)}`,
+    );
+  }
+  const term = detail.term_months ?? 0;
+  if (term < product.min_term || term > product.max_term) {
+    return fail('term_months', `Срок для «${product.name}» — от ${product.min_term} до ${product.max_term} мес`);
+  }
+  if (!detail.revenue_12m || Number(detail.revenue_12m) <= 0) return fail('revenue_12m', 'Укажите выручку за 12 месяцев');
+  if (detail.existing_payments_monthly === null) {
+    return fail('existing_payments_monthly', 'Укажите платежи по текущим кредитам — если их нет, поставьте 0');
+  }
+  if (!detail.bki_consent) return fail('bki_consent', 'Нужно согласие на запрос в бюро кредитных историй');
+}
+
+const MONEY_RE = /^\d+\.\d{2}$/;
+
 if (!load()) reset();
 // №1051 в исходных данных «оценивается» — через 10 секунд банк её одобрит (проверка опроса).
 for (const id of apps.keys()) continuePipeline(id, id === 'a-1051' ? 10_000 : STEP_MS);
@@ -229,8 +261,13 @@ for (const id of apps.keys()) continuePipeline(id, id === 'a-1051' ? 10_000 : ST
 export const db = {
   reset,
 
-  list(): ApplicationSummary[] {
-    return [...apps.values()].map(({ detail }) => ({
+  /** Чужая заявка — как будто её нет. */
+  assertOwner(id: string, companyId: string) {
+    if (find(id).detail.company_id !== companyId) throw new MockHttpError(404, 'not_found', 'Заявка не найдена');
+  },
+
+  list(companyId: string): ApplicationSummary[] {
+    return [...apps.values()].filter(({ detail }) => detail.company_id === companyId).map(({ detail }) => ({
       id: detail.id,
       number: detail.number,
       status: detail.status,
@@ -253,6 +290,85 @@ export const db = {
 
   offers(id: string) {
     return find(id).offers;
+  },
+
+  create(user: Me, body: ApplicationCreate): ApplicationDetail {
+    if (body.product_id && !products.some((p) => p.id === body.product_id)) {
+      throw new MockHttpError(422, 'validation_error', 'Такого продукта нет', 'product_id');
+    }
+    const at = new Date().toISOString();
+    const last = Math.max(0, ...[...apps.values()].map((a) => Number(a.detail.number) || 0));
+    const detail: ApplicationDetail = {
+      id: crypto.randomUUID(),
+      number: String(last + 1).padStart(4, '0'),
+      company_id: user.company!.id,
+      applicant_id: user.id,
+      product_id: body.product_id ?? null,
+      amount: body.amount ?? null,
+      term_months: body.term_months ?? null,
+      purpose: body.purpose ?? null,
+      revenue_12m: null,
+      existing_payments_monthly: null,
+      bki_consent: false,
+      status: 'DRAFT',
+      status_changed_at: at,
+      version: 1,
+      submitted_at: null,
+      active_offer: null,
+      decision: null,
+      info_request: null,
+      documents: [],
+    };
+    apps.set(detail.id, {
+      detail,
+      history: [{ from_status: null, to_status: 'DRAFT', actor_type: 'client', created_at: at }],
+      offers: [],
+    });
+    save();
+    return detail;
+  },
+
+  /** Автосохранение черновика: только переданные поля, с проверкой версии (план, раздел 9). */
+  update(id: string, body: ApplicationUpdate): ApplicationDetail {
+    const app = find(id);
+    if (app.detail.status !== 'DRAFT') {
+      throw new MockHttpError(409, 'conflict', 'Заявку уже отправили — изменить её нельзя');
+    }
+    if (body.version !== app.detail.version) {
+      throw new MockHttpError(409, 'version_conflict', 'Заявку изменили в другой вкладке');
+    }
+    const { version: _version, ...fields } = body;
+    for (const key of ['amount', 'revenue_12m', 'existing_payments_monthly'] as const) {
+      const value = fields[key];
+      if (value !== undefined && value !== null && !MONEY_RE.test(value)) {
+        throw new MockHttpError(422, 'validation_error', 'Сумма указана неверно', key);
+      }
+    }
+    if (fields.product_id && !products.some((p) => p.id === fields.product_id)) {
+      throw new MockHttpError(422, 'validation_error', 'Такого продукта нет', 'product_id');
+    }
+    if (fields.term_months !== undefined && fields.term_months !== null && fields.term_months < 1) {
+      throw new MockHttpError(422, 'validation_error', 'Срок — от 1 месяца', 'term_months');
+    }
+    const changes = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+    app.detail = { ...app.detail, ...changes, version: app.detail.version + 1 };
+    save();
+    return app.detail;
+  },
+
+  submit(id: string, key: string | null): ApplicationDetail {
+    return withIdempotency(key, `submit:${id}`, () => {
+      const app = find(id);
+      if (app.detail.status !== 'DRAFT') {
+        throw new MockHttpError(409, 'invalid_transition', 'Заявка уже отправлена');
+      }
+      checkComplete(app.detail);
+      transition(app, 'SUBMITTED', 'client');
+      app.detail = { ...app.detail, submitted_at: app.detail.status_changed_at };
+      save();
+      continuePipeline(id);
+      return app.detail;
+    });
   },
 
   accept(id: string, offerId: string, key: string | null): ApplicationDetail {
@@ -354,7 +470,14 @@ export const db = {
     });
   },
 
-  feed(): FeedItem[] {
-    return feed;
+  /** События — только по своим заявкам. Исходные новости подобраны под Пекарню, другим их не показываем. */
+  feed(companyId: string): FeedItem[] {
+    return feed.filter((item) =>
+      item.kind === 'event'
+        ? item.application_id !== null &&
+          item.application_id !== undefined &&
+          apps.get(item.application_id)?.detail.company_id === companyId
+        : companyId === bakery.company!.id,
+    );
   },
 };

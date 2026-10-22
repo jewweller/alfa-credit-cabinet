@@ -107,6 +107,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/recommend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recommend Products
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Подбор продукта по цели, сумме и сроку (экран C3).
+         *
+         *     Возвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят
+         *     без изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.
+         */
+        post: operations["recommendProducts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/lookup": {
         parameters: {
             query?: never;
@@ -991,6 +1016,68 @@ export interface components {
             base_rate: string;
         };
         /**
+         * ProductRecommendRequest
+         * @description Параметры подбора продукта (экран C3): на что нужны деньги, сколько и на какой срок.
+         */
+        ProductRecommendRequest: {
+            purpose: components["schemas"]["LoanPurpose"];
+            /**
+             * Amount
+             * @description Желаемая сумма, рублей.
+             * @example 3000000.00
+             */
+            amount: string;
+            /**
+             * Term Months
+             * @description Желаемый срок, месяцев.
+             */
+            term_months: number;
+        };
+        /**
+         * ProductRecommendation
+         * @description Подходящий продукт с примерным платежом.
+         *
+         *     Сумма и срок приведены к лимитам продукта; что изменено — в `adjusted`.
+         *     Платёж — аннуитет по базовой ставке, итоговую ставку определит решение банка.
+         */
+        ProductRecommendation: {
+            product: components["schemas"]["Product"];
+            /**
+             * Amount
+             * @description Сумма для расчёта: запрошенная, приведённая к лимитам.
+             * @example 3000000.00
+             */
+            amount: string;
+            /**
+             * Term Months
+             * @description Срок для расчёта: запрошенный, приведённый к лимитам.
+             */
+            term_months: number;
+            /**
+             * Rate
+             * @description Базовая ставка продукта.
+             * @example 18.00
+             */
+            rate: string;
+            /**
+             * Monthly Payment
+             * @description Примерный ежемесячный платёж.
+             * @example 3000000.00
+             */
+            monthly_payment: string;
+            /**
+             * Adjusted
+             * @description Изменённые параметры; пусто — продукт подходит на запрошенных условиях.
+             */
+            adjusted: components["schemas"]["RecommendationAdjustment"][];
+        };
+        /**
+         * RecommendationAdjustment
+         * @description Какой параметр подбора изменён, чтобы попасть в лимиты продукта.
+         * @enum {string}
+         */
+        RecommendationAdjustment: "amount" | "term_months";
+        /**
          * RejectReason
          * @description Причина отказа. Коды привязаны к правилам движка решения (план, раздел 7).
          *
@@ -1187,6 +1274,48 @@ export interface operations {
             };
             /** @description Нет токена или он недействителен. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRecommendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRecommendation"][];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

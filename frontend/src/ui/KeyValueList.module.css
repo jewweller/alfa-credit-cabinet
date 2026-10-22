@@ -56,6 +56,18 @@
   text-align: right;
 }
 
+.invalid .label,
+.invalid .value {
+  color: var(--color-danger);
+}
+
+.error {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
 .emphasis .value {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-medium);

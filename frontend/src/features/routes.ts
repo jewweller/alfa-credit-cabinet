@@ -1,3 +1,4 @@
+import type { UserRole } from '../api/types';
 import type { Screen } from '../i18n/ru';
 
 // Адреса экранов из плана (раздел 11).
@@ -6,6 +7,8 @@ export const ROUTES = {
   login: '/login',
   products: '/products',
   feed: '/feed',
+  /** Кабинет банка (B2) — экраны сотрудников ещё впереди. */
+  bank: '/bank',
   application: (id: string) => `/applications/${id}`,
   applicationEdit: (id: string) => `/applications/${id}/edit`,
   signing: (id: string) => `/applications/${id}/signing`,
@@ -23,4 +26,9 @@ export function screenPath(screen: Screen, applicationId: string): string {
     case 'C7':
       return ROUTES.result(applicationId);
   }
+}
+
+/** Куда вести после входа: клиента — на главную, сотрудника банка — в очередь. */
+export function homeFor(role: UserRole): string {
+  return role === 'client' ? ROUTES.home : ROUTES.bank;
 }
