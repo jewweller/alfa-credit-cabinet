@@ -25,18 +25,36 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
+function Brand({ productName, homeHref }: { productName: string; homeHref: string }) {
+  return (
+    <Link to={homeHref} className={styles.brand}>
+      <span className={styles.logo} aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path d="M12 3 21 20H3Z" fill="currentColor" />
+        </svg>
+      </span>
+      <span className={styles.product}>{productName}</span>
+    </Link>
+  );
+}
+
+/** Шапка до входа: только название продукта и, например, переключатель оформления. */
+export function PublicHeader({ productName, homeHref, tools }: Pick<AppHeaderProps, 'productName' | 'homeHref' | 'tools'>) {
+  return (
+    <header className={styles.header}>
+      <div className={`${styles.inner} ${styles.public}`}>
+        <Brand productName={productName} homeHref={homeHref} />
+        {tools && <div className={styles.tools}>{tools}</div>}
+      </div>
+    </header>
+  );
+}
+
 export function AppHeader(props: AppHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link to={props.homeHref} className={styles.brand}>
-          <span className={styles.logo} aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <path d="M12 3 21 20H3Z" fill="currentColor" />
-            </svg>
-          </span>
-          <span className={styles.product}>{props.productName}</span>
-        </Link>
+        <Brand productName={props.productName} homeHref={props.homeHref} />
 
         <div className={styles.company}>
           {props.company ? (

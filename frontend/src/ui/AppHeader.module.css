@@ -21,6 +21,10 @@
   gap: var(--space-5);
 }
 
+.public {
+  justify-content: space-between;
+}
+
 .brand {
   display: flex;
   align-items: center;

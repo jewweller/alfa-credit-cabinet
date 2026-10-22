@@ -1,21 +1,11 @@
-// Аннуитет и график платежей — так же, как будет считать бэк (domain/loan_math.py).
-// Считаем в копейках; платёж и проценты округляем до копейки, последний платёж
-// закрывает остаток целиком (описание PaymentSchedule в контракте).
+// График платежей — так же, как будет считать бэк (domain/loan_math.py). Аннуитет — в
+// features/loanMath.ts; проценты округляем до копейки, последний платёж закрывает
+// остаток целиком (описание PaymentSchedule в контракте).
 // В плане примеры округлены до рубля: 275 040 ₽ — здесь будет 275 039,98 ₽.
 import type { PaymentSchedule } from '../api/types';
+import { annuityPaymentKop, monthlyPayment, toKop, toMoney } from '../features/loanMath';
 
-const toKop = (money: string) => Math.round(Number(money) * 100);
-const toMoney = (kop: number) => (kop / 100).toFixed(2);
-
-export function annuityPaymentKop(amountKop: number, ratePercent: number, months: number): number {
-  const r = ratePercent / 100 / 12;
-  if (r === 0) return Math.round(amountKop / months);
-  return Math.round((amountKop * r) / (1 - Math.pow(1 + r, -months)));
-}
-
-export function monthlyPayment(amount: string, rate: string, months: number): string {
-  return toMoney(annuityPaymentKop(toKop(amount), Number(rate), months));
-}
+export { monthlyPayment };
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);

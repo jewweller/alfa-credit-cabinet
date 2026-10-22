@@ -21,6 +21,16 @@ export type PaymentScheduleItem = Schemas['PaymentScheduleItem'];
 export type Product = Schemas['Product'];
 export type LoanPurpose = Schemas['LoanPurpose'];
 export type Me = Schemas['MeResponse'];
+export type UserRole = Schemas['UserRole'];
+export type LoginRequest = Schemas['LoginRequest'];
+export type TokenResponse = Schemas['TokenResponse'];
+export type CompanyLookup = Schemas['CompanyLookupResponse'];
+export type CompanyRegistryStatus = Schemas['CompanyRegistryStatus'];
+export type ProductRecommendRequest = Schemas['ProductRecommendRequest'];
+export type ProductRecommendation = Schemas['ProductRecommendation'];
+export type RecommendationAdjustment = Schemas['RecommendationAdjustment'];
+export type ApplicationCreate = Schemas['ApplicationCreate'];
+export type ApplicationUpdate = Schemas['ApplicationUpdate'];
 export type ApiErrorBody = Schemas['ErrorResponse'];
 export type ErrorCode = Schemas['ErrorCode'];
 

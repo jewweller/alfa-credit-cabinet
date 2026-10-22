@@ -64,3 +64,15 @@ const todayFmt = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numer
 export function formatToday(now: number = Date.now()): string {
   return todayFmt.format(new Date(now));
 }
+
+const compact = new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 });
+
+/** Лимиты продукта коротко: «300 тыс. – 5 млн ₽». */
+export function formatMoneyRange(min: string, max: string): string {
+  return `${compact.format(Number(min))} – ${compact.format(Number(max))} ₽`;
+}
+
+/** Доля 0.213 → «21,3%». */
+export function formatPercent(share: number): string {
+  return `${(share * 100).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
+}

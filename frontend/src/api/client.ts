@@ -22,6 +22,14 @@ export function readToken(): string | null {
   }
 }
 
+export function saveToken(token: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    // хранилище недоступно — без токена API ответит 401 и вернёт на вход
+  }
+}
+
 export function clearToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY);
@@ -63,10 +71,11 @@ export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> 
  */
 export async function apiPost<T>(
   path: string,
-  options: { body?: unknown; idempotencyKey?: string } = {},
+  options: { body?: unknown; idempotencyKey?: string; signal?: AbortSignal } = {},
 ): Promise<T> {
   const res = await fetch(BASE_URL + path, {
     method: 'POST',
+    signal: options.signal,
     headers: {
       Accept: 'application/json',
       ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
@@ -74,6 +83,16 @@ export async function apiPost<T>(
       ...authHeaders(),
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+  });
+  return parse<T>(res);
+}
+
+/** PATCH — частичное изменение, например автосохранение черновика. */
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(BASE_URL + path, {
+    method: 'PATCH',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
   });
   return parse<T>(res);
 }

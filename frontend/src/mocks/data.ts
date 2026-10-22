@@ -2,6 +2,7 @@
 // Клиент — ООО «Пекарня Север». По заявке на каждый сценарий карточки (C5).
 import type {
   ApplicationDetail,
+  CompanyLookup,
   FeedItem,
   Me,
   Offer,
@@ -72,6 +73,153 @@ export const me: Me = {
     segment: 'small',
   },
 };
+
+/** Пароль у всех демо-учёток — как в плане (раздел 14). */
+export const DEMO_PASSWORD = 'Demo2026!';
+
+const company = (id: string, inn: string, name: string, kind: 'LLC' | 'IE', okved: string, segment: 'micro' | 'small') => ({
+  id: `5a0e7d6c-0000-4000-8000-0000000${id}`,
+  inn,
+  name,
+  kind,
+  okved_main: okved,
+  segment,
+});
+
+/** Демо-учётки из плана. Заявки в исходных данных есть только у Пекарни, остальные начинают с нуля. */
+export const users: Me[] = [
+  me,
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000a2',
+    email: 'kovalev@demo.local',
+    full_name: 'Андрей Ковалёв',
+    role: 'client',
+    company: company('000c2', '500100001072', 'ИП Ковалёв А.С.', 'IE', '47.11', 'micro'),
+  },
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000a3',
+    email: 'stroy@demo.local',
+    full_name: 'Олег Белов',
+    role: 'client',
+    company: company('000c3', '7701000026', 'ООО «СтройРесурс»', 'LLC', '41.20', 'small'),
+  },
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000a4',
+    email: 'melnikova@demo.local',
+    full_name: 'Елена Мельникова',
+    role: 'client',
+    company: company('000c4', '500100002020', 'ИП Мельникова Е.В.', 'IE', '96.02', 'micro'),
+  },
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000b1',
+    email: 'underwriter@demo.local',
+    full_name: 'Дмитрий Орлов',
+    role: 'underwriter',
+    company: null,
+  },
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000b2',
+    email: 'admin@demo.local',
+    full_name: 'Администратор стенда',
+    role: 'admin',
+    company: null,
+  },
+];
+
+/** Ответы ЕГРЮЛ/ЕГРИП по тестовым ИНН (план, раздел 8). 7701000072 в реестре нет. */
+export const registry: CompanyLookup[] = [
+  {
+    inn: '7701000019',
+    kind: 'LLC',
+    ogrn: '1187746000019',
+    name: 'ООО «Пекарня Север»',
+    status: 'ACTIVE',
+    registered_at: '2018-09-14',
+    okved_main: '10.71',
+    okved_extra: ['10.72', '47.24'],
+    region: 'Москва',
+    address: 'г. Москва, ул. Северная, д. 12',
+    director_fio: 'Соколова Ирина Павловна',
+  },
+  {
+    inn: '500100001072',
+    kind: 'IE',
+    ogrn: '321500100001072',
+    name: 'Ковалёв Андрей Сергеевич',
+    status: 'ACTIVE',
+    registered_at: '2022-06-01',
+    okved_main: '47.11',
+    okved_extra: [],
+    region: 'Московская область',
+    address: null,
+    director_fio: null,
+  },
+  {
+    inn: '500100002020',
+    kind: 'IE',
+    ogrn: '324500100002020',
+    name: 'Мельникова Елена Викторовна',
+    status: 'ACTIVE',
+    registered_at: '2024-04-10',
+    okved_main: '96.02',
+    okved_extra: [],
+    region: 'Московская область',
+    address: null,
+    director_fio: null,
+  },
+  {
+    inn: '7701000026',
+    kind: 'LLC',
+    ogrn: '1157746000026',
+    name: 'ООО «СтройРесурс»',
+    status: 'LIQUIDATED',
+    registered_at: '2015-03-02',
+    okved_main: '41.20',
+    okved_extra: ['43.99'],
+    region: 'Москва',
+    address: 'г. Москва, Промышленный пр., д. 4',
+    director_fio: 'Белов Олег Игоревич',
+  },
+  {
+    inn: '7701000033',
+    kind: 'LLC',
+    ogrn: '1197746000033',
+    name: 'ООО «Вектор»',
+    status: 'ACTIVE',
+    registered_at: '2019-11-20',
+    okved_main: '46.90',
+    okved_extra: [],
+    region: 'Москва',
+    address: 'г. Москва, ул. Лесная, д. 7',
+    director_fio: 'Гришин Павел Олегович',
+  },
+  {
+    inn: '7701000058',
+    kind: 'LLC',
+    ogrn: '1207746000058',
+    name: 'ООО «Мираж»',
+    status: 'ACTIVE',
+    registered_at: '2020-02-17',
+    okved_main: '56.10',
+    okved_extra: [],
+    region: 'Москва',
+    address: 'г. Москва, ул. Садовая, д. 1',
+    director_fio: 'Зайцева Анна Петровна',
+  },
+  {
+    inn: '7701000065',
+    kind: 'LLC',
+    ogrn: '1217746000065',
+    name: 'ООО «Сбой-Тест»',
+    status: 'ACTIVE',
+    registered_at: '2021-05-05',
+    okved_main: '62.01',
+    okved_extra: [],
+    region: 'Москва',
+    address: 'г. Москва, ул. Тестовая, д. 5',
+    director_fio: 'Сбоев Игорь Иванович',
+  },
+];
 
 /** Оффер с платежом, посчитанным по аннуитету. */
 export function makeOffer(

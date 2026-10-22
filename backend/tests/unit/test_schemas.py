@@ -11,7 +11,7 @@ from app.schemas.auth import LoginRequest
 from app.schemas.companies import CompanyLookupResponse
 from app.schemas.decisions import REJECT_REASON_DESCRIPTIONS, RejectReason
 from app.schemas.documents import MAX_UPLOAD_BYTES, DocumentInfo
-from app.schemas.products import Product
+from app.schemas.products import Product, ProductRecommendRequest
 from app.schemas.schedule import PaymentScheduleItem
 
 
@@ -85,11 +85,15 @@ def test_application_update_accepts_partial_fields() -> None:
     assert update.model_dump(exclude_unset=True) == {"version": 1, "term_months": 12}
 
 
-@pytest.mark.parametrize("model", [ApplicationCreate, ApplicationUpdate, LoginRequest])
+@pytest.mark.parametrize(
+    "model", [ApplicationCreate, ApplicationUpdate, LoginRequest, ProductRecommendRequest]
+)
 def test_request_models_reject_unknown_fields(model: type) -> None:
     base = {"version": 1} if model is ApplicationUpdate else {}
     if model is LoginRequest:
         base = {"email": "bakery@demo.local", "password": "x"}
+    if model is ProductRecommendRequest:
+        base = {"purpose": "working_capital", "amount": "3000000.00", "term_months": 12}
 
     with pytest.raises(ValidationError):
         model.model_validate({**base, "unexpected": True})
