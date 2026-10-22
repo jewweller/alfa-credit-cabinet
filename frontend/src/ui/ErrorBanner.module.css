@@ -1,0 +1,43 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  background: var(--surface-fill);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-card),
+    inset 0 0 0 1px var(--error-ring);
+  padding: var(--space-4);
+  animation: enter-up var(--duration-slow) var(--ease-out) both;
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--status-rejected-bg);
+  color: var(--status-rejected);
+  font-weight: var(--font-weight-bold);
+}
+
+.text {
+  flex: 1;
+  min-width: 160px;
+}
+
+.message {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.detail {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}

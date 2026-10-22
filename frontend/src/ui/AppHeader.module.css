@@ -1,0 +1,142 @@
+/* Стеклянная тёмная шапка: над тёмным приветствием сливается с ним,
+   над светлым контентом при прокрутке становится матовой. */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-night-glass);
+  backdrop-filter: saturate(160%) blur(24px);
+  -webkit-backdrop-filter: saturate(160%) blur(24px);
+  border-bottom: 1px solid var(--color-night-line);
+  color: var(--color-night-text);
+}
+
+.inner {
+  max-width: var(--layout-max-width);
+  min-height: var(--header-height);
+  margin: 0 auto;
+  padding: var(--space-2) var(--layout-gutter);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  flex: none;
+}
+
+.logo {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  box-shadow: var(--shadow-button), 0 0 24px -4px var(--color-accent-glow);
+}
+
+.product {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.01em;
+}
+
+.company {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.companyName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inn {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--color-night-muted);
+  white-space: nowrap;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.tools {
+  display: flex;
+  align-items: center;
+  margin-right: var(--space-3);
+}
+
+.userChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-night-raised);
+  box-shadow: var(--shadow-night-key);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+}
+
+.userName {
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .inner {
+    flex-wrap: wrap;
+    row-gap: 0;
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+
+  .company {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .user {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .product,
+  .userName {
+    display: none;
+  }
+
+  .tools {
+    margin-right: var(--space-1);
+  }
+}
