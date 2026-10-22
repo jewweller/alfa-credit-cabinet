@@ -192,6 +192,68 @@
         "x-implementation-status": "planned"
       }
     },
+    "/api/v1/products/recommend": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Recommend Products",
+        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
+        "operationId": "recommendProducts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRecommendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductRecommendation"
+                  },
+                  "type": "array",
+                  "title": "Response Recommendproducts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-implementation-status": "planned"
+      }
+    },
     "/api/v1/companies/lookup": {
       "get": {
         "tags": [
@@ -2828,6 +2890,104 @@
           "base_rate"
         ],
         "title": "Product"
+      },
+      "ProductRecommendRequest": {
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "title": "Amount",
+            "description": "Желаемая сумма, рублей.",
+            "examples": [
+              "3000000.00"
+            ]
+          },
+          "term_months": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Term Months",
+            "description": "Желаемый срок, месяцев."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "purpose",
+          "amount",
+          "term_months"
+        ],
+        "title": "ProductRecommendRequest",
+        "description": "Параметры подбора продукта (экран C3): на что нужны деньги, сколько и на какой срок."
+      },
+      "ProductRecommendation": {
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/Product"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "title": "Amount",
+            "description": "Сумма для расчёта: запрошенная, приведённая к лимитам.",
+            "examples": [
+              "3000000.00"
+            ]
+          },
+          "term_months": {
+            "type": "integer",
+            "title": "Term Months",
+            "description": "Срок для расчёта: запрошенный, приведённый к лимитам."
+          },
+          "rate": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "title": "Rate",
+            "description": "Базовая ставка продукта.",
+            "examples": [
+              "18.00"
+            ]
+          },
+          "monthly_payment": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "title": "Monthly Payment",
+            "description": "Примерный ежемесячный платёж.",
+            "examples": [
+              "3000000.00"
+            ]
+          },
+          "adjusted": {
+            "items": {
+              "$ref": "#/components/schemas/RecommendationAdjustment"
+            },
+            "type": "array",
+            "title": "Adjusted",
+            "description": "Изменённые параметры; пусто — продукт подходит на запрошенных условиях."
+          }
+        },
+        "type": "object",
+        "required": [
+          "product",
+          "amount",
+          "term_months",
+          "rate",
+          "monthly_payment",
+          "adjusted"
+        ],
+        "title": "ProductRecommendation",
+        "description": "Подходящий продукт с примерным платежом.\n\nСумма и срок приведены к лимитам продукта; что изменено — в `adjusted`.\nПлатёж — аннуитет по базовой ставке, итоговую ставку определит решение банка."
+      },
+      "RecommendationAdjustment": {
+        "type": "string",
+        "enum": [
+          "amount",
+          "term_months"
+        ],
+        "title": "RecommendationAdjustment",
+        "description": "Какой параметр подбора изменён, чтобы попасть в лимиты продукта."
       },
       "RejectReason": {
         "type": "string",

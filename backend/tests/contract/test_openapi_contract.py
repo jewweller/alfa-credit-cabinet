@@ -12,6 +12,7 @@ PLANNED_OPERATIONS = {
     ("post", "/api/v1/auth/login"),
     ("get", "/api/v1/auth/me"),
     ("get", "/api/v1/products"),
+    ("post", "/api/v1/products/recommend"),
     ("get", "/api/v1/companies/lookup"),
     ("get", "/api/v1/applications"),
     ("post", "/api/v1/applications"),
