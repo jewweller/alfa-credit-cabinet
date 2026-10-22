@@ -262,10 +262,11 @@ export function ReviewStep({
     <Panel tone="highlight" eyebrow={R.eyebrow} title={WIZARD.steps.review} footer={footer}>
       {incomplete && <InlineAlert>{R.incomplete}</InlineAlert>}
       <ReviewGroup title={R.company}>
-        <KeyValueList items={[{ label: C.name, value: companyName ?? empty }]} />
+        <KeyValueList valueFirst items={[{ label: C.name, value: companyName ?? empty }]} />
       </ReviewGroup>
       <ReviewGroup title={R.params} editLabel={R.edit} onEdit={() => onEdit('params')}>
         <KeyValueList
+          valueFirst
           items={[
             { label: P.product, value: product?.name ?? empty, error: errors.product_id },
             {
@@ -285,6 +286,7 @@ export function ReviewStep({
       </ReviewGroup>
       <ReviewGroup title={R.finance} editLabel={R.edit} onEdit={() => onEdit('finance')}>
         <KeyValueList
+          valueFirst
           items={[
             {
               label: F.revenue,

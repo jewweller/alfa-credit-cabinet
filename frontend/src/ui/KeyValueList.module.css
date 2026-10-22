@@ -56,6 +56,18 @@
   text-align: right;
 }
 
+.cols1.valueFirst .row {
+  flex-direction: row-reverse;
+}
+
+.cols1.valueFirst .value {
+  text-align: left;
+}
+
+.cols1.valueFirst .label {
+  text-align: right;
+}
+
 .invalid .label,
 .invalid .value {
   color: var(--color-danger);
