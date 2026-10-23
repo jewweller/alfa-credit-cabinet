@@ -29,6 +29,10 @@ PLANNED_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/cancel"),
     ("post", "/api/v1/applications/{id}/signing/code"),
     ("post", "/api/v1/applications/{id}/signing/confirm"),
+    ("get", "/api/v1/bank/applications"),
+    ("get", "/api/v1/bank/applications/{id}"),
+    ("post", "/api/v1/bank/applications/{id}/assign"),
+    ("post", "/api/v1/bank/applications/{id}/decision"),
 }
 IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/submit"),
@@ -37,6 +41,7 @@ IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/resubmit"),
     ("post", "/api/v1/applications/{id}/cancel"),
     ("post", "/api/v1/applications/{id}/signing/confirm"),
+    ("post", "/api/v1/bank/applications/{id}/decision"),
 }
 IMPLEMENTED_OPERATIONS = {("get", "/health"), ("get", "/api/v1/health")}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *IMPLEMENTED_OPERATIONS}
