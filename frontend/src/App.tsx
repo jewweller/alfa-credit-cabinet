@@ -11,6 +11,8 @@ import { ApplicationPage } from './pages/client/ApplicationPage';
 import { ComingSoonPage } from './pages/client/ComingSoonPage';
 import { HomePage } from './pages/client/HomePage';
 import { ProductsPage } from './pages/client/ProductsPage';
+import { ResultPage } from './pages/client/ResultPage';
+import { SigningPage } from './pages/client/SigningPage';
 
 /** Токен истёк или недействителен — на вход, с возвратом на текущий экран. */
 function onUnauthorized(error: Error) {
@@ -47,8 +49,8 @@ export function App() {
           <Route path="/products" element={client(<ProductsPage />)} />
           <Route path="/applications/:id/edit" element={client(<ApplicationEditPage />)} />
           <Route path="/applications/:id" element={client(<ApplicationPage />)} />
-          <Route path="/applications/:id/signing" element={client(<ComingSoonPage code="C6" />)} />
-          <Route path="/applications/:id/result" element={client(<ComingSoonPage code="C7" />)} />
+          <Route path="/applications/:id/signing" element={client(<SigningPage />)} />
+          <Route path="/applications/:id/result" element={client(<ResultPage />)} />
           <Route path="/feed" element={client(<ComingSoonPage code="C8" />)} />
           <Route
             path={ROUTES.bank}

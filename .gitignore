@@ -5,6 +5,11 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# ML: окружение, сгенерированные датасеты и прогоны (ml/README.md)
+ml/.venv/
+/data/
+ml/runs/
+
 # Environment / secrets
 .env
 

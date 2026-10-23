@@ -1,0 +1,568 @@
+{
+  "behavior": {
+    "acceptance_change_penalty": 2.0,
+    "acceptance_intercept": 2.5,
+    "acceptance_rate_penalty": 2.0,
+    "amount_flexibility_beta": [
+      2.0,
+      2.0
+    ],
+    "application_base": 0.3,
+    "application_urgency": 0.5,
+    "dti_penalty": 3.0,
+    "gumbel_scale": 1.0,
+    "issuance_probability": 0.97,
+    "manual_approval_base": 0.9,
+    "manual_dti_penalty": 0.3,
+    "manual_risk_penalty": 0.65,
+    "outside_utility": 0.0,
+    "price_sensitivity_lognormal": [
+      0.0,
+      0.45
+    ],
+    "purpose_bonus": 1.2,
+    "rate_penalty": 1.5,
+    "shortage_penalty": 2.0,
+    "term_penalty": 1.0,
+    "term_preference_sigma": 0.2,
+    "urgency_beta": [
+      2.0,
+      2.0
+    ],
+    "utility_intercept": 4.2
+  },
+  "bki": {
+    "balance_months": [
+      6,
+      36
+    ],
+    "bankruptcy_probability": 0.01,
+    "current_overdue_weights": [
+      0.9,
+      0.06,
+      0.02,
+      0.02
+    ],
+    "existing_dti_beta": [
+      1.5,
+      8.0
+    ],
+    "history_probability": 0.8,
+    "inquiry_lambda": 0.8,
+    "inquiry_risk_multiplier": 1.0,
+    "loans_count": {
+      "values": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "weights": [
+        0.1,
+        0.4,
+        0.3,
+        0.15,
+        0.05
+      ]
+    },
+    "overdue_ranges": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        30
+      ],
+      [
+        31,
+        90
+      ],
+      [
+        91,
+        180
+      ]
+    ],
+    "overdue_weights": [
+      0.7,
+      0.18,
+      0.08,
+      0.04
+    ],
+    "risk_correlation": 0.55,
+    "unavailable_probability": 0.025,
+    "young_history_probability": 0.4
+  },
+  "candidates": {
+    "amount_fractions": [
+      1.0,
+      0.75,
+      0.5
+    ],
+    "max_candidates": 20,
+    "term_offsets": [
+      0,
+      -6,
+      6,
+      -12,
+      12
+    ],
+    "unknown_grade_for_pricing": "B"
+  },
+  "company": {
+    "age_log_sigma": 1.34,
+    "age_max_years": 25.0,
+    "age_median_years": 4.0,
+    "age_min_years": 0.05,
+    "employee_noise_sigma": 2.0,
+    "extra_okved_max": 3,
+    "industries": [
+      {
+        "code": "10.71",
+        "purposes": [
+          0.35,
+          0.55,
+          0.1
+        ],
+        "season_peak": 11,
+        "weight": 0.1
+      },
+      {
+        "code": "41.20",
+        "purposes": [
+          0.4,
+          0.4,
+          0.2
+        ],
+        "season_peak": 6,
+        "weight": 0.09
+      },
+      {
+        "code": "43.21",
+        "purposes": [
+          0.45,
+          0.4,
+          0.15
+        ],
+        "season_peak": 7,
+        "weight": 0.07
+      },
+      {
+        "code": "45.20",
+        "purposes": [
+          0.45,
+          0.35,
+          0.2
+        ],
+        "season_peak": 4,
+        "weight": 0.07
+      },
+      {
+        "code": "46.90",
+        "purposes": [
+          0.6,
+          0.1,
+          0.3
+        ],
+        "season_peak": 11,
+        "weight": 0.15
+      },
+      {
+        "code": "47.11",
+        "purposes": [
+          0.55,
+          0.1,
+          0.35
+        ],
+        "season_peak": 12,
+        "weight": 0.2
+      },
+      {
+        "code": "49.41",
+        "purposes": [
+          0.3,
+          0.6,
+          0.1
+        ],
+        "season_peak": 8,
+        "weight": 0.08
+      },
+      {
+        "code": "56.10",
+        "purposes": [
+          0.4,
+          0.45,
+          0.15
+        ],
+        "season_peak": 7,
+        "weight": 0.09
+      },
+      {
+        "code": "62.01",
+        "purposes": [
+          0.7,
+          0.15,
+          0.15
+        ],
+        "season_peak": 10,
+        "weight": 0.08
+      },
+      {
+        "code": "96.02",
+        "purposes": [
+          0.45,
+          0.4,
+          0.15
+        ],
+        "season_peak": 12,
+        "weight": 0.07
+      }
+    ],
+    "kinds": {
+      "values": [
+        "LLC",
+        "IE"
+      ],
+      "weights": [
+        0.55,
+        0.45
+      ]
+    },
+    "micro_employees": [
+      1,
+      15
+    ],
+    "micro_revenue_bounds": [
+      300000,
+      120000000
+    ],
+    "micro_revenue_median": 10000000,
+    "regions": [
+      {
+        "code": "77",
+        "group": "central",
+        "weight": 0.25
+      },
+      {
+        "code": "50",
+        "group": "central",
+        "weight": 0.13
+      },
+      {
+        "code": "78",
+        "group": "northwest",
+        "weight": 0.12
+      },
+      {
+        "code": "23",
+        "group": "south",
+        "weight": 0.12
+      },
+      {
+        "code": "16",
+        "group": "volga",
+        "weight": 0.12
+      },
+      {
+        "code": "66",
+        "group": "ural",
+        "weight": 0.1
+      },
+      {
+        "code": "54",
+        "group": "siberia",
+        "weight": 0.1
+      },
+      {
+        "code": "25",
+        "group": "far_east",
+        "weight": 0.06
+      }
+    ],
+    "reserved_inns": [
+      "7701000019",
+      "500100001072",
+      "500100002020",
+      "7701000026",
+      "7701000033",
+      "7701000058",
+      "7701000065",
+      "7701000072"
+    ],
+    "revenue_log_sigma": 0.75,
+    "risk_age_correlation": -0.45,
+    "risk_revenue_correlation": -0.25,
+    "small_employees": [
+      16,
+      100
+    ],
+    "small_probability": 0.15,
+    "small_revenue_bounds": [
+      120000000.01,
+      800000000
+    ],
+    "small_revenue_median": 250000000,
+    "statuses": {
+      "values": [
+        "ACTIVE",
+        "LIQUIDATING",
+        "LIQUIDATED"
+      ],
+      "weights": [
+        0.96,
+        0.02,
+        0.02
+      ]
+    }
+  },
+  "display": {
+    "examination_exponent": 0.65,
+    "random_probability": 0.2,
+    "shown_count": {
+      "values": [
+        3,
+        4,
+        5
+      ],
+      "weights": [
+        0.25,
+        0.5,
+        0.25
+      ]
+    }
+  },
+  "fns": {
+    "annual_growth_bounds": [
+      -0.6,
+      0.8
+    ],
+    "annual_growth_mean": 0.08,
+    "annual_growth_sigma": 0.2,
+    "debt_weights": [
+      0.8,
+      0.15,
+      0.05
+    ],
+    "flag_probability": 0.04,
+    "large_debt_bounds": [
+      100000.01,
+      1000000
+    ],
+    "risk_correlation": 0.45,
+    "small_debt_bounds": [
+      0.01,
+      100000
+    ],
+    "unavailable_probability": 0.025
+  },
+  "products": [
+    {
+      "base_rate": "18.00",
+      "code": "EXPRESS_WC",
+      "id": "7f1c2b0a-0000-4000-8000-000000000001",
+      "max_amount": "5000000.00",
+      "max_term": 24,
+      "min_amount": "300000.00",
+      "min_term": 3,
+      "name": "Экспресс-оборот",
+      "purpose_tags": [
+        "working_capital",
+        "cash_gap"
+      ]
+    },
+    {
+      "base_rate": "16.00",
+      "code": "EQUIPMENT",
+      "id": "7f1c2b0a-0000-4000-8000-000000000002",
+      "max_amount": "30000000.00",
+      "max_term": 60,
+      "min_amount": "1000000.00",
+      "min_term": 12,
+      "name": "Инвест-оборудование",
+      "purpose_tags": [
+        "equipment"
+      ]
+    },
+    {
+      "base_rate": "20.00",
+      "code": "OVERDRAFT",
+      "id": "7f1c2b0a-0000-4000-8000-000000000003",
+      "max_amount": "3000000.00",
+      "max_term": 12,
+      "min_amount": "100000.00",
+      "min_term": 12,
+      "name": "Овердрафт для бизнеса",
+      "purpose_tags": [
+        "cash_gap"
+      ]
+    }
+  ],
+  "quality": {
+    "category_tolerance": 0.02,
+    "deployment_ndcg3_margin": null,
+    "funnel_intervals": null,
+    "grade_intervals": null,
+    "median_relative_tolerance": 0.1,
+    "outcome_intervals": null,
+    "positive_query_interval": [
+      0.55,
+      0.7
+    ]
+  },
+  "request": {
+    "amount_beta": [
+      2.0,
+      5.0
+    ],
+    "amount_rounding": 50000,
+    "amount_share_bounds": [
+      0.02,
+      0.65
+    ],
+    "bki_consent_probability": 0.3,
+    "mismatch_ranges": [
+      [
+        0.0,
+        0.1
+      ],
+      [
+        0.1001,
+        0.3
+      ],
+      [
+        0.3001,
+        0.8
+      ]
+    ],
+    "mismatch_weights": [
+      0.85,
+      0.1,
+      0.05
+    ],
+    "purposes": [
+      "working_capital",
+      "equipment",
+      "cash_gap"
+    ],
+    "season_amplitude": 0.35,
+    "terms": {
+      "cash_gap": {
+        "values": [
+          3,
+          6,
+          12
+        ],
+        "weights": [
+          0.15,
+          0.5,
+          0.35
+        ]
+      },
+      "equipment": {
+        "values": [
+          12,
+          18,
+          24,
+          36,
+          48,
+          60
+        ],
+        "weights": [
+          0.1,
+          0.1,
+          0.25,
+          0.25,
+          0.15,
+          0.15
+        ]
+      },
+      "working_capital": {
+        "values": [
+          6,
+          12,
+          18,
+          24
+        ],
+        "weights": [
+          0.15,
+          0.45,
+          0.2,
+          0.2
+        ]
+      }
+    },
+    "understated_payment_fraction": [
+      0.4,
+      0.9
+    ],
+    "understatement_probability": 0.1
+  },
+  "rules": {
+    "adapter": "ml.synth.rules:PlanRules",
+    "counter_amount_fraction": 0.5,
+    "dti_limit": 0.35,
+    "grade_thresholds": {
+      "A": 80,
+      "B": 65,
+      "C": 50,
+      "D": 35,
+      "E": 0
+    },
+    "manual_amount": 10000000,
+    "rate_spreads": {
+      "A": 0,
+      "B": 2,
+      "C": 4,
+      "D": 0,
+      "E": 0
+    },
+    "revenue_mismatch_limit": 0.3,
+    "tax_debt_threshold": 100000,
+    "term_step": 6,
+    "version": "plan-2026-10-20-v1"
+  },
+  "schema_version": 1,
+  "simulation": {
+    "companies": 200,
+    "debug_fraction": 0.01,
+    "end_date": "2026-10-22",
+    "parquet_batch_rows": 4096,
+    "requests_per_company": {
+      "values": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "weights": [
+        0.1,
+        0.2,
+        0.4,
+        0.2,
+        0.1
+      ]
+    },
+    "start_date": "2025-05-01"
+  },
+  "split": {
+    "company_fractions": [
+      0.7,
+      0.15,
+      0.15
+    ],
+    "test_months": 3
+  },
+  "training": {
+    "colsample_bytree": 0.8,
+    "early_stopping_rounds": 50,
+    "lambdarank_num_pair_per_sample": 5,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "min_child_weight": 5,
+    "n_estimators": 1000,
+    "n_jobs": 2,
+    "subsample": 0.8
+  }
+}

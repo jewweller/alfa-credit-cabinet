@@ -106,6 +106,7 @@ class ErrorCode(StrEnum):
     DOCUMENTS_REQUIRED = "documents_required"
     FILE_TOO_LARGE = "file_too_large"
     UNSUPPORTED_MEDIA_TYPE = "unsupported_media_type"
+    INVALID_CODE = "invalid_code"
     HTTP_ERROR = "http_error"
 
 

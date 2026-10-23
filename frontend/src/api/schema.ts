@@ -320,6 +320,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/applications/{id}/signing/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Signing Code
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.
+         */
+        post: operations["createSigningCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/signing/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Signing
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Подтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`).
+         */
+        post: operations["confirmSigning"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/applications/{id}/documents": {
         parameters: {
             query?: never;
@@ -744,7 +788,7 @@ export interface components {
          * @description Технические коды ошибок. Предварительный контракт: в плане не закреплены, TBD.
          * @enum {string}
          */
-        ErrorCode: "validation_error" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "invalid_transition" | "version_conflict" | "company_not_found" | "upstream_unavailable" | "offer_not_active" | "documents_required" | "file_too_large" | "unsupported_media_type" | "http_error";
+        ErrorCode: "validation_error" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "invalid_transition" | "version_conflict" | "company_not_found" | "upstream_unavailable" | "offer_not_active" | "documents_required" | "file_too_large" | "unsupported_media_type" | "invalid_code" | "http_error";
         /**
          * ErrorResponse
          * @description Единый формат ошибки `{code, message, field?}` (план, раздел 10).
@@ -1089,6 +1133,35 @@ export interface components {
          * @enum {string}
          */
         RejectReason: "company_inactive" | "bankruptcy_or_overdue" | "low_score" | "no_suitable_terms" | "underwriter_decision";
+        /**
+         * SigningCodeResponse
+         * @description Одноразовый код подписи. На демо показывается на экране в рамке «Симуляция ПЭП».
+         */
+        SigningCodeResponse: {
+            /**
+             * Code
+             * @description Шесть цифр.
+             * @example 482915
+             */
+            code: string;
+            /**
+             * Expires At
+             * Format: date-time
+             * @description До какого момента код действует.
+             */
+            expires_at: string;
+        };
+        /**
+         * SigningConfirmRequest
+         * @description Подтверждение подписи введённым кодом.
+         */
+        SigningConfirmRequest: {
+            /**
+             * Code
+             * @example 482915
+             */
+            code: string;
+        };
         /**
          * StatusActor
          * @enum {string}
@@ -1914,6 +1987,147 @@ export interface operations {
                 };
             };
             /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createSigningCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningCodeResponse"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Нет доступа к заявке. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Код выдаётся только в статусе `SIGNING`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmSigning: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9). */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Нет доступа к заявке. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Подтверждение возможно только в статусе `SIGNING`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `invalid_code` — код неверный или истёк; либо ошибка валидации тела. */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -6,16 +6,19 @@
 """
 
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header
 from fastapi.security import HTTPBearer
 
+from app.schemas.applications import ApplicationDetail
 from app.schemas.common import ErrorResponse
 from app.schemas.documents import (
     ALLOWED_UPLOAD_MIME_TYPES,
     MAX_UPLOAD_BYTES,
 )
 from app.schemas.products import ProductRecommendation, ProductRecommendRequest
+from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 
 _bearer = HTTPBearer(description="JWT из `POST /api/v1/auth/login`.")
 _AUTH = [Depends(_bearer)]
@@ -64,6 +67,46 @@ def recommend_products(body: ProductRecommendRequest) -> None:
 
 
 # ── Карточка заявки (экран C5) ────────────────────────────────────────────────
+
+
+# ── Подписание договора (экран C6) ────────────────────────────────────────────
+
+
+@contract_router.post(
+    "/applications/{id}/signing/code",
+    response_model=SigningCodeResponse,
+    operation_id="createSigningCode",
+    tags=["signing"],
+    dependencies=_AUTH,
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Код выдаётся только в статусе `SIGNING`.",
+    ),
+)
+def create_signing_code(id: UUID) -> None:
+    """Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе."""
+
+
+@contract_router.post(
+    "/applications/{id}/signing/confirm",
+    response_model=ApplicationDetail,
+    operation_id="confirmSigning",
+    tags=["signing"],
+    dependencies=_AUTH,
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Подтверждение возможно только в статусе `SIGNING`.",
+        e422="`invalid_code` — код неверный или истёк; либо ошибка валидации тела.",
+    ),
+)
+def confirm_signing(
+    id: UUID, body: SigningConfirmRequest, idempotency_key: IdempotencyKey = None
+) -> None:
+    """Подтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`)."""
 
 
 _ALLOWED_TYPES = ", ".join(ALLOWED_UPLOAD_MIME_TYPES)
