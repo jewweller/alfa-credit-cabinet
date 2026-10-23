@@ -1,0 +1,55 @@
+.shell {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+/* Фон закреплён: рабочие поверхности прокручиваются поверх «атмосферы». */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--page-gradient);
+  pointer-events: none;
+}
+
+.glow {
+  position: absolute;
+  inset: -30% -20%;
+  background:
+    radial-gradient(34% 40% at 72% 18%, var(--page-glow-1), transparent 70%),
+    radial-gradient(40% 46% at 12% 78%, var(--page-glow-2), transparent 70%),
+    radial-gradient(26% 30% at 92% 72%, var(--page-glow-3), transparent 70%);
+  filter: blur(48px);
+  animation: drift 22s var(--ease-in-out) infinite alternate;
+}
+
+/* Еле заметная сетка точек — «инженерная» фактура. */
+.dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--page-dots) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 85%);
+}
+
+.main {
+  position: relative;
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--layout-gutter) var(--space-9);
+}
+
+.withHero {
+  padding-top: 0;
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-6%, 5%, 0) scale(1.08);
+  }
+}

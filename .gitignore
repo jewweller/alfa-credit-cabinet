@@ -1,9 +1,17 @@
+# Python
 __pycache__/
 *.py[cod]
+.venv/
 .pytest_cache/
 .ruff_cache/
-.venv/
+
+# ML: окружение, сгенерированные датасеты и прогоны (ml/README.md)
 ml/.venv/
-data/
+/data/
 ml/runs/
+
+# Environment / secrets
+.env
+
+# OS / editors
 .DS_Store

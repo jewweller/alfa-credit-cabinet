@@ -1,0 +1,154 @@
+.progress {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Линия к следующему этапу: серая подложка + прорисовка цветом. */
+.step:not(:last-child)::before,
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 16px;
+  right: 4px;
+  height: 2px;
+  border-radius: 2px;
+}
+
+.step:not(:last-child)::before {
+  background: var(--stage-todo);
+  opacity: 0.6;
+}
+
+.done:not(:last-child)::after {
+  background: var(--stage-done);
+  transform-origin: left;
+  animation: draw var(--duration-slow) var(--ease-out) both;
+  animation-delay: calc(120ms + var(--i) * 110ms);
+}
+
+.complete .done:not(:last-child)::after {
+  background: var(--stage-complete);
+}
+
+.dot {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--stage-todo);
+  background: var(--color-surface);
+  flex: none;
+  z-index: 1;
+}
+
+.done .dot {
+  background: var(--stage-done);
+  border-color: var(--stage-done);
+}
+
+.complete .done .dot {
+  background: var(--stage-complete);
+  border-color: var(--stage-complete);
+}
+
+.current .dot {
+  background: var(--stage-current);
+  border-color: var(--stage-current);
+}
+
+/* Пульс текущего этапа. */
+.current .dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--stage-current);
+  animation: pulse 1.8s var(--ease-out) infinite;
+}
+
+.failed .dot {
+  background: var(--stage-failed);
+  border-color: var(--stage-failed);
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.done .label {
+  color: var(--color-text-muted);
+}
+
+.current .label {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.failed .label {
+  color: var(--stage-failed);
+  font-weight: var(--font-weight-medium);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* На узком экране подпись только у текущего этапа, остальные — для скринридера. */
+@media (max-width: 480px) {
+  .done .label,
+  .todo .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .current .label,
+  .failed .label {
+    overflow: visible;
+  }
+}

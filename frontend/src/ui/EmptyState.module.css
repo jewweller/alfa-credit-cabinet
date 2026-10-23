@@ -1,0 +1,87 @@
+.empty {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-fill);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  animation: enter-up var(--duration-slow) var(--ease-out) both;
+}
+
+/* Мягкое красное свечение снизу — перекличка с тёмным блоком сверху. */
+.empty:not(.compact)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -60%;
+  width: 70%;
+  height: 90%;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(239, 49, 36, 0.14), transparent);
+  pointer-events: none;
+}
+
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-2);
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  box-shadow: var(--shadow-button), 0 12px 32px -8px var(--color-accent-glow);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--tracking-display);
+}
+
+.text {
+  max-width: 440px;
+  color: var(--color-text-muted);
+}
+
+.action {
+  position: relative;
+  margin-top: var(--space-3);
+}
+
+.compact {
+  background: none;
+  box-shadow: none;
+  padding: var(--space-5) 0;
+  animation: none;
+}
+
+.compact .title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 600px) {
+  .empty:not(.compact) {
+    padding: var(--space-7) var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+
+  .title {
+    font-size: var(--font-size-lg);
+  }
+}
