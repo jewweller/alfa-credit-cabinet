@@ -22,12 +22,31 @@ _CODE_BY_STATUS: dict[int, ErrorCode] = {
 _LOCATION_PREFIXES = {"body", "query", "path", "header", "cookie"}
 
 
+class ApiError(Exception):
+    """Ошибка с явным кодом из контракта, когда одного HTTP-статуса мало (409 и т. п.)."""
+
+    def __init__(
+        self, status_code: int, code: ErrorCode, message: str, field: str | None = None
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+        self.field = field
+
+
 def error_response(
-    status_code: int, code: ErrorCode, message: str, field: str | None = None
+    status_code: int,
+    code: ErrorCode,
+    message: str,
+    field: str | None = None,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     body = ErrorResponse(code=code, message=message, field=field)
     return JSONResponse(
-        status_code=status_code, content=body.model_dump(mode="json", exclude_none=True)
+        status_code=status_code,
+        content=body.model_dump(mode="json", exclude_none=True),
+        headers=headers,
     )
 
 
@@ -44,7 +63,11 @@ async def _handle_validation_error(_: Request, exc: RequestValidationError) -> J
 
 async def _handle_http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
     code = _CODE_BY_STATUS.get(exc.status_code, ErrorCode.HTTP_ERROR)
-    return error_response(exc.status_code, code, str(exc.detail))
+    return error_response(exc.status_code, code, str(exc.detail), headers=exc.headers)
+
+
+async def _handle_api_error(_: Request, exc: ApiError) -> JSONResponse:
+    return error_response(exc.status_code, exc.code, exc.message, exc.field)
 
 
 async def _handle_invalid_transition(_: Request, exc: InvalidTransitionError) -> JSONResponse:
@@ -54,4 +77,5 @@ async def _handle_invalid_transition(_: Request, exc: InvalidTransitionError) ->
 def install_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, _handle_validation_error)
     app.add_exception_handler(StarletteHTTPException, _handle_http_error)
+    app.add_exception_handler(ApiError, _handle_api_error)
     app.add_exception_handler(InvalidTransitionError, _handle_invalid_transition)

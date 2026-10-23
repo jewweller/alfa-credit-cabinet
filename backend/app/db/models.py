@@ -1,0 +1,118 @@
+"""SQLAlchemy-модели (план, раздел 6). Пока только таблицы, нужные входу и черновику заявки.
+
+Остальные таблицы плана (обогащение, скоринг, решения, офферы, документы, лента, аудит,
+очередь воркера) добавляются отдельными миграциями вместе с их функциональностью.
+"""
+
+from datetime import UTC, date, datetime
+from decimal import Decimal
+from uuid import UUID, uuid4
+
+from sqlalchemy import (
+    ARRAY,
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Uuid,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+# purpose_tags[] — массив в PostgreSQL; в SQLite (unit-тесты) хранится как JSON.
+TAG_LIST = ARRAY(String(32)).with_variant(JSON(), "sqlite")
+MONEY = Numeric(14, 2)
+RATE = Numeric(5, 2)
+
+
+def utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Company(Base):
+    __tablename__ = "companies"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    inn: Mapped[str] = mapped_column(String(12), unique=True)
+    ogrn: Mapped[str] = mapped_column(String(15))
+    kind: Mapped[str] = mapped_column(String(3))
+    name: Mapped[str] = mapped_column(String(255))
+    okved_main: Mapped[str] = mapped_column(String(16))
+    region: Mapped[str] = mapped_column(String(128))
+    registered_at: Mapped[date] = mapped_column(Date)
+    segment: Mapped[str] = mapped_column(String(8))
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(128))
+    role: Mapped[str] = mapped_column(String(16))
+    full_name: Mapped[str] = mapped_column(String(255))
+    company_id: Mapped[UUID | None] = mapped_column(ForeignKey("companies.id"))
+
+    company: Mapped[Company | None] = relationship(lazy="joined")
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    code: Mapped[str] = mapped_column(String(32), unique=True)
+    name: Mapped[str] = mapped_column(String(255))
+    purpose_tags: Mapped[list[str]] = mapped_column(TAG_LIST)
+    min_amount: Mapped[Decimal] = mapped_column(MONEY)
+    max_amount: Mapped[Decimal] = mapped_column(MONEY)
+    min_term: Mapped[int] = mapped_column(Integer)
+    max_term: Mapped[int] = mapped_column(Integer)
+    base_rate: Mapped[Decimal] = mapped_column(RATE)
+
+
+class Application(Base):
+    __tablename__ = "applications"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    number: Mapped[str] = mapped_column(String(16), unique=True)
+    company_id: Mapped[UUID] = mapped_column(ForeignKey("companies.id"), index=True)
+    applicant_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    product_id: Mapped[UUID | None] = mapped_column(ForeignKey("products.id"))
+    amount: Mapped[Decimal | None] = mapped_column(MONEY)
+    term_months: Mapped[int | None] = mapped_column(Integer)
+    purpose: Mapped[str | None] = mapped_column(String(32))
+    revenue_12m: Mapped[Decimal | None] = mapped_column(MONEY)
+    existing_payments_monthly: Mapped[Decimal | None] = mapped_column(MONEY)
+    bki_consent: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(32))
+    status_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    company: Mapped[Company] = relationship(lazy="joined")
+    product: Mapped[Product | None] = relationship(lazy="joined")
+
+    # Оптимистическая блокировка (план, раздел 9): SQLAlchemy сам увеличивает version
+    # и бросает StaleDataError, если запись успели изменить параллельно.
+    __mapper_args__ = {"version_id_col": version}
+
+
+class ApplicationStatusHistory(Base):
+    __tablename__ = "application_status_history"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    from_status: Mapped[str | None] = mapped_column(String(32))
+    to_status: Mapped[str] = mapped_column(String(32))
+    actor_type: Mapped[str] = mapped_column(String(16))
+    actor_id: Mapped[UUID | None] = mapped_column(Uuid)
+    reason: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
