@@ -5,6 +5,7 @@ import type {
   DocumentInfo,
   DocumentKind,
   PaymentSchedule,
+  SigningCode,
   StatusHistoryEntry,
 } from '../../api/types';
 import { STATUS_UI } from '../../i18n/ru';
@@ -94,4 +95,23 @@ export function useApplicationActions(id: string) {
   });
 
   return { accept, decline, resubmit, cancel, upload };
+}
+
+/** Получить код подписи (экран C6). Каждый запрос — новый код. */
+export function useSigningCode(id: string) {
+  return useMutation({ mutationFn: () => apiPost<SigningCode>(`/applications/${id}/signing/code`) });
+}
+
+/** Подтвердить подпись кодом: SIGNING → SIGNED. Ответ — свежая карточка. */
+export function useConfirmSigning(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiPost<ApplicationDetail>(`/applications/${id}/signing/confirm`, { body: { code }, idempotencyKey: newIdempotencyKey() }),
+    onSuccess: (detail) => {
+      queryClient.setQueryData(applicationKey(id), detail);
+      void queryClient.invalidateQueries({ queryKey: ['applications'] });
+      void queryClient.invalidateQueries({ queryKey: ['feed'] });
+    },
+  });
 }

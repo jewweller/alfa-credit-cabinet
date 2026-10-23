@@ -31,6 +31,8 @@ export type ProductRecommendation = Schemas['ProductRecommendation'];
 export type RecommendationAdjustment = Schemas['RecommendationAdjustment'];
 export type ApplicationCreate = Schemas['ApplicationCreate'];
 export type ApplicationUpdate = Schemas['ApplicationUpdate'];
+export type SigningCode = Schemas['SigningCodeResponse'];
+export type SigningConfirmRequest = Schemas['SigningConfirmRequest'];
 export type ApiErrorBody = Schemas['ErrorResponse'];
 export type ErrorCode = Schemas['ErrorCode'];
 

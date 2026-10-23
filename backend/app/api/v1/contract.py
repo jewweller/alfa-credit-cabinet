@@ -29,6 +29,7 @@ from app.schemas.documents import (
 )
 from app.schemas.products import Product, ProductRecommendation, ProductRecommendRequest
 from app.schemas.schedule import PaymentSchedule
+from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 
 _bearer = HTTPBearer(description="JWT из `POST /api/v1/auth/login`.")
 _AUTH = [Depends(_bearer)]
@@ -278,6 +279,46 @@ def get_payment_schedule(
     ] = None,
 ) -> None:
     """График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи."""
+
+
+# ── Подписание договора (экран C6) ────────────────────────────────────────────
+
+
+@contract_router.post(
+    "/applications/{id}/signing/code",
+    response_model=SigningCodeResponse,
+    operation_id="createSigningCode",
+    tags=["signing"],
+    dependencies=_AUTH,
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Код выдаётся только в статусе `SIGNING`.",
+    ),
+)
+def create_signing_code(id: UUID) -> None:
+    """Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе."""
+
+
+@contract_router.post(
+    "/applications/{id}/signing/confirm",
+    response_model=ApplicationDetail,
+    operation_id="confirmSigning",
+    tags=["signing"],
+    dependencies=_AUTH,
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Подтверждение возможно только в статусе `SIGNING`.",
+        e422="`invalid_code` — код неверный или истёк; либо ошибка валидации тела.",
+    ),
+)
+def confirm_signing(
+    id: UUID, body: SigningConfirmRequest, idempotency_key: IdempotencyKey = None
+) -> None:
+    """Подтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`)."""
 
 
 _ALLOWED_TYPES = ", ".join(ALLOWED_UPLOAD_MIME_TYPES)
