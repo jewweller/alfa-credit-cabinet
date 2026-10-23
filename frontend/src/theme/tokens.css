@@ -51,6 +51,12 @@
   /* Статусы */
   --color-success: #14804a;
   --color-success-soft: #e4f5ec;
+  /* Зелёные заливки: полоска выдачи, точки этапов, галочки. В светлых темах совпадает с текстом. */
+  --color-success-fill: var(--color-success);
+  /* Ширина цветной полоски слева у блока выдачи (Panel tone="success"). */
+  --success-stripe: 3px;
+  /* Отсвет от полоски внутрь блока выдачи; none — без него. */
+  --success-wash: none;
   --color-danger: #c4231a;
   --color-danger-soft: #fdeceb;
   --color-progress: #2a5bd7;
@@ -72,7 +78,7 @@
   /* Этапы заявки */
   --stage-done: var(--color-text);
   --stage-current: var(--color-accent);
-  --stage-complete: var(--color-success);
+  --stage-complete: var(--color-success-fill);
   --stage-failed: var(--color-danger);
   --stage-todo: var(--color-border-strong);
 
@@ -190,6 +196,10 @@
 
 /* Жемчуг — тёплый светло-серый, «чуть темнее белого». */
 :root[data-surface='pearl'] {
+  /* На светлом перламутре тонкая полоска теряется: шире и с лёгким зелёным отсветом. */
+  --success-stripe: 5px;
+  --success-wash: linear-gradient(90deg, color-mix(in srgb, var(--color-success) 10%, transparent), transparent 32%);
+
   --color-surface: #efebe6;
   --color-surface-muted: #e7e2dc;
   --color-surface-sunken: #dfd9d2;
@@ -255,7 +265,8 @@
   --color-surface-muted: #221d1e;
   --color-surface-sunken: #2a2426;
 
-  --color-text: #f5f0eb;
+  /* Нейтральный почти белый, без тёплого оттенка — не режет глаз. */
+  --color-text: #f7f6f6;
   --color-text-muted: #b0a7a2;
   --color-text-faint: #8f8681;
 
@@ -265,8 +276,10 @@
   --color-accent-soft: rgba(239, 49, 36, 0.14);
   --color-accent-border: rgba(255, 92, 76, 0.38);
 
-  --color-success: #4fd393;
-  --color-success-soft: rgba(79, 211, 147, 0.12);
+  /* Зелёный графита — от #2b753b: заливки им, текст — тем же оттенком посветлее (контраст 6,4:1). */
+  --color-success: #53ac66;
+  --color-success-fill: #2b753b;
+  --color-success-soft: rgba(43, 117, 59, 0.2);
   --color-danger: #ff6d61;
   --color-danger-soft: rgba(255, 92, 76, 0.13);
   --color-progress: #93b2ff;
@@ -274,7 +287,7 @@
   --color-neutral: #b0a7a2;
   --color-neutral-soft: rgba(255, 240, 230, 0.07);
 
-  --stage-done: #f5f0eb;
+  --stage-done: var(--color-text);
   --stage-todo: rgba(255, 240, 230, 0.2);
 
   --color-skeleton: rgba(255, 240, 230, 0.06);

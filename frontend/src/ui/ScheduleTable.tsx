@@ -39,7 +39,7 @@ export function ScheduleTable({ columns, rows, preview = 3, showAllLabel, collap
               <th scope="col" className={`${styles.num} ${styles.optional}`}>
                 {columns.interest}
               </th>
-              <th scope="col" className={styles.num}>
+              <th scope="col" className={`${styles.num} ${styles.secondary}`}>
                 {columns.balance}
               </th>
             </tr>
@@ -52,7 +52,7 @@ export function ScheduleTable({ columns, rows, preview = 3, showAllLabel, collap
                 <td className={`${styles.num} ${styles.strong}`}>{row.payment}</td>
                 <td className={`${styles.num} ${styles.optional}`}>{row.principal}</td>
                 <td className={`${styles.num} ${styles.optional}`}>{row.interest}</td>
-                <td className={`${styles.num} ${styles.muted}`}>{row.balance}</td>
+                <td className={`${styles.num} ${styles.muted} ${styles.secondary}`}>{row.balance}</td>
               </tr>
             ))}
           </tbody>
