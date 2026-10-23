@@ -58,8 +58,10 @@ services:
     build:
       context: ./frontend
       args:
-        # true — экраны работают на моках в браузере (весь путь клиента и банка);
-        # false — все запросы идут в api через nginx. Пока бэк без подписания и банка — true.
+        # Режим данных: mocks — всё на моках в браузере (весь путь клиента и банка);
+        # mixed — реализованное на бэке идёт в api, остальное — моки; real — всё в api.
+        # Пусто — по VITE_USE_MOCKS. Пока бэк без подписания и банка — моки.
+        VITE_API_MODE: ${VITE_API_MODE:-}
         VITE_USE_MOCKS: ${VITE_USE_MOCKS:-true}
         VITE_DEMO_MODE: ${VITE_DEMO_MODE:-true}
     ports:
