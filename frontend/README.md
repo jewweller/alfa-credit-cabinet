@@ -14,6 +14,13 @@ npm run dev        # http://localhost:5173
 Node 20+ (`.nvmrc`). Без бэка всё работает на моках: `VITE_USE_MOCKS=true` в `.env.development`.
 Когда бэк поднят на `:8000`, поставьте `VITE_USE_MOCKS=false` — Vite проксирует `/api` туда.
 
+**Смешанный режим** — `npm run dev:mixed` (бэк поднят: `docker compose up` в корне). Операции из
+`src/mocks/real-operations.json` идут в настоящий API, остальные отвечает MSW. Моки принимают
+JWT бэкенда: id демо-учёток совпадают с `seed/users.json`. Заявки в этом режиме настоящие: у
+Пекарни их сначала нет, а `submit` сразу возвращает итог (одобрение, отказ, запрос документов
+или ручная проверка). Режим задаётся `VITE_API_MODE` (`mocks` / `mixed` / `real`, см.
+`src/mocks/mode.ts`); список операций сверяет бэкенд-тест.
+
 ## Запуск в Docker
 
 Из корня репозитория: `cp .env.example .env && docker compose up --build`, затем

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mixed": "vite --mode mixed",
     "build": "npm run check:layers && tsc --noEmit && vite build",
     "check:layers": "node scripts/check-layers.mjs",
     "preview": "vite preview",

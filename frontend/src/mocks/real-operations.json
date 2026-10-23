@@ -1,0 +1,11 @@
+[
+  ["POST", "/api/v1/auth/login"],
+  ["GET", "/api/v1/auth/me"],
+  ["GET", "/api/v1/products"],
+  ["GET", "/api/v1/applications"],
+  ["POST", "/api/v1/applications"],
+  ["GET", "/api/v1/applications/{id}"],
+  ["PATCH", "/api/v1/applications/{id}"],
+  ["POST", "/api/v1/applications/{id}/submit"],
+  ["GET", "/api/v1/applications/{id}/history"]
+]

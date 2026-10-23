@@ -1,4 +1,5 @@
 import { setupWorker } from 'msw/browser';
-import { handlers } from './handlers';
+import { handlersFor } from './compose';
+import { apiMode } from './mode';
 
-export const worker = setupWorker(...handlers);
+export const worker = setupWorker(...handlersFor(apiMode()));

@@ -33,13 +33,30 @@ function errorJson(status: number, code: string, message: string, field?: string
   return HttpResponse.json(field ? { code, message, field } : { code, message }, { status });
 }
 
-/** Токен мока — «mock-token.<email>», по нему находим демо-учётку. */
+/**
+ * В смешанном режиме вход настоящий и токен — JWT бэкенда. Подпись проверяет бэкенд;
+ * мок только берёт id пользователя (`sub`): id демо-учёток совпадают с seed/users.json.
+ */
+function userFromJwt(token: string): Me | null {
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))) as { sub?: string };
+    return users.find((u) => u.id === claims.sub) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Токен мока — «mock-token.<email>», по нему находим демо-учётку; иначе пробуем JWT. */
 function currentUser(request: Request): Me | null {
   const header = request.headers.get('Authorization') ?? '';
   const prefix = `Bearer ${TOKEN_PREFIX}`;
-  if (!header.startsWith(prefix)) return null;
-  const email = header.slice(prefix.length);
-  return users.find((u) => u.email === email) ?? null;
+  if (header.startsWith(prefix)) {
+    const email = header.slice(prefix.length);
+    return users.find((u) => u.email === email) ?? null;
+  }
+  return header.startsWith('Bearer ') ? userFromJwt(header.slice('Bearer '.length)) : null;
 }
 
 /** Клиент с компанией; сотрудникам банка клиентские операции недоступны. */
