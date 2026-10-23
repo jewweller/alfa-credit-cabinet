@@ -171,9 +171,7 @@ export function decide(app: ApplicationDetail): Verdict {
 
 /** Запрос банка при R4 — какие документы нужны и почему. */
 export const REVENUE_INFO_REQUEST = {
-  items: [
-    { kind: 'tax_return' as const, title: 'Налоговая декларация за 2025 год', required: true },
-    { kind: 'bank_statement' as const, title: 'Выписка по расчётному счёту за 6 месяцев', required: false },
-  ],
+  // Как на бэке (config.yaml, R4): один пункт, закрывается декларацией или выпиской.
+  items: [{ kind: 'tax_return' as const, title: 'Декларация или выписка за прошлый год', required: true }],
   message: 'Выручка в заявке отличается от данных ФНС больше чем на 30%. Подтвердите её декларацией — так мы быстрее примем решение.',
 };

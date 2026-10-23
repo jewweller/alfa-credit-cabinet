@@ -62,7 +62,7 @@ const FIXTURES: Record<string, { fns: FnsProfile; bki: BkiReport | null }> = {
       inquiries_30d: 2,
     },
   },
-  // ИП Мельникова: работает с 2024 года — выручки за прошлый год нет; кредитной истории нет.
+  // ИП Мельникова: зарегистрирована в апреле 2025 — выручки за прошлый год нет; кредитной истории нет.
   '500100002020': {
     fns: { revenue: { '2025': 7_000_000 }, tax_debt_rub: 0, msp_category: 'micro', employees: 2, flags: CLEAN },
     bki: NO_HISTORY,
