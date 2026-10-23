@@ -8,6 +8,13 @@ import type {
   ApplicationDetail,
   ApplicationStatus,
   ApplicationSummary,
+  BankApplicationDetail,
+  BankApplicationSummary,
+  BankDecision,
+  CompanyBrief,
+  EnrichmentResult,
+  Grade,
+  UnderwriterDecisionRequest,
   DocumentInfo,
   DocumentKind,
   ApplicationUpdate,
@@ -18,8 +25,9 @@ import type {
   StatusActor,
 } from '../api/types';
 import { formatMoney } from '../features/format';
-import { makeOffer, me as bakery, products, seedApplications, seedFeed, type MockApplication } from './data';
-import { decide, REVENUE_INFO_REQUEST, underwriterDecide, type Verdict } from './decision';
+import { makeOffer, me as bakery, products, seedApplications, seedFeed, users, type MockApplication } from './data';
+import { decide, evaluate, REVENUE_INFO_REQUEST, sourcesOf, type Verdict } from './decision';
+import { rawRegistry } from './sources';
 
 /** Как в backend/app/domain/state_machine.py. */
 const TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
@@ -56,7 +64,7 @@ export class MockHttpError extends Error {
   }
 }
 
-const STORAGE_KEY = 'mock-db-v3';
+const STORAGE_KEY = 'mock-db-v4';
 const apps = new Map<string, MockApplication>();
 const files = new Map<string, Blob>();
 const idempotent = new Map<string, unknown>();
@@ -181,7 +189,7 @@ function apply(app: MockApplication, verdict: Verdict, by: 'system' | 'underwrit
         info_request: {
           id: crypto.randomUUID(),
           status: 'open',
-          ...REVENUE_INFO_REQUEST,
+          ...(verdict.request ?? REVENUE_INFO_REQUEST),
           created_at: app.detail.status_changed_at,
         },
       };
@@ -194,7 +202,7 @@ function apply(app: MockApplication, verdict: Verdict, by: 'system' | 'underwrit
 
 /**
  * Двигает заявку по конвейеру с её текущего статуса: проверка → оценка → решение
- * по правилам (decision.ts) → при ручном рассмотрении — решение специалиста.
+ * по правилам (decision.ts). Ручное рассмотрение ждёт специалиста в кабинете банка (B4).
  * Вызывается после отправки и при загрузке страницы, поэтому перезагрузка
  * посреди конвейера не «замораживает» заявку.
  */
@@ -206,20 +214,15 @@ function continuePipeline(id: string, firstDelay = STEP_MS) {
     SUBMITTED: (current) => transition(current, 'ENRICHMENT', 'system'),
     ENRICHMENT: (current) => transition(current, 'SCORING', 'system'),
     SCORING: (current) => apply(current, decide(current.detail), 'system'),
-    // Пока нет кабинета банка (B4), специалист «решает» сам через паузу.
-    MANUAL_REVIEW: (current) => apply(current, underwriterDecide(current.detail), 'underwriter'),
   };
-  const step = next[app.detail.status];
-  if (!step) return;
-  // Специалисту даём побольше времени — так на демо видно ручное рассмотрение.
-  const delay = app.detail.status === 'MANUAL_REVIEW' ? 8000 : firstDelay;
+  if (!next[app.detail.status]) return;
   setTimeout(() => {
     const current = apps.get(id);
     if (!current || !next[current.detail.status]) return;
     next[current.detail.status]!(current);
     save();
     continuePipeline(id);
-  }, delay);
+  }, firstDelay);
 }
 
 function withIdempotency<T>(key: string | null, scope: string, run: () => T): T {
@@ -297,6 +300,121 @@ if (!load()) reset();
 for (const id of apps.keys()) {
   continuePipeline(id, id === 'a-1051' ? 10_000 : STEP_MS);
   if (apps.get(id)!.detail.status === 'SIGNED') scheduleIssue(id);
+}
+
+// ── Кабинет банка: что видит андеррайтер ─────────────────────────────────────
+
+/** До конца обогащения ответов источников ещё нет; до решения нет скоринга и правил. */
+const BEFORE_ENRICHMENT: ApplicationStatus[] = ['DRAFT', 'SUBMITTED', 'ENRICHMENT'];
+const BEFORE_DECISION: ApplicationStatus[] = [...BEFORE_ENRICHMENT, 'SCORING'];
+/** Раньше всех в очереди — то, что ждёт человека. */
+const QUEUE_FIRST: ApplicationStatus = 'MANUAL_REVIEW';
+
+function companyOf(app: MockApplication): CompanyBrief {
+  return users.find((u) => u.company?.id === app.detail.company_id)!.company!;
+}
+
+function evaluation(app: MockApplication) {
+  return BEFORE_DECISION.includes(app.detail.status) ? null : evaluate(app.detail);
+}
+
+/** Ответы источников — время берём из истории: когда заявка ушла на оценку. */
+function enrichmentOf(app: MockApplication): EnrichmentResult[] {
+  if (BEFORE_ENRICHMENT.includes(app.detail.status)) return [];
+  const at =
+    [...app.history].reverse().find((h) => h.to_status === 'SCORING')?.created_at ??
+    app.detail.submitted_at ??
+    app.detail.status_changed_at;
+  const src = sourcesOf(app.detail);
+  const registrySource = companyOf(app).kind === 'IE' ? 'egrip' : 'egrul';
+  return [
+    src.registry
+      ? { source: registrySource, status: 'ok', attempts: 1, fetched_at: at, response: rawRegistry(src.registry) }
+      : { source: registrySource, status: 'not_found', attempts: 1, fetched_at: at, response: null },
+    { source: 'fns_tb', status: 'ok', attempts: 1, fetched_at: at, response: { ...src.fns } },
+    src.bki
+      ? { source: 'bki', status: 'ok', attempts: 1, fetched_at: at, response: { ...src.bki } }
+      : { source: 'bki', status: 'error', attempts: 3, fetched_at: at, response: null },
+  ];
+}
+
+function bankDecisionOf(app: MockApplication): BankDecision | null {
+  const decision = app.detail.decision;
+  if (!decision) return null;
+  const review = decision.decided_by === 'underwriter' ? app.review : null;
+  return { ...decision, underwriter: review?.underwriter ?? null, comment: review?.comment ?? null };
+}
+
+function bankDetailOf(app: MockApplication): BankApplicationDetail {
+  const ev = evaluation(app);
+  return {
+    application: app.detail,
+    company: companyOf(app),
+    applicant_name: users.find((u) => u.id === app.detail.applicant_id)?.full_name ?? '—',
+    registry: sourcesOf(app.detail).registry,
+    assignee: app.assignee ?? null,
+    enrichment: enrichmentOf(app),
+    scoring: ev?.scoring ?? null,
+    rules: ev?.rules ?? [],
+    decision: bankDecisionOf(app),
+  };
+}
+
+function bankSummaryOf(app: MockApplication): BankApplicationSummary {
+  const { detail } = app;
+  const scoring = evaluation(app)?.scoring;
+  return {
+    id: detail.id,
+    number: detail.number,
+    company: companyOf(app),
+    product_id: detail.product_id,
+    amount: detail.amount,
+    term_months: detail.term_months,
+    status: detail.status,
+    status_changed_at: detail.status_changed_at,
+    submitted_at: detail.submitted_at,
+    score: scoring?.total_score ?? null,
+    grade: scoring?.grade ?? null,
+    assignee: app.assignee ?? null,
+  };
+}
+
+/** Решение специалиста → вердикт для apply(); поля по исходу и лимиты продукта (контракт B4). */
+function underwriterVerdict(app: MockApplication, body: UnderwriterDecisionRequest): Verdict {
+  const fail = (field: string, message: string): never => {
+    throw new MockHttpError(422, 'validation_error', message, field);
+  };
+  const rate = (value: string | null | undefined) => {
+    if (!value || !(Number(value) > 0)) fail('rate', 'Укажите ставку');
+    return Number(value).toFixed(2);
+  };
+  switch (body.outcome) {
+    case 'approved': {
+      const { product_id, amount, term_months } = app.detail;
+      return { kind: 'approved', offer: { productId: product_id!, amount: amount!, term: term_months!, rate: rate(body.rate) } };
+    }
+    case 'counter_offer': {
+      const product = products.find((p) => p.id === body.product_id) ?? fail('product_id', 'Выберите продукт');
+      const amount = Number(body.amount ?? 0);
+      if (amount < Number(product.min_amount) || amount > Number(product.max_amount)) {
+        fail('amount', `Сумма для «${product.name}» — от ${formatMoney(product.min_amount)} до ${formatMoney(product.max_amount)}`);
+      }
+      const term = body.term_months ?? 0;
+      if (term < product.min_term || term > product.max_term) {
+        fail('term_months', `Срок для «${product.name}» — от ${product.min_term} до ${product.max_term} мес`);
+      }
+      return { kind: 'counter_offer', offer: { productId: product.id, amount: amount.toFixed(2), term, rate: rate(body.rate) } };
+    }
+    case 'info_requested': {
+      const items = body.info_items ?? [];
+      if (items.length === 0) fail('info_items', 'Отметьте хотя бы один документ');
+      const message = body.comment?.trim() ?? '';
+      if (!message) fail('comment', 'Напишите клиенту, зачем нужны документы');
+      return { kind: 'info_requested', request: { items, message } };
+    }
+    case 'rejected':
+      return { kind: 'rejected', reason: body.reason_code ?? fail('reason_code', 'Выберите причину отказа') };
+  }
 }
 
 // ── Операции API ───────────────────────────────────────────────────────────
@@ -554,5 +672,63 @@ export const db = {
           apps.get(item.application_id)?.detail.company_id === companyId
         : companyId === bakery.company!.id,
     );
+  },
+
+  // ── Кабинет банка (B2–B4) ──
+
+  /** Очередь: без черновиков; сначала ждущие специалиста (дольше ждут — выше), потом свежие. */
+  bankList(filter: { status: string[]; grade: string | null; productId: string | null }): BankApplicationSummary[] {
+    const rows = [...apps.values()]
+      .filter((app) => app.detail.status !== 'DRAFT')
+      .map(bankSummaryOf)
+      .filter(
+        (row) =>
+          (filter.status.length === 0 || filter.status.includes(row.status)) &&
+          (!filter.grade || row.grade === (filter.grade as Grade)) &&
+          (!filter.productId || row.product_id === filter.productId),
+      );
+    const waiting = rows.filter((r) => r.status === QUEUE_FIRST).sort((a, b) => a.status_changed_at.localeCompare(b.status_changed_at));
+    const rest = rows.filter((r) => r.status !== QUEUE_FIRST).sort((a, b) => b.status_changed_at.localeCompare(a.status_changed_at));
+    return [...waiting, ...rest];
+  },
+
+  bankDetail(id: string): BankApplicationDetail {
+    const app = find(id);
+    if (app.detail.status === 'DRAFT') throw new MockHttpError(404, 'not_found', 'Заявка не найдена');
+    return bankDetailOf(app);
+  },
+
+  /** Взять в работу: только ручное рассмотрение и только если не ведёт другой специалист. */
+  assign(id: string, user: Me): BankApplicationDetail {
+    const app = find(id);
+    if (app.detail.status !== QUEUE_FIRST) {
+      throw new MockHttpError(409, 'invalid_transition', 'Взять в работу можно только заявку на ручном рассмотрении');
+    }
+    if (app.assignee && app.assignee.id !== user.id) {
+      throw new MockHttpError(409, 'assigned_to_other', `Заявку уже ведёт ${app.assignee.full_name}`);
+    }
+    app.assignee = { id: user.id, full_name: user.full_name };
+    save();
+    return bankDetailOf(app);
+  },
+
+  /** Решение специалиста (B4): MANUAL_REVIEW → итог; клиент видит его в карточке и в ленте. */
+  bankDecide(id: string, user: Me, body: UnderwriterDecisionRequest, key: string | null): BankApplicationDetail {
+    return withIdempotency(key, `decide:${id}`, () => {
+      const app = find(id);
+      if (app.detail.status !== QUEUE_FIRST) {
+        throw new MockHttpError(409, 'invalid_transition', 'Решение принимается только на ручном рассмотрении');
+      }
+      if (app.assignee && app.assignee.id !== user.id) {
+        throw new MockHttpError(409, 'assigned_to_other', `Заявку ведёт ${app.assignee.full_name}`);
+      }
+      const verdict = underwriterVerdict(app, body);
+      const me = { id: user.id, full_name: user.full_name };
+      apply(app, verdict, 'underwriter');
+      app.assignee = me;
+      app.review = { underwriter: me, comment: body.outcome === 'info_requested' ? null : body.comment?.trim() || null };
+      save();
+      return bankDetailOf(app);
+    });
   },
 };

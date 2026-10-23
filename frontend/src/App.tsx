@@ -11,6 +11,8 @@ import { ApplicationPage } from './pages/client/ApplicationPage';
 import { ComingSoonPage } from './pages/client/ComingSoonPage';
 import { HomePage } from './pages/client/HomePage';
 import { ProductsPage } from './pages/client/ProductsPage';
+import { BankApplicationPage } from './pages/bank/BankApplicationPage';
+import { QueuePage } from './pages/bank/QueuePage';
 import { ResultPage } from './pages/client/ResultPage';
 import { SigningPage } from './pages/client/SigningPage';
 
@@ -38,6 +40,7 @@ const CLIENT: UserRole[] = ['client'];
 const BANK: UserRole[] = ['underwriter', 'admin'];
 
 const client = (page: ReactNode) => <RequireAuth roles={CLIENT}>{page}</RequireAuth>;
+const bank = (page: ReactNode) => <RequireAuth roles={BANK}>{page}</RequireAuth>;
 
 export function App() {
   return (
@@ -52,14 +55,8 @@ export function App() {
           <Route path="/applications/:id/signing" element={client(<SigningPage />)} />
           <Route path="/applications/:id/result" element={client(<ResultPage />)} />
           <Route path="/feed" element={client(<ComingSoonPage code="C8" />)} />
-          <Route
-            path={ROUTES.bank}
-            element={
-              <RequireAuth roles={BANK}>
-                <ComingSoonPage code="B2" />
-              </RequireAuth>
-            }
-          />
+          <Route path={ROUTES.bank} element={bank(<QueuePage />)} />
+          <Route path="/bank/applications/:id" element={bank(<BankApplicationPage />)} />
           <Route path="*" element={client(<ComingSoonPage code="404" />)} />
         </Routes>
       </BrowserRouter>

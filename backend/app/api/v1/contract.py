@@ -11,6 +11,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, Header, Query, Response, UploadFile, status
 from fastapi.security import HTTPBearer
 
+from app.domain.state_machine import ApplicationStatus
 from app.schemas.applications import (
     ApplicationCreate,
     ApplicationDetail,
@@ -19,6 +20,12 @@ from app.schemas.applications import (
     StatusHistoryEntry,
 )
 from app.schemas.auth import LoginRequest, MeResponse, TokenResponse
+from app.schemas.bank import (
+    BankApplicationDetail,
+    BankApplicationSummary,
+    Grade,
+    UnderwriterDecisionRequest,
+)
 from app.schemas.common import INN_PATTERN, ErrorResponse
 from app.schemas.companies import CompanyLookupResponse
 from app.schemas.documents import (
@@ -48,6 +55,7 @@ _E403_CLIENT = "Операция доступна только роли client."
 _E404_APP = "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD."
 _E422 = "Ошибка валидации; `field` указывает на поле."
 _E403_APP = "Нет доступа к заявке."
+_E403_BANK = "Операция доступна только сотрудникам банка (роли underwriter и admin)."
 _E409_TRANSITION = "`invalid_transition` — из текущего статуса операция не разрешена."
 
 IdempotencyKey = Annotated[
@@ -409,3 +417,88 @@ def resubmit_application(id: UUID, idempotency_key: IdempotencyKey = None) -> No
 )
 def cancel_application(id: UUID, idempotency_key: IdempotencyKey = None) -> None:
     """Отозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`."""
+
+
+# ── Кабинет банка (экраны B2–B4) ──────────────────────────────────────────────
+
+
+@contract_router.get(
+    "/bank/applications",
+    response_model=list[BankApplicationSummary],
+    operation_id="listBankApplications",
+    tags=["bank"],
+    dependencies=_AUTH,
+    responses=_errors(e401=_E401, e403=_E403_BANK, e422=_E422),
+)
+def list_bank_applications(
+    status: Annotated[
+        list[ApplicationStatus] | None,
+        Query(description="Фильтр по статусам; можно несколько. Без фильтра — все, кроме DRAFT."),
+    ] = None,
+    grade: Annotated[Grade | None, Query(description="Фильтр по грейду.")] = None,
+    product_id: Annotated[UUID | None, Query(description="Фильтр по продукту.")] = None,
+) -> None:
+    """Очередь заявок всех клиентов (экран B2).
+
+    Черновики (`DRAFT`) банку не видны. Сортировка: сначала `MANUAL_REVIEW`, внутри — дольше
+    всего ждущие (по `status_changed_at`), затем остальные, свежие сверху.
+    """
+
+
+@contract_router.get(
+    "/bank/applications/{id}",
+    response_model=BankApplicationDetail,
+    operation_id="getBankApplication",
+    tags=["bank"],
+    dependencies=_AUTH,
+    responses=_errors(e401=_E401, e403=_E403_BANK, e404=_E404_APP),
+)
+def get_bank_application(id: UUID) -> None:
+    """Полная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение."""
+
+
+@contract_router.post(
+    "/bank/applications/{id}/assign",
+    response_model=BankApplicationDetail,
+    operation_id="assignBankApplication",
+    tags=["bank"],
+    dependencies=_AUTH,
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_BANK,
+        e404=_E404_APP,
+        e409=(
+            f"{_E409_TRANSITION} Взять в работу можно только заявку в `MANUAL_REVIEW`. "
+            "`assigned_to_other` — заявку уже ведёт другой специалист."
+        ),
+    ),
+)
+def assign_bank_application(id: UUID) -> None:
+    """Взять заявку в работу. Повторный вызов тем же специалистом ничего не меняет."""
+
+
+@contract_router.post(
+    "/bank/applications/{id}/decision",
+    response_model=BankApplicationDetail,
+    operation_id="decideBankApplication",
+    tags=["bank"],
+    dependencies=_AUTH,
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_BANK,
+        e404=_E404_APP,
+        e409=(
+            f"{_E409_TRANSITION} Решение принимается только в `MANUAL_REVIEW`. "
+            "`assigned_to_other` — заявку ведёт другой специалист; сначала её нужно взять в работу."
+        ),
+        e422=(
+            "Ошибка валидации: для выбранного `outcome` не хватает полей "
+            "или условия вне лимитов продукта."
+        ),
+    ),
+)
+def decide_bank_application(
+    id: UUID, body: UnderwriterDecisionRequest, idempotency_key: IdempotencyKey = None
+) -> None:
+    """Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
+    документов или отказ. Клиент видит итог в карточке заявки и событие в ленте."""

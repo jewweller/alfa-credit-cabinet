@@ -64,6 +64,13 @@
   --color-neutral: #66686e;
   --color-neutral-soft: #eef0f2;
 
+  /* Раскрывашка на светлой рабочей поверхности (Collapsible onSurface) — в цветах блока,
+     который она раскрывает (подложка JSON в карточке банка). */
+  --toggle-surface-text: var(--color-text);
+  --toggle-surface-fill: var(--color-surface-sunken);
+  --toggle-surface-ring: none;
+  --toggle-surface-hover-fill: color-mix(in srgb, var(--color-text) 6%, var(--color-surface-sunken));
+
   --status-action: var(--color-accent);
   --status-action-bg: var(--color-accent-soft);
   --status-progress: var(--color-progress);
@@ -280,6 +287,12 @@
   --color-success: #53ac66;
   --color-success-fill: #2b753b;
   --color-success-soft: rgba(43, 117, 59, 0.2);
+
+  /* В графите раскрывашка остаётся как в тёмной зоне. */
+  --toggle-surface-text: var(--color-night-muted);
+  --toggle-surface-fill: rgba(255, 255, 255, 0.04);
+  --toggle-surface-ring: var(--shadow-night-key);
+  --toggle-surface-hover-fill: rgba(255, 255, 255, 0.08);
   --color-danger: #ff6d61;
   --color-danger-soft: rgba(255, 92, 76, 0.13);
   --color-progress: #93b2ff;
