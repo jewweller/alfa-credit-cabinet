@@ -1,5 +1,6 @@
 # Запуск: cp .env.example .env && docker compose up --build   (план, раздел 9)
-# Сейчас: db + api (миграции и демо-данные при старте). frontend, mocks и worker — отдельные этапы.
+# Сейчас: db + api (миграции и демо-данные при старте) + frontend (http://localhost:8080).
+# mocks и worker — отдельные этапы.
 name: alfa-credit-cabinet
 
 services:
@@ -51,6 +52,20 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # true — экраны работают на моках в браузере (весь путь клиента и банка);
+        # false — все запросы идут в api через nginx. Пока бэк без подписания и банка — true.
+        VITE_USE_MOCKS: ${VITE_USE_MOCKS:-true}
+        VITE_DEMO_MODE: ${VITE_DEMO_MODE:-true}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:

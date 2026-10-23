@@ -1,0 +1,6 @@
+# В образ — только исходники и lock-файл; зависимости ставит npm ci.
+node_modules
+dist
+*.tsbuildinfo
+.env.local
+README.md
