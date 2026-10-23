@@ -1,0 +1,9 @@
+# Не отправлять в образ локальное окружение, кеши, тесты и секреты.
+.venv
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.ruff_cache
+tests
+.env
+.env.*

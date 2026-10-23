@@ -1,0 +1,47 @@
+# Запуск: cp .env.example .env && docker compose up --build   (план, раздел 9)
+# Этап D1: только db + api. frontend, mocks и worker добавляются отдельными этапами.
+name: alfa-credit-cabinet
+
+services:
+  db:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?задайте в .env (cp .env.example .env)}
+      POSTGRES_USER: ${POSTGRES_USER:?задайте в .env (cp .env.example .env)}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте в .env (cp .env.example .env)}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # Порт 5432 наружу не публикуется: БД доступна только внутри сети compose (план, раздел 9).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    # API пока не подключается к БД (этап D2), поэтому параметры БД ему не передаются.
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  db-data:
