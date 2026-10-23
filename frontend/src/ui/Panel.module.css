@@ -19,14 +19,14 @@
 .danger {
   box-shadow:
     var(--shadow-card),
-    inset 3px 0 0 var(--color-danger);
+    inset var(--panel-stripe) 0 0 var(--color-danger);
 }
 
 .success {
   background: var(--success-wash), var(--surface-fill);
   box-shadow:
     var(--shadow-card),
-    inset var(--success-stripe) 0 0 var(--color-success-fill);
+    inset var(--panel-stripe) 0 0 var(--color-success-fill);
 }
 
 .head {

@@ -53,8 +53,8 @@
   --color-success-soft: #e4f5ec;
   /* Зелёные заливки: полоска выдачи, точки этапов, галочки. В светлых темах совпадает с текстом. */
   --color-success-fill: var(--color-success);
-  /* Ширина цветной полоски слева у блока выдачи (Panel tone="success"). */
-  --success-stripe: 3px;
+  /* Ширина цветной полоски слева у блоков выдачи и отказа (Panel tone="success" / "danger"). */
+  --panel-stripe: 3px;
   /* Отсвет от полоски внутрь блока выдачи; none — без него. */
   --success-wash: none;
   --color-danger: #c4231a;
@@ -196,8 +196,8 @@
 
 /* Жемчуг — тёплый светло-серый, «чуть темнее белого». */
 :root[data-surface='pearl'] {
-  /* На светлом перламутре тонкая полоска теряется: шире и с лёгким зелёным отсветом. */
-  --success-stripe: 5px;
+  /* На светлом перламутре тонкая полоска теряется: шире, у выдачи ещё и лёгкий зелёный отсвет. */
+  --panel-stripe: 5px;
   --success-wash: linear-gradient(90deg, color-mix(in srgb, var(--color-success) 10%, transparent), transparent 32%);
 
   --color-surface: #efebe6;
