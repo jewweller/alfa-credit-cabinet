@@ -5,7 +5,7 @@ import { ROUTES } from '../../features/routes';
 import { SurfaceSwitch } from '../../features/session/SurfaceSwitch';
 import { useLogin } from '../../features/session/useLogin';
 import { HEADER, LOGIN } from '../../i18n/ru';
-import { AccountPicker, AppShell, AuthLayout, Button, InlineAlert, Panel, PublicHeader, TextField } from '../../ui';
+import { AccountPicker, AppShell, AuthLayout, Button, Form, InlineAlert, Panel, PublicHeader, TextField } from '../../ui';
 
 /** Подсказку с тестовыми учётками прячем только явно: VITE_DEMO_MODE=false (план, экран C1). */
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE !== 'false';
@@ -42,7 +42,7 @@ export function LoginPage() {
     <AppShell header={<PublicHeader productName={HEADER.product} homeHref={ROUTES.login} tools={<SurfaceSwitch />} />}>
       <AuthLayout eyebrow={LOGIN.eyebrow} title={LOGIN.title} subtitle={LOGIN.subtitle} points={LOGIN.points}>
         <Panel tone="highlight" eyebrow={LOGIN.formEyebrow} title={LOGIN.formTitle}>
-          <form onSubmit={onSubmit} noValidate style={{ display: 'contents' }}>
+          <Form layout="contents" onSubmit={onSubmit}>
             <TextField
               label={LOGIN.email}
               type="email"
@@ -64,7 +64,7 @@ export function LoginPage() {
             <Button type="submit" size="lg" arrow disabled={login.isPending}>
               {login.isPending ? LOGIN.submitting : LOGIN.submit}
             </Button>
-          </form>
+          </Form>
         </Panel>
 
         {DEMO_MODE && (

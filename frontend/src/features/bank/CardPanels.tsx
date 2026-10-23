@@ -7,11 +7,25 @@ import type {
   ScoringResult,
 } from '../../api/types';
 import { APPLICATION, BANK, MONEY } from '../../i18n/ru';
-import { Button, Collapsible, KeyValueList, Meter, MetaNote, Panel, StatusBadge, type KeyValue } from '../../ui';
+import {
+  CodeBlock,
+  Collapsible,
+  FactorList,
+  FileList,
+  KeyValueList,
+  Meter,
+  MetaNote,
+  Panel,
+  PlainList,
+  Quote,
+  RuleList,
+  SourceBlock,
+  StatusBadge,
+  type KeyValue,
+} from '../../ui';
 import { downloadDocument } from '../application/download';
 import { formatBytes, formatDate, formatDateTime, formatMoney, formatPercent, formatRate, formatTerm } from '../format';
 import { GRADE_TONE } from './format';
-import styles from './CardPanels.module.css';
 
 const SAFE_LOAD = 0.35;
 
@@ -40,26 +54,9 @@ export function ScoringPanel({ scoring, index = 0 }: { scoring: ScoringResult | 
         thresholdLabel={S.threshold}
         note={S.loadNote}
       />
-      <ul className={styles.factors}>
-        {scoring.factors.map((factor) => (
-          <li key={factor.code} className={styles.factor}>
-            <span className={styles.code}>{factor.code}</span>
-            <span className={styles.factorText}>
-              <span className={styles.factorTitle}>{factor.title}</span>
-              <span className={styles.factorValue}>{factor.value}</span>
-            </span>
-            <span className={styles.points}>
-              <span className={styles.pointsValue}>
-                {factor.points}
-                <span className={styles.pointsMax}>/{factor.max_points}</span>
-              </span>
-              <span className={styles.bar} aria-hidden="true">
-                <span className={styles.barFill} style={{ width: `${(factor.points / factor.max_points) * 100}%` }} />
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      <FactorList
+        items={scoring.factors.map((f) => ({ code: f.code, title: f.title, value: f.value, points: f.points, max: f.max_points }))}
+      />
       <MetaNote>{S.model(scoring.model_version)}</MetaNote>
     </Panel>
   );
@@ -71,18 +68,7 @@ export function RulesPanel({ rules, index = 0 }: { rules: RuleCheck[]; index?: n
   if (rules.length === 0) return null;
   return (
     <Panel eyebrow={R.eyebrow} title={R.title} index={index}>
-      <ol className={styles.rules}>
-        {rules.map((rule) => (
-          <li key={rule.code} className={`${styles.rule} ${rule.fired ? styles.fired : ''}`}>
-            <span className={styles.code}>{rule.code}</span>
-            <span className={styles.ruleText}>
-              <span className={styles.ruleTitle}>{rule.title}</span>
-              {rule.detail && <span className={styles.ruleDetail}>{rule.detail}</span>}
-            </span>
-            <span className={styles.ruleState}>{rule.fired ? R.fired : R.passed}</span>
-          </li>
-        ))}
-      </ol>
+      <RuleList items={rules} firedLabel={R.fired} passedLabel={R.passed} />
       <MetaNote>{R.note}</MetaNote>
     </Panel>
   );
@@ -142,21 +128,21 @@ export function SourcesPanel({ enrichment, index = 0 }: { enrichment: Enrichment
     <Panel eyebrow={S.eyebrow} title={S.title} index={index}>
       {enrichment.length === 0 && <MetaNote>{S.pending}</MetaNote>}
       {enrichment.map((result) => (
-        <section key={result.source} className={styles.source}>
-          <div className={styles.sourceHead}>
-            <h3 className={styles.sourceName}>{S.names[result.source]}</h3>
-            <StatusBadge label={S.status[result.status]} tone={SOURCE_TONE[result.status]} />
-          </div>
+        <SourceBlock
+          key={result.source}
+          title={S.names[result.source]}
+          badge={<StatusBadge label={S.status[result.status]} tone={SOURCE_TONE[result.status]} />}
+        >
           <MetaNote>{`${formatDateTime(result.fetched_at)} · ${S.attempts(result.attempts)}`}</MetaNote>
           {result.response && (
             <>
               <KeyValueList columns={2} items={sourceFacts(result)} />
               <Collapsible title={S.raw} onSurface>
-                <pre className={styles.json}>{JSON.stringify(result.response, null, 2)}</pre>
+                <CodeBlock>{JSON.stringify(result.response, null, 2)}</CodeBlock>
               </Collapsible>
             </>
           )}
-        </section>
+        </SourceBlock>
       ))}
     </Panel>
   );
@@ -190,21 +176,15 @@ export function DocumentsPanel({ app, index = 0 }: { app: ApplicationDetail; ind
       {app.documents.length === 0 ? (
         <MetaNote>{D.empty}</MetaNote>
       ) : (
-        <ul className={styles.docs}>
-          {app.documents.map((doc) => (
-            <li key={doc.id} className={styles.doc}>
-              <span className={styles.docText}>
-                <span className={styles.docName}>{doc.filename}</span>
-                <span className={styles.docMeta}>
-                  {`${APPLICATION.documentKind[doc.kind]} · ${formatBytes(doc.size_bytes)}`}
-                </span>
-              </span>
-              <Button variant="ghost" onClick={() => void downloadDocument(doc.id, doc.filename)}>
-                {D.download}
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <FileList
+          actionLabel={D.download}
+          items={app.documents.map((doc) => ({
+            id: doc.id,
+            name: doc.filename,
+            meta: `${APPLICATION.documentKind[doc.kind]} · ${formatBytes(doc.size_bytes)}`,
+            onAction: () => void downloadDocument(doc.id, doc.filename),
+          }))}
+        />
       )}
     </Panel>
   );
@@ -245,12 +225,8 @@ export function DecisionResultPanel({
       {items.length > 0 && <KeyValueList items={items} />}
       {decision.outcome === 'info_requested' && app.info_request && (
         <>
-          <ul className={styles.requested}>
-            {app.info_request.items.map((item) => (
-              <li key={item.kind}>{item.title}</li>
-            ))}
-          </ul>
-          {app.info_request.message && <p className={styles.quote}>{app.info_request.message}</p>}
+          <PlainList items={app.info_request.items.map((item) => item.title)} />
+          {app.info_request.message && <Quote>{app.info_request.message}</Quote>}
         </>
       )}
       {decision.comment && <KeyValueList items={[{ label: R.comment, value: decision.comment }]} />}

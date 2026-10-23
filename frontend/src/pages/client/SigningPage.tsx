@@ -14,8 +14,11 @@ import {
   BackLink,
   Button,
   ButtonLink,
+  ClauseList,
+  CodeDisplay,
   EmptyState,
   ErrorBanner,
+  Form,
   Hero,
   InlineAlert,
   KeyValueList,
@@ -25,7 +28,6 @@ import {
   SplitLayout,
   TextField,
 } from '../../ui';
-import styles from './SigningPage.module.css';
 
 const timeFmt = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -69,12 +71,8 @@ function SignForm({ app }: { app: ApplicationDetail }) {
       ) : (
         <>
           <p>{S.codeShown}</p>
-          <div className={styles.codeBox}>
-            <span className={styles.codeLabel}>{S.codeLabel}</span>
-            <span className={styles.code}>{issued.code}</span>
-            <span className={styles.expires}>{S.expires(timeFmt.format(new Date(issued.expires_at)))}</span>
-          </div>
-          <form className={styles.row} onSubmit={onConfirm}>
+          <CodeDisplay label={S.codeLabel} code={issued.code} note={S.expires(timeFmt.format(new Date(issued.expires_at)))} />
+          <Form layout="inline" onSubmit={onConfirm}>
             <TextField
               label={S.input}
               inputMode="numeric"
@@ -86,7 +84,7 @@ function SignForm({ app }: { app: ApplicationDetail }) {
             <Button type="submit" size="lg" arrow disabled={confirm.isPending || code.length < 6}>
               {confirm.isPending ? S.confirming : S.confirm}
             </Button>
-          </form>
+          </Form>
           <div>
             <Button variant="ghost" onClick={getCode} disabled={codeMutation.isPending || confirm.isPending}>
               {codeMutation.isPending ? S.getting : S.again}
@@ -122,20 +120,16 @@ function ContractPanel({ app, products }: { app: ApplicationDetail; products: Ma
               { label: C.purpose, value: purpose },
             ]}
           />
-          <ol className={styles.clauses}>
-            {C.clauses({
+          <ClauseList
+            items={C.clauses({
               amount: formatMoney(offer.amount),
               term: formatTerm(offer.term_months),
               purpose,
               rate: formatRate(offer.rate),
               payment: formatMoney(offer.monthly_payment),
               account: RESULT.issued.accountNumber,
-            }).map((clause) => (
-              <li key={clause.title}>
-                <strong>{clause.title}.</strong> {clause.text}
-              </li>
-            ))}
-          </ol>
+            })}
+          />
         </>
       )}
       <MetaNote>{C.note}</MetaNote>
