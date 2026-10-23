@@ -1,5 +1,6 @@
 """Контракт первой волны: пути из плана (раздел 10), формат ошибок, актуальность openapi.json."""
 
+import re
 from typing import Any
 
 import pytest
@@ -10,7 +11,6 @@ from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_c
 
 PLANNED_OPERATIONS = {
     ("post", "/api/v1/products/recommend"),
-    ("get", "/api/v1/applications/{id}/schedule"),
 }
 IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/submit"),
@@ -38,6 +38,7 @@ IMPLEMENTED_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/documents"),
     ("get", "/api/v1/documents/{id}"),
     ("post", "/api/v1/applications/{id}/resubmit"),
+    ("get", "/api/v1/applications/{id}/schedule"),
 }
 PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}
@@ -165,9 +166,12 @@ def test_planned_operations_are_not_served_by_app() -> None:
         for method in operations
     }
     assert served == IMPLEMENTED_OPERATIONS
-    response = client.get("/api/v1/applications/00000000-0000-4000-8000-000000000000/schedule")
-    assert response.status_code == 404
-    assert response.json()["code"] == "not_found"
+    for method, path in PLANNED_OPERATIONS:
+        url = re.sub(r"\{\w+\}", "00000000-0000-4000-8000-000000000000", path)
+        response = client.request(method, url)
+        # Маршрута нет: 404, а если путь занят другим методом — 405.
+        assert response.status_code in (404, 405), (method, path)
+        assert response.json()["code"] in ("not_found", "method_not_allowed")
 
 
 def test_contract_file_is_up_to_date() -> None:

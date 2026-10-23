@@ -6,9 +6,8 @@
 """
 
 from typing import Annotated, Any
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header
 from fastapi.security import HTTPBearer
 
 from app.schemas.common import ErrorResponse
@@ -17,7 +16,6 @@ from app.schemas.documents import (
     MAX_UPLOAD_BYTES,
 )
 from app.schemas.products import ProductRecommendation, ProductRecommendRequest
-from app.schemas.schedule import PaymentSchedule
 
 _bearer = HTTPBearer(description="JWT из `POST /api/v1/auth/login`.")
 _AUTH = [Depends(_bearer)]
@@ -66,29 +64,6 @@ def recommend_products(body: ProductRecommendRequest) -> None:
 
 
 # ── Карточка заявки (экран C5) ────────────────────────────────────────────────
-
-
-@contract_router.get(
-    "/applications/{id}/schedule",
-    response_model=PaymentSchedule,
-    operation_id="getPaymentSchedule",
-    tags=["offers"],
-    dependencies=_AUTH,
-    responses=_errors(
-        e401=_E401,
-        e403=_E403_APP,
-        e404="Заявка не найдена или по ней нет оффера.",
-        e422=_E422,
-    ),
-)
-def get_payment_schedule(
-    id: UUID,
-    offer_id: Annotated[
-        UUID | None,
-        Query(description="Какой оффер. По умолчанию — активный, после принятия — принятый."),
-    ] = None,
-) -> None:
-    """График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи."""
 
 
 _ALLOWED_TYPES = ", ".join(ALLOWED_UPLOAD_MIME_TYPES)

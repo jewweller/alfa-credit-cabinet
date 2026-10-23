@@ -127,7 +127,7 @@ class Rounding(_Model):
 
 class Calculation(_Model):
     annuity: dict[Literal["rate_conversion"], Literal["nominal_div_12"]]
-    rounding: dict[Literal["payment", "amount"], Rounding]
+    rounding: dict[Literal["payment", "amount", "interest"], Rounding]
     debt_load: "DebtLoad"
     pricing: "Pricing"
 

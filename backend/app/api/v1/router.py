@@ -50,9 +50,10 @@ from app.schemas.common import INN_PATTERN
 from app.schemas.companies import CompanyBrief, CompanyLookupResponse
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, DocumentInfo, DocumentKind
 from app.schemas.products import Product
+from app.schemas.schedule import PaymentSchedule
 from app.security import create_access_token, verify_password
 from app.services import applications as service
-from app.services import companies, documents, offers
+from app.services import companies, documents, offers, schedule
 from app.storage import Storage, get_storage
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -428,3 +429,31 @@ def resubmit_application(
 ) -> ApplicationDetail:
     """Ответить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново."""
     return service.to_detail(session, service.resubmit(session, user, id, sources))
+
+
+# ── График платежей ───────────────────────────────────────────────────────────
+
+
+@api_v1_router.get(
+    "/applications/{id}/schedule",
+    response_model=PaymentSchedule,
+    operation_id="getPaymentSchedule",
+    tags=["offers"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404="Заявка не найдена или по ней нет оффера.",
+        e422=_E422,
+    ),
+)
+def get_payment_schedule(
+    id: UUID,
+    user: ClientUser,
+    session: SessionDep,
+    offer_id: Annotated[
+        UUID | None,
+        Query(description="Какой оффер. По умолчанию — активный, после принятия — принятый."),
+    ] = None,
+) -> PaymentSchedule:
+    """График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи."""
+    return schedule.build(session, user, id, offer_id)

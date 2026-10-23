@@ -107,3 +107,56 @@ def test_max_principal_is_inverse_of_annuity() -> None:
     assert abs(max_principal(payment, Decimal("20"), 24) - Decimal("2000000")) < Decimal("0.0001")
     assert max_principal(Decimal("100000"), Decimal("0"), 12) == Decimal("1200000")
     assert max_principal(Decimal("-1"), Decimal("18"), 12) == 0
+
+
+def _schedule(amount: str, rate: str, term: int, payment: str):  # noqa: ANN202
+    from app.domain.loan_math import annuity_schedule
+
+    return annuity_schedule(
+        Decimal(amount), Decimal(rate), term, Decimal(payment), Decimal("0.01"), "half_up"
+    )
+
+
+@pytest.mark.parametrize(
+    ("amount", "rate", "term", "payment"),
+    [
+        ("3000000", "18", 12, "275040"),  # Пекарня, план, раздел 7
+        ("2000000", "20", 24, "101792"),  # Ковалёв
+        ("3000000", "18", 12, "275039.98"),  # тот же платёж до копеек (вопрос K1)
+        ("1200000", "0", 12, "100000"),
+    ],
+)
+def test_schedule_repays_exactly_the_principal(
+    amount: str, rate: str, term: int, payment: str
+) -> None:
+    rows = _schedule(amount, rate, term, payment)
+
+    assert [r.number for r in rows] == list(range(1, term + 1))
+    assert sum(r.principal for r in rows) == Decimal(amount)
+    assert rows[-1].balance == 0
+    assert all(r.payment == r.principal + r.interest for r in rows)
+    assert all(r.payment == Decimal(payment) for r in rows[:-1])
+    assert all(r.interest == r.interest.quantize(Decimal("0.01")) for r in rows)
+    balances = [r.balance for r in rows]
+    assert balances == sorted(balances, reverse=True)
+
+
+def test_schedule_first_interest_and_last_payment() -> None:
+    rows = _schedule("3000000", "18", 12, "275040")
+
+    assert rows[0].interest == Decimal("45000.00")  # 3 000 000 × 18 % / 12
+    # Платёж округлён до рубля вверх — последний платёж чуть меньше и закрывает остаток.
+    assert Decimal("275000") < rows[-1].payment < Decimal("275040")
+
+
+def test_schedule_rejects_payment_below_interest() -> None:
+    with pytest.raises(ValueError, match="не покрывает"):
+        _schedule("3000000", "18", 12, "40000")
+
+
+@pytest.mark.parametrize(
+    "bad", [("0", "18", 12, "1"), ("1000", "18", 0, "1"), ("1000", "18", 12, "0")]
+)
+def test_schedule_rejects_non_positive_inputs(bad: tuple) -> None:
+    with pytest.raises(ValueError):
+        _schedule(*bad)
