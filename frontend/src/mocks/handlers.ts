@@ -172,6 +172,15 @@ export const handlers = [
     own(request, params.id, (id) => db.decline(id, String(params.offerId), key(request)), { wait: 500 }),
   ),
 
+  http.post(`${API}/applications/:id/signing/code`, ({ request, params }) =>
+    own(request, params.id, (id) => db.signingCode(id), { wait: 400 }),
+  ),
+
+  http.post(`${API}/applications/:id/signing/confirm`, async ({ request, params }) => {
+    const body = (await request.json()) as { code?: string };
+    return own(request, params.id, (id) => db.confirmSigning(id, String(body.code ?? ''), key(request)), { wait: 500 });
+  }),
+
   http.post(`${API}/applications/:id/documents`, async ({ params, request }) => {
     const form = await request.formData();
     const file = form.get('file');

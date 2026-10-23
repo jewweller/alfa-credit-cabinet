@@ -1149,6 +1149,214 @@
         "x-implementation-status": "planned"
       }
     },
+    "/api/v1/applications/{id}/signing/code": {
+      "post": {
+        "tags": [
+          "signing"
+        ],
+        "summary": "Create Signing Code",
+        "description": "**Только контракт — ещё не реализовано.**\n\nСгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.",
+        "operationId": "createSigningCode",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SigningCodeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`invalid_transition` — из текущего статуса операция не разрешена. Код выдаётся только в статусе `SIGNING`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
+    },
+    "/api/v1/applications/{id}/signing/confirm": {
+      "post": {
+        "tags": [
+          "signing"
+        ],
+        "summary": "Confirm Signing",
+        "description": "**Только контракт — ещё не реализовано.**\n\nПодтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`).",
+        "operationId": "confirmSigning",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
+              "title": "Idempotency-Key"
+            },
+            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`invalid_transition` — из текущего статуса операция не разрешена. Подтверждение возможно только в статусе `SIGNING`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_code` — код неверный или истёк; либо ошибка валидации тела.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
+    },
     "/api/v1/applications/{id}/documents": {
       "post": {
         "tags": [
@@ -2408,6 +2616,7 @@
           "documents_required",
           "file_too_large",
           "unsupported_media_type",
+          "invalid_code",
           "http_error"
         ],
         "title": "ErrorCode",
@@ -3007,6 +3216,51 @@
           "R10, нагрузка выше 35%, и не подошли ни более длинный срок, ни меньшая сумма, ни другой продукт",
           "ручной отказ кредитного специалиста (этап 6)"
         ]
+      },
+      "SigningCodeResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "title": "Code",
+            "description": "Шесть цифр.",
+            "examples": [
+              "482915"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At",
+            "description": "До какого момента код действует."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "expires_at"
+        ],
+        "title": "SigningCodeResponse",
+        "description": "Одноразовый код подписи. На демо показывается на экране в рамке «Симуляция ПЭП»."
+      },
+      "SigningConfirmRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "title": "Code",
+            "examples": [
+              "482915"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "SigningConfirmRequest",
+        "description": "Подтверждение подписи введённым кодом."
       },
       "StatusActor": {
         "type": "string",
