@@ -274,13 +274,6 @@ function checkComplete(detail: ApplicationDetail) {
 
 const MONEY_RE = /^\d+\.\d{2}$/;
 
-if (!load()) reset();
-// №1051 в исходных данных «оценивается» — через 10 секунд банк её одобрит (проверка опроса).
-for (const id of apps.keys()) {
-  continuePipeline(id, id === 'a-1051' ? 10_000 : STEP_MS);
-  if (apps.get(id)!.detail.status === 'SIGNED') scheduleIssue(id);
-}
-
 /** Выданные коды подписи по заявке: сверяем введённый код с последним. */
 const signingCodes = new Map<string, SigningCode>();
 /** Сколько действует код подписи. */
@@ -296,6 +289,14 @@ function scheduleIssue(id: string) {
     transition(app, 'ISSUED', 'system');
     save();
   }, ISSUE_DELAY_MS);
+}
+
+// Запуск — после объявления констант выше: scheduleIssue читает ISSUE_DELAY_MS.
+if (!load()) reset();
+// №1051 в исходных данных «оценивается» — через 10 секунд банк её одобрит (проверка опроса).
+for (const id of apps.keys()) {
+  continuePipeline(id, id === 'a-1051' ? 10_000 : STEP_MS);
+  if (apps.get(id)!.detail.status === 'SIGNED') scheduleIssue(id);
 }
 
 // ── Операции API ───────────────────────────────────────────────────────────

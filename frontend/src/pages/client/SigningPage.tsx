@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../../api/client';
 import type { ApplicationDetail, Product } from '../../api/types';
@@ -8,7 +8,7 @@ import { useProductMap } from '../../features/products/useProducts';
 import { ROUTES } from '../../features/routes';
 import { ClientHeader } from '../../features/session/ClientHeader';
 import { useMe } from '../../features/session/useMe';
-import { APPLICATION, HOME, MONEY, SIGNING } from '../../i18n/ru';
+import { APPLICATION, HOME, MONEY, RESULT, SIGNING } from '../../i18n/ru';
 import {
   AppShell,
   BackLink,
@@ -39,8 +39,18 @@ function SignForm({ app }: { app: ApplicationDetail }) {
   const issued = codeMutation.data;
   const S = SIGNING.sign;
 
-  const onConfirm = () => {
-    if (!issued) return;
+  // Новый код заменяет прежний: поле и ошибку сбрасываем.
+  const getCode = () =>
+    codeMutation.mutate(undefined, {
+      onSuccess: () => {
+        setCode('');
+        confirm.reset();
+      },
+    });
+
+  const onConfirm = (e: FormEvent) => {
+    e.preventDefault();
+    if (!issued || code.length < 6 || confirm.isPending) return;
     confirm.mutate(code, { onSuccess: () => navigate(ROUTES.result(app.id)) });
   };
 
@@ -52,7 +62,7 @@ function SignForm({ app }: { app: ApplicationDetail }) {
       {!issued ? (
         <>
           <MetaNote>{S.hint}</MetaNote>
-          <Button size="lg" onClick={() => codeMutation.mutate()} disabled={codeMutation.isPending}>
+          <Button size="lg" onClick={getCode} disabled={codeMutation.isPending}>
             {codeMutation.isPending ? S.getting : S.get}
           </Button>
         </>
@@ -64,7 +74,7 @@ function SignForm({ app }: { app: ApplicationDetail }) {
             <span className={styles.code}>{issued.code}</span>
             <span className={styles.expires}>{S.expires(timeFmt.format(new Date(issued.expires_at)))}</span>
           </div>
-          <div className={styles.row}>
+          <form className={styles.row} onSubmit={onConfirm}>
             <TextField
               label={S.input}
               inputMode="numeric"
@@ -73,8 +83,13 @@ function SignForm({ app }: { app: ApplicationDetail }) {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               error={wrongCode ? S.wrong : null}
             />
-            <Button size="lg" arrow onClick={onConfirm} disabled={confirm.isPending || code.length < 6}>
+            <Button type="submit" size="lg" arrow disabled={confirm.isPending || code.length < 6}>
               {confirm.isPending ? S.confirming : S.confirm}
+            </Button>
+          </form>
+          <div>
+            <Button variant="ghost" onClick={getCode} disabled={codeMutation.isPending || confirm.isPending}>
+              {codeMutation.isPending ? S.getting : S.again}
             </Button>
           </div>
         </>
@@ -84,24 +99,44 @@ function SignForm({ app }: { app: ApplicationDetail }) {
   );
 }
 
+/** Договор из шаблона с данными предложения (план, раздел 11, C6). */
 function ContractPanel({ app, products }: { app: ApplicationDetail; products: Map<string, Product> }) {
   const C = SIGNING.contract;
   const offer = app.active_offer;
   const productName = (offer?.product_id && products.get(offer.product_id)?.name) || MONEY.noProduct;
+  const purpose = app.purpose ? APPLICATION.purpose[app.purpose] : '—';
   const me = useMe().data;
   return (
-    <Panel eyebrow={C.eyebrow} title={C.title}>
-      <p>{C.intro(me?.company?.name ?? '—')}</p>
+    <Panel eyebrow={C.eyebrow(app.number)} title={C.title}>
+      <p>{C.parties(me?.company?.name ?? '—', me?.company?.inn ?? '—', me?.full_name ?? '—')}</p>
       {offer && (
-        <KeyValueList
-          items={[
-            { label: C.product, value: productName },
-            { label: C.amount, value: formatMoney(offer.amount), emphasis: true },
-            { label: C.term, value: formatTerm(offer.term_months) },
-            { label: C.rate, value: formatRate(offer.rate) },
-            { label: C.payment, value: formatMoney(offer.monthly_payment) },
-          ]}
-        />
+        <>
+          <KeyValueList
+            columns={3}
+            items={[
+              { label: C.amount, value: formatMoney(offer.amount), emphasis: true },
+              { label: C.term, value: formatTerm(offer.term_months) },
+              { label: C.rate, value: formatRate(offer.rate) },
+              { label: C.payment, value: formatMoney(offer.monthly_payment) },
+              { label: C.product, value: productName },
+              { label: C.purpose, value: purpose },
+            ]}
+          />
+          <ol className={styles.clauses}>
+            {C.clauses({
+              amount: formatMoney(offer.amount),
+              term: formatTerm(offer.term_months),
+              purpose,
+              rate: formatRate(offer.rate),
+              payment: formatMoney(offer.monthly_payment),
+              account: RESULT.issued.accountNumber,
+            }).map((clause) => (
+              <li key={clause.title}>
+                <strong>{clause.title}.</strong> {clause.text}
+              </li>
+            ))}
+          </ol>
+        </>
       )}
       <MetaNote>{C.note}</MetaNote>
     </Panel>
@@ -163,9 +198,10 @@ export function SigningPage() {
       header={<ClientHeader />}
       hero={<Hero top={back} eyebrow={SIGNING.eyebrow(app.number)} title={SIGNING.title} subtitle={SIGNING.subtitle} />}
     >
+      {/* Сначала условия, потом подпись: на узком экране форма уходит под договор. */}
       <SplitLayout
-        main={<SignForm app={app} />}
-        aside={<ContractPanel app={app} products={products} />}
+        main={<ContractPanel app={app} products={products} />}
+        aside={<SignForm app={app} />}
       />
     </AppShell>
   );
