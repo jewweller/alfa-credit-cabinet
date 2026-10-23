@@ -54,7 +54,8 @@ def test_catalog_and_enums_match_inspected_api(config):
 
 
 def test_live_loan_math_has_not_drifted_if_merged():
-    live = Path(__file__).parents[3] / "frontend/src/mocks/loanMath.ts"
+    # Аннуитет фронта живёт в features/loanMath.ts (mocks/loanMath.ts строит из него график).
+    live = Path(__file__).parents[3] / "frontend/src/features/loanMath.ts"
     if live.exists():
         assert live.read_bytes() == (REFERENCE / "loanMath.ts").read_bytes(), (
             "loanMath.ts changed: re-review and update the reference/parity test"
