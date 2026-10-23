@@ -18,6 +18,7 @@ import type {
 } from '../api/types';
 import { formatMoney } from '../features/format';
 import { makeOffer, me as bakery, products, seedApplications, seedFeed, type MockApplication } from './data';
+import { decide, REVENUE_INFO_REQUEST, underwriterDecide, type Verdict } from './decision';
 
 /** Как в backend/app/domain/state_machine.py. */
 const TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
@@ -54,7 +55,7 @@ export class MockHttpError extends Error {
   }
 }
 
-const STORAGE_KEY = 'mock-db-v2';
+const STORAGE_KEY = 'mock-db-v3';
 const apps = new Map<string, MockApplication>();
 const files = new Map<string, Blob>();
 const idempotent = new Map<string, unknown>();
@@ -89,15 +90,6 @@ function reset() {
   save();
 }
 
-/**
- * Чем закончится конвейер для заявки. №1051 банк одобряет сам (грейд A, ставка базовая),
- * остальные после повторной отправки — через специалиста (грейд B, база + 2 п.п.).
- */
-const OUTCOME: Record<string, { rate: string; by: 'system' | 'underwriter' }> = {
-  'a-1051': { rate: '16.00', by: 'system' },
-};
-const DEFAULT_OUTCOME = { rate: '20.00', by: 'underwriter' as const };
-
 // ── Вспомогательное ────────────────────────────────────────────────────────
 
 function find(id: string): MockApplication {
@@ -119,6 +111,7 @@ function transition(app: MockApplication, to: ApplicationStatus, actor: StatusAc
 
 const EVENT_TEXT: Partial<Record<ApplicationStatus, (n: string) => [string, string]>> = {
   SUBMITTED: (n) => [`Заявка №${n} отправлена`, 'Проверяем данные о компании. Ничего делать не нужно.'],
+  INFO_REQUESTED: (n) => [`По заявке №${n} нужны документы`, 'Загрузите их в карточке заявки — и мы продолжим рассмотрение.'],
   MANUAL_REVIEW: (n) => [`Заявку №${n} смотрит специалист`, 'Обычно это занимает до одного рабочего дня.'],
   APPROVED: (n) => [`Заявка №${n} одобрена`, 'Посмотрите предложение и график платежей.'],
   COUNTER_OFFER: (n) => [`По заявке №${n} — другие условия`, 'Сравните их с запрошенными.'],
@@ -160,32 +153,59 @@ function approve(app: MockApplication, offer: Offer, by: 'system' | 'underwriter
   };
 }
 
+/** Применяет решение движка (или специалиста) к заявке: статус, решение, оффер или запрос документов. */
+function apply(app: MockApplication, verdict: Verdict, by: 'system' | 'underwriter') {
+  const actor: StatusActor = by === 'system' ? 'system' : 'underwriter';
+  switch (verdict.kind) {
+    case 'approved':
+    case 'counter_offer': {
+      const { productId, amount, term, rate } = verdict.offer;
+      const offer = makeOffer(crypto.randomUUID(), productId, amount, term, rate);
+      approve(app, offer, by, verdict.kind === 'approved' ? 'APPROVED' : 'COUNTER_OFFER');
+      return;
+    }
+    case 'rejected':
+      transition(app, 'REJECTED', actor);
+      app.detail = {
+        ...app.detail,
+        decision: { outcome: 'rejected', decided_by: by, reason_code: verdict.reason, decided_at: app.detail.status_changed_at },
+      };
+      return;
+    case 'info_requested':
+      transition(app, 'INFO_REQUESTED', actor);
+      app.detail = {
+        ...app.detail,
+        decision: { outcome: 'info_requested', decided_by: by, reason_code: null, decided_at: app.detail.status_changed_at },
+        info_request: {
+          id: crypto.randomUUID(),
+          status: 'open',
+          ...REVENUE_INFO_REQUEST,
+          created_at: app.detail.status_changed_at,
+        },
+      };
+      return;
+    case 'manual_review':
+      transition(app, 'MANUAL_REVIEW', actor);
+      return;
+  }
+}
+
 /**
- * Двигает заявку по конвейеру с её текущего статуса: проверка → оценка →
- * (специалист) → одобрение. Вызывается после отправки и при загрузке страницы,
- * поэтому перезагрузка посреди конвейера не «замораживает» заявку.
+ * Двигает заявку по конвейеру с её текущего статуса: проверка → оценка → решение
+ * по правилам (decision.ts) → при ручном рассмотрении — решение специалиста.
+ * Вызывается после отправки и при загрузке страницы, поэтому перезагрузка
+ * посреди конвейера не «замораживает» заявку.
  */
 function continuePipeline(id: string, firstDelay = STEP_MS) {
   const app = apps.get(id);
   if (!app) return;
-  const outcome = OUTCOME[id] ?? DEFAULT_OUTCOME;
-  const decide = (current: MockApplication) => {
-    const offer = makeOffer(
-      crypto.randomUUID(),
-      current.detail.product_id!,
-      current.detail.amount!,
-      current.detail.term_months!,
-      outcome.rate,
-    );
-    approve(current, offer, outcome.by, 'APPROVED');
-  };
 
   const next: Partial<Record<ApplicationStatus, (current: MockApplication) => void>> = {
     SUBMITTED: (current) => transition(current, 'ENRICHMENT', 'system'),
     ENRICHMENT: (current) => transition(current, 'SCORING', 'system'),
-    SCORING: (current) =>
-      outcome.by === 'underwriter' ? transition(current, 'MANUAL_REVIEW', 'system') : decide(current),
-    MANUAL_REVIEW: decide,
+    SCORING: (current) => apply(current, decide(current.detail), 'system'),
+    // Пока нет кабинета банка (B4), специалист «решает» сам через паузу.
+    MANUAL_REVIEW: (current) => apply(current, underwriterDecide(current.detail), 'underwriter'),
   };
   const step = next[app.detail.status];
   if (!step) return;
