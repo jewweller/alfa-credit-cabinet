@@ -23,6 +23,28 @@
   min-width: 0;
 }
 
+/* В несколько колонок каждая пара занимает две строки общей сетки (subgrid): подписи ряда
+   стоят на одной линии и значения тоже, даже если что-то переносится на две строки. */
+.cols2 .row,
+.cols3 .row {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  row-gap: 2px;
+  align-content: start;
+}
+
+.cols2 .label,
+.cols3 .label {
+  align-self: end;
+}
+
+/* Крупная сумма и обычные значения в одном ряду стоят на общей базовой линии. */
+.cols2 .value,
+.cols3 .value {
+  align-self: baseline;
+}
+
 .cols1 .row {
   flex-direction: row;
   justify-content: space-between;

@@ -55,7 +55,7 @@
 }
 
 .ok .fill {
-  background: var(--color-success);
+  background: var(--color-success-fill);
 }
 
 .high .fill {

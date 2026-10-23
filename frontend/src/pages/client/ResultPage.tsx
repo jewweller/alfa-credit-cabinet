@@ -1,13 +1,14 @@
 import { Navigate, useParams } from 'react-router';
 import { ApiError } from '../../api/client';
 import type { ApplicationDetail, Product } from '../../api/types';
-import { useApplication } from '../../features/application/queries';
+import { useApplication, useApplicationHistory, usePaymentSchedule } from '../../features/application/queries';
 import { SchedulePanel } from '../../features/application/SchedulePanel';
+import { HistoryPanel } from '../../features/application/SidePanels';
 import { formatDate, formatMoney, formatRate, formatTerm } from '../../features/format';
 import { useProductMap } from '../../features/products/useProducts';
-import { usePaymentSchedule } from '../../features/application/queries';
 import { ROUTES } from '../../features/routes';
 import { ClientHeader } from '../../features/session/ClientHeader';
+import { useNow } from '../../features/useNow';
 import { APPLICATION, HOME, MONEY, RESULT } from '../../i18n/ru';
 import {
   AppShell,
@@ -58,6 +59,7 @@ function IssuedBlock({ app, products }: { app: ApplicationDetail; products: Map<
       }
     >
       <KeyValueList
+        columns={3}
         items={[
           { label: R.account, value: R.accountNumber },
           { label: R.amount, value: formatMoney(offer?.amount), emphasis: true },
@@ -77,6 +79,8 @@ export function ResultPage() {
   const products = useProductMap();
   const application = useApplication(id);
   const app = application.data;
+  const history = useApplicationHistory(id, app?.status_changed_at);
+  const now = useNow();
   const back = <BackLink to={ROUTES.application(id)} label={RESULT.back} />;
 
   if (application.isError) {
@@ -134,9 +138,16 @@ export function ResultPage() {
       }
     >
       {issued ? (
+        // График — широкая таблица, ему нужна основная колонка; справа, как на карточке (C5), история.
         <SplitLayout
-          main={<IssuedBlock app={app} products={products} />}
-          aside={app.active_offer && <SchedulePanel applicationId={app.id} offerId={app.active_offer.id} />}
+          stickyAside={false}
+          main={
+            <>
+              <IssuedBlock app={app} products={products} />
+              {app.active_offer && <SchedulePanel applicationId={app.id} offerId={app.active_offer.id} index={1} />}
+            </>
+          }
+          aside={<HistoryPanel history={history.data} loading={history.isPending} now={now} />}
         />
       ) : (
         <IssuingBlock />

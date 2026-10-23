@@ -23,9 +23,10 @@
 }
 
 .success {
+  background: var(--success-wash), var(--surface-fill);
   box-shadow:
     var(--shadow-card),
-    inset 3px 0 0 var(--color-success);
+    inset var(--success-stripe) 0 0 var(--color-success-fill);
 }
 
 .head {
