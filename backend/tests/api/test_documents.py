@@ -115,12 +115,24 @@ def test_resubmit_without_required_document_is_422(
     assert "Декларация или выписка" in response.json()["message"]
 
 
-def test_document_of_other_kind_does_not_close_required_item(
+def test_bank_statement_also_closes_revenue_item(
     client: TestClient, melnikova: tuple[dict, dict]
 ) -> None:
-    # Пункт запроса — tax_return (вопрос K4: «декларация или выписка» → один вид в контракте).
+    # Пункт «Декларация или выписка» (решение K4): закрывает и выписка по счёту.
     app, headers = melnikova
     _upload(client, app, headers, kind="bank_statement")
+
+    response = _resubmit(client, app, headers)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "MANUAL_REVIEW"
+
+
+def test_document_of_unrelated_kind_does_not_close_required_item(
+    client: TestClient, melnikova: tuple[dict, dict]
+) -> None:
+    app, headers = melnikova
+    _upload(client, app, headers, kind="contract")
 
     assert _resubmit(client, app, headers).status_code == 422
 

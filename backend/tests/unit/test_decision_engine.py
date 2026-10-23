@@ -40,7 +40,9 @@ def test_bakery_is_approved_on_requested_terms() -> None:
     assert (decision.outcome, decision.reason_code) == ("APPROVED", "R9_APPROVED")
     offer = decision.offer
     assert (offer.amount, offer.term_months, offer.rate) == (D(3_000_000), 12, D(18))
-    assert offer.monthly_payment == D("275040.00")
+    assert offer.monthly_payment == D(
+        "275039.98"
+    )  # до копейки (решение K1); в плане — 275 040 ₽, то же значение до рубля
     assert _fired_rules(decision) == [f"R{n}" for n in range(1, 10)]
     assert decision.config_version == "1.0.0"
 
@@ -52,7 +54,7 @@ def test_kovalev_gets_longer_term_at_grade_b_rate() -> None:
     offer = decision.offer
     assert (offer.product.code, offer.amount, offer.term_months) == ("EXPRESS_WC", D(2_000_000), 24)
     assert offer.rate == D(20)
-    assert offer.monthly_payment == D("101792.00")
+    assert offer.monthly_payment == D("101791.61")  # в плане — 101 792 ₽
     assert round(offer.debt_load_pct, 1) == D("32.4")
 
 

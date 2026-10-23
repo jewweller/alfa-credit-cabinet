@@ -1,11 +1,12 @@
 {
   "_meta": {
-    "status": "draft — не утверждено аналитиком (docs/analyst-questions.md, раздел 6)",
+    "status": "synthetic — значения, которых нет в плане, решены backend по поручению команды (аналитик не участвовал): docs/analyst-questions.md, раздел 8",
     "contract": "GET /egrip/v1/entrepreneurs/{inn} — docs/plan.md, раздел 8",
     "sources": {
       "P7": "docs/plan.md, раздел 7 (примеры расчёта)",
       "P8": "docs/plan.md, раздел 8 (тестовые случаи)",
-      "FE": "реестр в моках фронта frontend/src/mocks/data.ts"
+      "FE": "реестр в моках фронта frontend/src/mocks/data.ts",
+      "DECIDED": "решено backend (DECIDED): значения нет в плане, выбрано так, чтобы получился исход из P8"
     }
   },
   "500100001072": {
@@ -34,7 +35,7 @@
       "ogrnip": "324500100002020",
       "fio": "Мельникова Елена Викторовна",
       "status": "ACTIVE",
-      "registered_at": "2024-04-10",
+      "registered_at": "2025-04-23",
       "okved_main": "96.02",
       "region": "Московская область"
     },
@@ -43,7 +44,7 @@
       "ogrnip": "FE",
       "fio": "FE",
       "status": "FE",
-      "registered_at": "FE. КОНФЛИКТ D1: в P7 «1,5 года» (F1 = 8), по FE — 2 полных года (F1 = 15); исход R4 не меняется",
+      "registered_at": "DECIDED (D1): по P7 «1,5 года» — 23.04.2025; на 23.10.2026 это 1 полный год, F1 = 8, итог 66 как в P7. В моках фронта было 2024-04-10",
       "okved_main": "P8",
       "region": "FE"
     }

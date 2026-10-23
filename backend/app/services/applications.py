@@ -205,8 +205,8 @@ def resubmit(
 ) -> Application:
     """Ответ на запрос документов: INFO_REQUESTED → SUBMITTED, обработка идёт заново.
 
-    Обязательные пункты запроса должны быть закрыты загруженными документами того же вида,
-    иначе 422 documents_required. Повторный resubmit — 409: статус уже не INFO_REQUESTED.
+    Обязательные пункты запроса должны быть закрыты загруженными документами допустимого
+    вида, иначе 422 documents_required. Повторный resubmit — 409: статус уже не INFO_REQUESTED.
     """
     application = get_visible(session, user, application_id)
     current = ApplicationStatus(application.status)
@@ -216,7 +216,12 @@ def resubmit(
     request = _latest(session, InfoRequestRow, application, InfoRequestRow.status == "open")
     if request is not None:
         uploaded = {d.kind for d in _document_rows(session, application)}
-        missing = [i for i in request.items if i["required"] and i["kind"] not in uploaded]
+        # Пункт закрыт документом любого из допустимых видов (config.yaml, `accepts`).
+        missing = [
+            i
+            for i in request.items
+            if i["required"] and not uploaded & set(i.get("accepts") or [i["kind"]])
+        ]
         if missing:
             titles = "; ".join(i["title"] for i in missing)
             raise ApiError(422, ErrorCode.DOCUMENTS_REQUIRED, f"Загрузите документы: {titles}")

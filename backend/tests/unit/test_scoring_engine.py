@@ -34,9 +34,11 @@ def test_plan_payments_and_loads() -> None:
     bakery = score(*BAKERY, reference_date=REF)
     kovalev = score(*KOVALEV, reference_date=REF)
 
-    assert bakery.new_payment_base_rate == D("275040.00")
+    assert bakery.new_payment_base_rate == D(
+        "275039.98"
+    )  # до копейки (решение K1); в плане — 275 040 ₽, то же значение до рубля
     assert round(bakery.debt_load_pct, 1) == D("21.3")
-    assert kovalev.new_payment_base_rate == D("183360.00")
+    assert kovalev.new_payment_base_rate == D("183359.99")  # в плане — 183 360 ₽
     assert round(kovalev.debt_load_pct, 1) == D("48.7")
 
 
@@ -76,10 +78,18 @@ def test_f2_without_history() -> None:
 
 @pytest.mark.parametrize(
     ("payments", "points"),
-    # Платёж 275 040 при выручке 2 млн/мес: E подобрано под нагрузку 25 / 35 / 50 %.
-    [(224_960, 20), (224_961, 12), (424_960, 12), (424_961, 4), (724_960, 4), (724_961, 0)],
+    # Платёж 275 039,98 при выручке 2 млн/мес: E подобрано под нагрузку ровно 25 / 35 / 50 %
+    # и на копейку больше.
+    [
+        ("224960.02", 20),
+        ("224960.03", 12),
+        ("424960.02", 12),
+        ("424960.03", 4),
+        ("724960.02", 4),
+        ("724960.03", 0),
+    ],
 )
-def test_f3_boundaries(payments: int, points: int) -> None:
+def test_f3_boundaries(payments: str, points: int) -> None:
     src = sources(bki=BkiReport(True, False))
     result = score(request(payments=payments), src, reference_date=REF)
 

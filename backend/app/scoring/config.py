@@ -146,6 +146,11 @@ class RequestItem(_Model):
     kind: DocumentKind
     title: str
     required: bool
+    # Какие виды документа закрывают пункт; пусто — только `kind`.
+    accepts: tuple[DocumentKind, ...] = ()
+
+    def accepted_kinds(self) -> set[str]:
+        return {str(k) for k in (self.accepts or (self.kind,))}
 
 
 class Rules(_Model):

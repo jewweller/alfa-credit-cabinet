@@ -65,7 +65,7 @@ def test_bakery_is_approved(client: TestClient, engine: Engine) -> None:
     )  # fmt: skip
     assert (offer["rate"], offer["monthly_payment"], offer["status"]) == (
         "18.00",
-        "275040.00",
+        "275039.98",
         "active",
     )  # fmt: skip — платёж до рубля по config.yaml (вопрос K1)
     assert app["info_request"] is None
@@ -91,7 +91,7 @@ def test_kovalev_gets_counter_offer(client: TestClient, engine: Engine) -> None:
     offer = app["active_offer"]
     # План, раздел 7: просили 2 млн / 12 мес, предлагаем 2 млн / 24 мес под 20 %.
     assert (offer["amount"], offer["term_months"], offer["rate"]) == ("2000000.00", 24, "20.00")
-    assert offer["monthly_payment"] == "101792.00"
+    assert offer["monthly_payment"] == "101791.61"  # в плане — 101 792 ₽ (до рубля)
     assert _steps(client, app, headers)[-1] == ("SCORING", "COUNTER_OFFER", "system")
     [decision] = _rows(engine, DecisionRow, app["id"])
     assert decision.reason_code == "R10_COUNTER_OFFER"
@@ -113,11 +113,12 @@ def test_stroyresurs_is_rejected_but_scored(client: TestClient, engine: Engine) 
     assert _steps(client, app, headers)[-1] == ("SCORING", "REJECTED", "system")
     [decision] = _rows(engine, DecisionRow, app["id"])
     assert decision.reason_code == "R1_LIQUIDATED"
-    # Скоринг посчитан и сохранён, хотя решение — отказ (план, раздел 4).
-    assert len(_rows(engine, ScoringResultRow, app["id"])) == 1
-    # ФНС и БКИ для СтройРесурса в фикстурах нет (D7): «недоступны», но R1 срабатывает раньше R3.
+    # Скоринг посчитан и сохранён, хотя решение — отказ (план, раздел 4). Профиль ФНС и БКИ
+    # чистый (решение D7), поэтому балл высокий: отказ даёт только стоп-фактор R1.
+    [scoring] = _rows(engine, ScoringResultRow, app["id"])
+    assert (scoring.total_score, scoring.grade) == (100, "A")
     sources = {r.source: r.status for r in _rows(engine, EnrichmentResult, app["id"])}
-    assert sources == {"egrul": "ok", "fns_tb": "unavailable", "bki": "unavailable"}
+    assert sources == {"egrul": "ok", "fns_tb": "ok", "bki": "ok"}
 
 
 def test_melnikova_is_asked_for_documents(client: TestClient, engine: Engine) -> None:
@@ -238,4 +239,4 @@ def test_money_values_are_exact_decimals(engine: Engine, client: TestClient) -> 
     app, _ = _submit(client, *KOVALEV)
 
     [offer] = _rows(engine, OfferRow, app["id"])
-    assert offer.monthly_payment == Decimal("101792.00")
+    assert offer.monthly_payment == Decimal("101791.61")

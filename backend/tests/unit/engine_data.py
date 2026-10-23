@@ -47,7 +47,7 @@ def request(
     amount: int = 3_000_000,
     term: int = 12,
     revenue: int = 24_000_000,
-    payments: int = 150_000,
+    payments: int | str = 150_000,
     product: ProductTerms = EXPRESS,
     purpose: str = "working_capital",
 ) -> LoanRequest:

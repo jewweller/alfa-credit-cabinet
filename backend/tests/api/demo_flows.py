@@ -32,6 +32,11 @@ KOVALEV = ("kovalev@demo.local", draft("2000000.00", "6000000.00", "60000.00"))
 MELNIKOVA = ("melnikova@demo.local", draft("1500000.00", "12000000.00", "0.00"))
 # Анкеты СтройРесурса в плане нет (D7): значения произвольные, исход определяет R1.
 STROY = ("stroy@demo.local", draft("2000000.00", "9000000.00", "0.00"))
+# Анкет Вектора, Миража и Сбой-Теста в плане нет: выручка = ФНС (иначе раньше сработает R4),
+# платежи = БКИ (решение backend D7, docs/analyst-questions.md, раздел 8).
+VEKTOR = ("vektor@demo.local", draft("2000000.00", "22000000.00", "100000.00"))
+MIRAGE = ("mirage@demo.local", draft("1500000.00", "12000000.00", "50000.00"))
+SBOY = ("sboy@demo.local", draft("1000000.00", "11000000.00", "0.00"))
 
 PIPELINE_STEPS = [
     (None, "DRAFT", "client"),

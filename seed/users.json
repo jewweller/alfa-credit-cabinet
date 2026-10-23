@@ -32,6 +32,30 @@
     "company_id": "5a0e7d6c-0000-4000-8000-0000000000c4"
   },
   {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a5",
+    "email": "vektor@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Павел Гришин",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c5"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a6",
+    "email": "mirage@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Анна Зайцева",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c6"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a7",
+    "email": "sboy@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Игорь Сбоев",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c7"
+  },
+  {
     "id": "5a0e7d6c-0000-4000-8000-0000000000b1",
     "email": "underwriter@demo.local",
     "password": "Demo2026!",

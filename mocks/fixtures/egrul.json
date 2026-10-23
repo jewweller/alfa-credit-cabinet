@@ -1,12 +1,13 @@
 {
   "_meta": {
-    "status": "draft — не утверждено аналитиком (docs/analyst-questions.md, раздел 6)",
+    "status": "synthetic — значения, которых нет в плане, решены backend по поручению команды (аналитик не участвовал): docs/analyst-questions.md, раздел 8",
     "contract": "GET /egrul/v1/companies/{inn} — docs/plan.md, раздел 8",
     "sources": {
       "P7": "docs/plan.md, раздел 7 (примеры расчёта)",
       "P8": "docs/plan.md, раздел 8 (тестовые случаи)",
       "FE": "реестр в моках фронта frontend/src/mocks/data.ts",
-      "TBD": "в источниках нет; движком не используется"
+      "TBD": "в источниках нет; движком не используется",
+      "DECIDED": "решено backend (DECIDED): значения нет в плане, выбрано так, чтобы получился исход из P8"
     }
   },
   "7701000019": {
@@ -17,8 +18,14 @@
       "status": "ACTIVE",
       "registered_at": "2018-09-14",
       "okved_main": "10.71",
-      "okved_extra": ["10.72", "47.24"],
-      "director": {"fio": "Соколова Ирина Павловна", "inn": null},
+      "okved_extra": [
+        "10.72",
+        "47.24"
+      ],
+      "director": {
+        "fio": "Соколова Ирина Павловна",
+        "inn": null
+      },
       "founders": null,
       "address": "г. Москва, ул. Северная, д. 12",
       "region": "Москва"
@@ -46,8 +53,13 @@
       "status": "LIQUIDATED",
       "registered_at": "2015-03-02",
       "okved_main": "41.20",
-      "okved_extra": ["43.99"],
-      "director": {"fio": "Белов Олег Игоревич", "inn": null},
+      "okved_extra": [
+        "43.99"
+      ],
+      "director": {
+        "fio": "Белов Олег Игоревич",
+        "inn": null
+      },
       "founders": null,
       "address": "г. Москва, Промышленный пр., д. 4",
       "region": "Москва"
@@ -76,7 +88,10 @@
       "registered_at": "2019-11-20",
       "okved_main": "46.90",
       "okved_extra": [],
-      "director": {"fio": "Гришин Павел Олегович", "inn": null},
+      "director": {
+        "fio": "Гришин Павел Олегович",
+        "inn": null
+      },
       "founders": null,
       "address": "г. Москва, ул. Лесная, д. 7",
       "region": "Москва"
@@ -85,8 +100,7 @@
       "inn": "P8",
       "ogrn, name, status, registered_at, okved_main, okved_extra, director.fio, address, region": "FE",
       "director.inn": "TBD",
-      "founders": "TBD",
-      "ФНС и БКИ": "не заданы (D7): заявка уйдёт в R3, а не в ожидаемый по P8 отказ R2"
+      "founders": "TBD"
     }
   },
   "7701000058": {
@@ -95,10 +109,13 @@
       "ogrn": "1207746000058",
       "name": "ООО «Мираж»",
       "status": "ACTIVE",
-      "registered_at": "2020-02-17",
+      "registered_at": "2023-02-17",
       "okved_main": "56.10",
       "okved_extra": [],
-      "director": {"fio": "Зайцева Анна Петровна", "inn": null},
+      "director": {
+        "fio": "Зайцева Анна Петровна",
+        "inn": null
+      },
       "founders": null,
       "address": "г. Москва, ул. Садовая, д. 1",
       "region": "Москва"
@@ -106,10 +123,9 @@
     "sources": {
       "inn": "P8",
       "ogrn, name, status, okved_main, okved_extra, director.fio, address, region": "FE",
-      "registered_at": "FE. КОНФЛИКТ D2: 6 лет → F1 = 20, а для 40 баллов по P8 нужно F1 = 15",
+      "registered_at": "DECIDED (D2): 2–5 лет (F1 = 15), чтобы сумма была 40 баллов по P8. В моках фронта было 2020-02-17",
       "director.inn": "TBD",
-      "founders": "TBD",
-      "ФНС и БКИ": "не заданы (D4, D7)"
+      "founders": "TBD"
     }
   },
   "7701000065": {
@@ -121,7 +137,10 @@
       "registered_at": "2021-05-05",
       "okved_main": "62.01",
       "okved_extra": [],
-      "director": {"fio": "Сбоев Игорь Иванович", "inn": null},
+      "director": {
+        "fio": "Сбоев Игорь Иванович",
+        "inn": null
+      },
       "founders": null,
       "address": "г. Москва, ул. Тестовая, д. 5",
       "region": "Москва"
@@ -130,8 +149,7 @@
       "inn": "P8",
       "ogrn, name, status, registered_at, okved_main, okved_extra, director.fio, address, region": "FE",
       "director.inn": "TBD",
-      "founders": "TBD",
-      "ФНС и БКИ": "не заданы (D7); по P8 БКИ всегда отвечает 503 — режим ошибки ещё не реализован"
+      "founders": "TBD"
     }
   }
 }

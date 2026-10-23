@@ -20,9 +20,9 @@ def test_seed_is_idempotent(engine: Engine) -> None:
         counts = seed_demo_data(session, get_settings().seed_dir)  # второй запуск
         after = session.scalar(select(User.password_hash).where(User.email == "bakery@demo.local"))
 
-        assert counts == {"companies": 4, "products": 3, "users": 6}
-        assert session.scalar(select(func.count()).select_from(User)) == 6
-        assert session.scalar(select(func.count()).select_from(Company)) == 4
+        assert counts == {"companies": 7, "products": 3, "users": 9}
+        assert session.scalar(select(func.count()).select_from(User)) == 9
+        assert session.scalar(select(func.count()).select_from(Company)) == 7
         assert session.scalar(select(func.count()).select_from(Product)) == 3
         assert before == after  # хэш не пересчитан
 

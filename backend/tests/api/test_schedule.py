@@ -26,7 +26,7 @@ def test_schedule_of_approved_offer(client: TestClient) -> None:
     offer = app["active_offer"]
     assert body["offer_id"] == offer["id"]
     assert (body["amount"], body["term_months"], body["rate"], body["monthly_payment"]) == (
-        "3000000.00", 12, "18.00", "275040.00",
+        "3000000.00", 12, "18.00", "275039.98",
     )  # fmt: skip
     items = body["items"]
     assert len(items) == 12
@@ -47,7 +47,7 @@ def test_schedule_of_counter_offer_uses_offered_terms(client: TestClient) -> Non
     assert (body["term_months"], body["rate"], body["monthly_payment"]) == (
         24,
         "20.00",
-        "101792.00",
+        "101791.61",
     )
     assert len(body["items"]) == 24
 

@@ -29,8 +29,12 @@ LOAN_FIELDS = {"type", "balance", "monthly_payment", "max_overdue_days_24m", "cu
 def test_fixtures_follow_mock_contract_and_cite_sources(source: str) -> None:
     raw = json.loads((FIXTURES / f"{source}.json").read_text(encoding="utf-8"))
 
-    assert raw["_meta"]["status"].startswith("draft")
+    assert raw["_meta"]["status"].startswith("synthetic")
     for inn, entry in ((k, v) for k, v in raw.items() if not k.startswith("_")):
+        if "http_status" in entry:  # режим «источник отвечает ошибкой»
+            assert entry["http_status"] >= 400 and "response" not in entry, inn
+            assert entry["sources"], f"{source}/{inn}: нет происхождения значений"
+            continue
         assert set(entry["response"]) == CONTRACT_FIELDS[source], inn
         assert entry["sources"], f"{source}/{inn}: нет происхождения значений"
         for loan in entry["response"].get("loans", []):
@@ -39,7 +43,7 @@ def test_fixtures_follow_mock_contract_and_cite_sources(source: str) -> None:
 
 @pytest.fixture(scope="module")
 def sources() -> FixtureSourceClient:
-    return FixtureSourceClient(FIXTURES)
+    return FixtureSourceClient(FIXTURES, retries=2)
 
 
 def test_known_inn_returns_contract_response(sources: FixtureSourceClient) -> None:
@@ -55,8 +59,17 @@ def test_missing_registry_entry_is_not_found(sources: FixtureSourceClient) -> No
 
 
 def test_missing_fns_or_bki_entry_is_unavailable(sources: FixtureSourceClient) -> None:
-    assert sources.fetch("fns_tb", "7701000026").state == SourceState.UNAVAILABLE
-    assert sources.fetch("bki", "7701000026").state == SourceState.UNAVAILABLE
+    assert sources.fetch("fns_tb", "7701000072").state == SourceState.UNAVAILABLE
+    assert sources.fetch("bki", "7701000072").state == SourceState.UNAVAILABLE
+
+
+def test_server_error_entry_is_unavailable_after_all_retries(sources: FixtureSourceClient) -> None:
+    # Сбой-Тест: по плану (раздел 8) БКИ всегда отвечает 503.
+    result = sources.fetch("bki", "7701000065")
+
+    assert (result.state, result.attempts, result.error) == (
+        SourceState.UNAVAILABLE, 3, "HTTP 503",
+    )  # fmt: skip
 
 
 def test_parsing_bakery_responses(sources: FixtureSourceClient) -> None:
