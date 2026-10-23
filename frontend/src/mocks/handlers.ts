@@ -236,9 +236,10 @@ export const handlers = [
 
   http.get(`${API}/documents/:id`, async ({ params, request }) => {
     await delay(200);
-    if (!currentUser(request)) return errorJson(401, 'unauthorized', 'Войдите заново');
+    const user = currentUser(request);
+    if (!user) return errorJson(401, 'unauthorized', 'Войдите заново');
     try {
-      const { blob, doc } = db.file(String(params.id));
+      const { blob, doc } = db.file(String(params.id), user.role === 'client' ? (user.company?.id ?? null) : null);
       return new HttpResponse(blob, {
         headers: {
           'Content-Type': doc.mime,

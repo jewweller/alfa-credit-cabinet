@@ -10,8 +10,12 @@ import { applySurface } from './theme/surface';
 
 applySurface();
 
+/**
+ * Моки включаются флагом сборки VITE_USE_MOCKS — и в dev, и в образе Docker (пока бэк
+ * не закрывает весь путь: подписание и кабинет банка). false — все запросы идут в /api.
+ */
 async function enableMocks() {
-  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS === 'true') {
+  if (import.meta.env.VITE_USE_MOCKS === 'true') {
     const { worker } = await import('./mocks/browser');
     // msw 3: опция называется onUnhandledFrame (в v2 была onUnhandledRequest).
     await worker.start({ onUnhandledFrame: 'bypass' });

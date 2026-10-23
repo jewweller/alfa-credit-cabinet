@@ -114,7 +114,7 @@ export const users: Me[] = [
   // Клиенты только для очереди банка (B2): своих учёток для демо у них нет, заявки — в исходных данных.
   {
     id: '5a0e7d6c-0000-4000-8000-0000000000a5',
-    email: 'vector@demo.local',
+    email: 'vektor@demo.local',
     full_name: 'Павел Гришин',
     role: 'client',
     company: company('000c5', '7701000033', 'ООО «Вектор»', 'LLC', '46.90', 'small'),
@@ -128,7 +128,7 @@ export const users: Me[] = [
   },
   {
     id: '5a0e7d6c-0000-4000-8000-0000000000a7',
-    email: 'sboi@demo.local',
+    email: 'sboy@demo.local',
     full_name: 'Игорь Сбоев',
     role: 'client',
     company: company('000c7', '7701000065', 'ООО «Сбой-Тест»', 'LLC', '62.01', 'small'),
@@ -183,7 +183,7 @@ export const registry: CompanyLookup[] = [
     ogrn: '324500100002020',
     name: 'Мельникова Елена Викторовна',
     status: 'ACTIVE',
-    registered_at: '2024-04-10',
+    registered_at: '2025-04-23',
     okved_main: '96.02',
     okved_extra: [],
     region: 'Московская область',
@@ -340,10 +340,7 @@ export function seedApplications(): MockApplication[] {
         info_request: {
           id: '1fe00000-0000-4000-8000-000000001042',
           status: 'open',
-          items: [
-            { kind: 'tax_return', title: 'Налоговая декларация за 2025 год', required: true },
-            { kind: 'bank_statement', title: 'Выписка по расчётному счёту за 6 месяцев', required: false },
-          ],
+          items: [{ kind: 'tax_return', title: 'Декларация или выписка за прошлый год', required: true }],
           message:
             'Выручка в заявке отличается от данных ФНС. Подтвердите её декларацией — так мы быстрее примем решение.',
           created_at: minutesAgo(10 * MIN),
@@ -471,7 +468,7 @@ export function seedApplications(): MockApplication[] {
       // ООО «Вектор»: текущая просрочка 120 дней — автоматический отказ (R2).
       detail: {
         ...base,
-        ...applicantOf('vector@demo.local'),
+        ...applicantOf('vektor@demo.local'),
         id: 'a-1060',
         number: '1060',
         product_id: PRODUCT_IDS.EXPRESS_WC,
@@ -512,7 +509,7 @@ export function seedApplications(): MockApplication[] {
       // ООО «Сбой-Тест»: БКИ не ответило после 2 повторов — ждёт специалиста (R3).
       detail: {
         ...base,
-        ...applicantOf('sboi@demo.local'),
+        ...applicantOf('sboy@demo.local'),
         id: 'a-1066',
         number: '1066',
         product_id: PRODUCT_IDS.OVERDRAFT,

@@ -64,7 +64,7 @@ export class MockHttpError extends Error {
   }
 }
 
-const STORAGE_KEY = 'mock-db-v4';
+const STORAGE_KEY = 'mock-db-v5';
 const apps = new Map<string, MockApplication>();
 const files = new Map<string, Blob>();
 const idempotent = new Map<string, unknown>();
@@ -302,6 +302,11 @@ for (const id of apps.keys()) {
   if (apps.get(id)!.detail.status === 'SIGNED') scheduleIssue(id);
 }
 
+/** Карточка наружу — как на бэке: запрос документов виден только в статусе INFO_REQUESTED. */
+function view(detail: ApplicationDetail): ApplicationDetail {
+  return detail.status === 'INFO_REQUESTED' ? detail : { ...detail, info_request: null };
+}
+
 // ── Кабинет банка: что видит андеррайтер ─────────────────────────────────────
 
 /** До конца обогащения ответов источников ещё нет; до решения нет скоринга и правил. */
@@ -348,7 +353,7 @@ function bankDecisionOf(app: MockApplication): BankDecision | null {
 function bankDetailOf(app: MockApplication): BankApplicationDetail {
   const ev = evaluation(app);
   return {
-    application: app.detail,
+    application: view(app.detail),
     company: companyOf(app),
     applicant_name: users.find((u) => u.id === app.detail.applicant_id)?.full_name ?? '—',
     registry: sourcesOf(app.detail).registry,
@@ -442,7 +447,7 @@ export const db = {
   },
 
   get(id: string): ApplicationDetail {
-    return find(id).detail;
+    return view(find(id).detail);
   },
 
   history(id: string) {
@@ -514,7 +519,7 @@ export const db = {
     const changes = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
     app.detail = { ...app.detail, ...changes, version: app.detail.version + 1 };
     save();
-    return app.detail;
+    return view(app.detail);
   },
 
   submit(id: string, key: string | null): ApplicationDetail {
@@ -528,7 +533,7 @@ export const db = {
       app.detail = { ...app.detail, submitted_at: app.detail.status_changed_at };
       save();
       continuePipeline(id);
-      return app.detail;
+      return view(app.detail);
     });
   },
 
@@ -539,7 +544,7 @@ export const db = {
       transition(app, 'SIGNING', 'client');
       setOfferStatus(app, offerId, 'accepted');
       save();
-      return app.detail;
+      return view(app.detail);
     });
   },
 
@@ -550,7 +555,7 @@ export const db = {
       transition(app, 'DECLINED_BY_CLIENT', 'client');
       setOfferStatus(app, offerId, 'declined');
       save();
-      return app.detail;
+      return view(app.detail);
     });
   },
 
@@ -582,7 +587,7 @@ export const db = {
       transition(app, 'SIGNED', 'client');
       save();
       scheduleIssue(id);
-      return app.detail;
+      return view(app.detail);
     });
   },
 
@@ -612,10 +617,14 @@ export const db = {
     return doc;
   },
 
-  file(documentId: string): { blob: Blob; doc: DocumentInfo } {
+  /** Файл заявки; companyId — компания клиента (сотрудник банка — null): чужой файл → 403, как на бэке. */
+  file(documentId: string, companyId: string | null): { blob: Blob; doc: DocumentInfo } {
     for (const app of apps.values()) {
       const doc = app.detail.documents.find((d) => d.id === documentId);
       const blob = files.get(documentId);
+      if (doc && companyId && app.detail.company_id !== companyId) {
+        throw new MockHttpError(403, 'forbidden', 'Нет доступа к файлу');
+      }
       if (doc && blob) return { blob, doc };
     }
     throw new MockHttpError(404, 'not_found', 'Файл не найден');
@@ -646,7 +655,7 @@ export const db = {
       };
       save();
       continuePipeline(id);
-      return app.detail;
+      return view(app.detail);
     });
   },
 
@@ -659,7 +668,7 @@ export const db = {
         info_request: app.detail.info_request ? { ...app.detail.info_request, status: 'answered' } : null,
       };
       save();
-      return app.detail;
+      return view(app.detail);
     });
   },
 
