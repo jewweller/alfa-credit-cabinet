@@ -1,0 +1,21 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+/* Первое поле занимает всю свободную ширину, кнопка — по содержимому. */
+.inline > :first-child {
+  flex: 1 1 180px;
+}
+
+.contents {
+  display: contents;
+}

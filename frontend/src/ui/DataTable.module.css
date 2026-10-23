@@ -39,24 +39,45 @@
   padding-right: 0;
 }
 
-.row {
-  cursor: pointer;
+.table tbody tr {
   animation: enter-up var(--duration-base) var(--ease-out) both;
   animation-delay: calc(var(--stagger) * var(--i, 0) / 2);
   transition: background-color var(--duration-fast) ease;
 }
 
-.row:hover {
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
   background: var(--control-fill-hover);
 }
 
-/* Ждёт специалиста — тонкая метка акцентом у номера. */
-.waiting td:first-child {
+/* Строка требует внимания — тонкая метка акцентом у первой ячейки. */
+.accent td:first-child {
   box-shadow: inset 2px 0 0 var(--color-accent);
   padding-left: var(--space-3);
 }
 
-.company {
+.end {
+  text-align: right !important;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.title {
   display: block;
   max-width: 260px;
   overflow: hidden;
@@ -66,77 +87,51 @@
   text-decoration: none;
 }
 
-.company:hover {
+.title:hover {
   text-decoration: underline;
 }
 
-.company:focus-visible {
+.title:focus-visible {
   outline: none;
   border-radius: 4px;
   box-shadow: var(--shadow-focus);
 }
 
-.inn,
-.mono {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-faint);
-}
-
-.inn {
+.meta {
   display: block;
   margin-top: 2px;
+  font-family: var(--font-mono);
   font-size: var(--font-size-2xs);
   letter-spacing: var(--tracking-mono);
-}
-
-.num {
-  text-align: right !important;
-}
-
-.strong {
-  font-weight: var(--font-weight-bold);
-}
-
-.muted {
-  color: var(--color-text-muted);
-}
-
-.faint {
   color: var(--color-text-faint);
 }
 
-.inlineStatus {
+.narrowOnly {
   display: none;
 }
 
-/* Колонки убираем по ширине самой таблицы — без прокрутки вбок. */
 @container (max-width: 940px) {
-  .wide {
+  .hideMedium {
     display: none;
   }
 }
 
 @container (max-width: 600px) {
-  .mid {
+  .hideSmall {
     display: none;
   }
 
-  .narrowHide {
-    display: none;
+  /* Первая колонка спрятана — следующая встаёт к краю. */
+  .table :is(th, td).hideSmall:first-child + :is(th, td) {
+    padding-left: 0;
   }
 
-  .inlineStatus {
+  .narrowOnly {
     display: block;
     margin-top: var(--space-2);
   }
 
-  .table td:nth-child(2),
-  .table th:nth-child(2) {
-    padding-left: 0;
-  }
-
-  .company {
+  .title {
     max-width: 180px;
   }
 }

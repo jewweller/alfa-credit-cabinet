@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run check:layers && tsc --noEmit && vite build",
+    "check:layers": "node scripts/check-layers.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "api:types": "npx --yes -p typescript@5 -p openapi-typescript@7 openapi-typescript ${OPENAPI_PATH:-../docs/api/openapi.json} -o src/api/schema.ts"

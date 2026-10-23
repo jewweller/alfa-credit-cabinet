@@ -10,10 +10,21 @@ import type {
   UnderwriterOutcome,
 } from '../../api/types';
 import { BANK } from '../../i18n/ru';
-import { Button, Checkbox, ChoiceCards, FormGrid, InlineAlert, KeyValueList, MoneyField, TextField } from '../../ui';
+import {
+  Button,
+  Checkbox,
+  CheckboxGroup,
+  ChoiceCards,
+  Form,
+  FormGrid,
+  InlineAlert,
+  InsetBox,
+  KeyValueList,
+  MoneyField,
+  TextField,
+} from '../../ui';
 import { formatMoney, formatPercent, formatRate } from '../format';
 import { monthlyPayment } from '../loanMath';
-import styles from './DecisionForm.module.css';
 
 const OUTCOMES: UnderwriterOutcome[] = ['approved', 'counter_offer', 'info_requested', 'rejected'];
 const DOCUMENTS: DocumentKind[] = ['tax_return', 'bank_statement', 'financial_statements', 'contract', 'other'];
@@ -138,7 +149,7 @@ export function DecisionForm({
   };
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate>
+    <Form onSubmit={submit}>
       <ChoiceCards
         label={D.outcomeLabel}
         columns={2}
@@ -209,8 +220,7 @@ export function DecisionForm({
       )}
 
       {showPreview && (
-        <div className={styles.preview}>
-          <span className={styles.previewLabel}>{D.preview}</span>
+        <InsetBox label={D.preview}>
           <KeyValueList
             columns={3}
             items={[
@@ -219,13 +229,12 @@ export function DecisionForm({
               ...(fnsRevenue ? [loadItem(D.loadByFns, fnsRevenue)] : []),
             ]}
           />
-        </div>
+        </InsetBox>
       )}
 
       {outcome === 'info_requested' && (
         <>
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>{D.documents}</legend>
+          <CheckboxGroup legend={D.documents} error={fieldError('info_items')}>
             {DOCUMENTS.map((kind) => (
               <Checkbox
                 key={kind}
@@ -240,8 +249,7 @@ export function DecisionForm({
                 label={D.documentTitles[kind]}
               />
             ))}
-            {fieldError('info_items') && <InlineAlert>{fieldError('info_items')!}</InlineAlert>}
-          </fieldset>
+          </CheckboxGroup>
           <TextField
             label={D.message}
             value={message}
@@ -275,11 +283,11 @@ export function DecisionForm({
 
       {error && !serverField && <InlineAlert>{D.error}</InlineAlert>}
 
-      <div className={styles.actions}>
+      <div>
         <Button type="submit" size="lg" arrow disabled={busy || !outcome}>
           {D.submit}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }

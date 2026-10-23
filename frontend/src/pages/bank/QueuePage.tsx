@@ -7,8 +7,18 @@ import { ClientHeader } from '../../features/session/ClientHeader';
 import { useMe } from '../../features/session/useMe';
 import { useNow } from '../../features/useNow';
 import { BANK, HOME, type QueueGroup } from '../../i18n/ru';
-import { AppShell, EmptyState, ErrorBanner, FilterChips, Hero, InlineAlert, MetaNote, Panel, SkeletonCard } from '../../ui';
-import styles from './QueuePage.module.css';
+import {
+  AppShell,
+  EmptyState,
+  ErrorBanner,
+  FilterBar,
+  FilterChips,
+  Hero,
+  InlineAlert,
+  MetaNote,
+  Panel,
+  SkeletonCard,
+} from '../../ui';
 
 const GROUPS: QueueGroup[] = ['all', 'review', 'pipeline', 'client', 'closed'];
 const GRADES: Grade[] = ['A', 'B', 'C', 'D', 'E'];
@@ -42,7 +52,7 @@ export function QueuePage() {
     : null;
 
   const filters = (
-    <div className={styles.filters}>
+    <FilterBar>
       <FilterChips label={Q.filters.group} value={group} onChange={setGroup} options={GROUPS.map((g) => ({ value: g, label: Q.group[g] }))} />
       <FilterChips
         label={Q.filters.grade}
@@ -56,7 +66,7 @@ export function QueuePage() {
         onChange={setProductId}
         options={[{ value: ANY, label: Q.any }, ...productList.map((p) => ({ value: p.id, label: p.name }))]}
       />
-    </div>
+    </FilterBar>
   );
 
   return (
