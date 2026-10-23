@@ -14,6 +14,8 @@ _CODE_BY_STATUS: dict[int, ErrorCode] = {
     404: ErrorCode.NOT_FOUND,
     405: ErrorCode.METHOD_NOT_ALLOWED,
     409: ErrorCode.CONFLICT,
+    413: ErrorCode.FILE_TOO_LARGE,
+    415: ErrorCode.UNSUPPORTED_MEDIA_TYPE,
 }
 
 # Части пути ошибки валидации, которые говорят «где», а не «какое поле».

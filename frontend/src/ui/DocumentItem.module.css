@@ -1,0 +1,126 @@
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--control-fill);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  animation: enter-up var(--duration-slow) var(--ease-out) both;
+  animation-delay: calc(var(--stagger) * var(--i, 0));
+  transition: box-shadow var(--duration-base) ease;
+}
+
+.pending {
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
+.done {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.check {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-accent-contrast);
+  transition:
+    background-color var(--duration-base) ease,
+    border-color var(--duration-base) ease;
+}
+
+.done .check {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  animation: pop var(--duration-base) var(--ease-out) both;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.tag {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.pending .tag {
+  color: var(--color-accent);
+}
+
+.done .tag {
+  color: var(--color-success);
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 0 0 34px;
+  list-style: none;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  animation: enter-up var(--duration-base) var(--ease-out) both;
+}
+
+.fileIcon {
+  flex: none;
+  color: var(--color-text-faint);
+}
+
+.fileName {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.fileName:hover {
+  text-decoration: underline;
+}
+
+.fileMeta {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-faint);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.6);
+  }
+  to {
+    transform: none;
+  }
+}

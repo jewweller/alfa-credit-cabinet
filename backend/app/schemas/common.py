@@ -1,11 +1,14 @@
 """Общие типы контракта API: деньги, ставки, ИНН и единый формат ошибок (план, раздел 10)."""
 
 import re
+from collections.abc import Mapping
 from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Any
 
 from pydantic import BaseModel, BeforeValidator, Field, PlainSerializer, WithJsonSchema
+from pydantic.json_schema import GetJsonSchemaHandler, JsonSchemaValue
+from pydantic_core import CoreSchema
 
 DECIMAL_2_PATTERN = r"^\d+\.\d{2}$"
 INN_PATTERN = r"^(\d{10}|\d{12})$"
@@ -62,6 +65,30 @@ Rate = Annotated[
 ]
 
 
+class DescribedStrEnum(StrEnum):
+    """StrEnum с пояснением к каждому значению.
+
+    Пояснения попадают в OpenAPI дважды: списком в `description` (видно в Swagger)
+    и массивом `x-enum-descriptions` (из него openapi-typescript делает комментарии к типам).
+    """
+
+    @classmethod
+    def value_descriptions(cls) -> Mapping[str, str]:
+        raise NotImplementedError
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        schema = handler.resolve_ref_schema(handler(core_schema))
+        descriptions = cls.value_descriptions()
+        intro = (cls.__doc__ or "").strip()
+        items = "\n".join(f"- `{member.value}` — {descriptions[member]}" for member in cls)
+        schema["description"] = f"{intro}\n\n{items}" if intro else items
+        schema["x-enum-descriptions"] = [descriptions[member] for member in cls]
+        return schema
+
+
 class ErrorCode(StrEnum):
     """Технические коды ошибок. Предварительный контракт: в плане не закреплены, TBD."""
 
@@ -75,6 +102,10 @@ class ErrorCode(StrEnum):
     VERSION_CONFLICT = "version_conflict"
     COMPANY_NOT_FOUND = "company_not_found"
     UPSTREAM_UNAVAILABLE = "upstream_unavailable"
+    OFFER_NOT_ACTIVE = "offer_not_active"
+    DOCUMENTS_REQUIRED = "documents_required"
+    FILE_TOO_LARGE = "file_too_large"
+    UNSUPPORTED_MEDIA_TYPE = "unsupported_media_type"
     HTTP_ERROR = "http_error"
 
 

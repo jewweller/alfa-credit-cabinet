@@ -2,6 +2,7 @@
 
 from datetime import date
 from enum import StrEnum
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +12,11 @@ from app.schemas.common import INN_PATTERN
 class CompanyKind(StrEnum):
     LLC = "LLC"
     IE = "IE"
+
+
+class CompanySegment(StrEnum):
+    MICRO = "micro"
+    SMALL = "small"
 
 
 class CompanyRegistryStatus(StrEnum):
@@ -38,3 +44,14 @@ class CompanyLookupResponse(BaseModel):
     region: str
     address: str | None = Field(default=None, description="Только для ЕГРЮЛ.")
     director_fio: str | None = Field(default=None, description="Только для ЕГРЮЛ.")
+
+
+class CompanyBrief(BaseModel):
+    """Компания клиента в профиле: показываем в шапке, от чьего имени он работает."""
+
+    id: UUID
+    inn: str = Field(pattern=INN_PATTERN, examples=["7701000019"])
+    name: str = Field(examples=["ООО «Пекарня Север»"])
+    kind: CompanyKind
+    okved_main: str = Field(examples=["10.71"])
+    segment: CompanySegment

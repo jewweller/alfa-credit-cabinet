@@ -1,0 +1,71 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  animation: enter-up var(--duration-slow) var(--ease-out) both;
+  animation-delay: calc(var(--stagger) * var(--i, 0));
+}
+
+.mark {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-accent-contrast);
+}
+
+.done .mark {
+  background: var(--stage-complete);
+  border-color: var(--stage-complete);
+}
+
+.current .mark {
+  border-color: var(--stage-current);
+  border-right-color: transparent;
+  animation: spin 0.9s linear infinite;
+}
+
+.note .mark {
+  width: 22px;
+  border: 0;
+}
+
+.note .mark::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.todo .title {
+  color: var(--color-text-faint);
+}
+
+.current .title {
+  font-weight: var(--font-weight-medium);
+}
+
+.done .title {
+  color: var(--color-text-muted);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

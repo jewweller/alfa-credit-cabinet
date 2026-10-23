@@ -1,0 +1,315 @@
+/*
+ * Дизайн-токены. Направление «Альфа, следующая версия»:
+ * вся страница — тёмный красный градиент с медленным свечением, светлые
+ * только рабочие поверхности (карточки, лента). Фирменный красный,
+ * моноширинные подписи-«телеметрия», мягкие «клавишные» тени.
+ * Всё оформление меняется здесь: компоненты берут значения только отсюда.
+ */
+:root {
+  /* Фон страницы: тёмный, с красным градиентом и свечением */
+  --color-bg: #0e0a0b;
+  --page-gradient: linear-gradient(180deg, #170b0c 0%, #0e0a0b 45%, #0b0b0d 100%);
+  --page-glow-1: rgba(239, 49, 36, 0.42);
+  --page-glow-2: rgba(170, 28, 20, 0.38);
+  --page-glow-3: rgba(255, 112, 84, 0.14);
+  --page-dots: rgba(255, 255, 255, 0.05);
+
+  /* Рабочие поверхности (светлые) */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f7f8;
+  --color-surface-sunken: #eef0f2;
+
+  /* Текст */
+  --color-text: #0b0b0d;
+  --color-text-muted: #66686e;
+  --color-text-faint: #9a9ca1;
+
+  /* Линии */
+  --color-border: #e5e6e9;
+  --color-border-strong: #d4d6da;
+
+  /* Фирменный акцент */
+  --color-accent: #ef3124;
+  --color-accent-hover: #dc2618;
+  --color-accent-pressed: #c52015;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: #fff1ef;
+  --color-accent-border: rgba(239, 49, 36, 0.22);
+  --color-accent-glow: rgba(239, 49, 36, 0.55);
+
+  /* Всё, что лежит прямо на тёмном фоне */
+  --color-night: #0b0c0e;
+  --color-night-raised: #15171a;
+  --color-night-line: rgba(255, 255, 255, 0.08);
+  --color-night-text: #ffffff;
+  --color-night-muted: #9c9da1;
+  --color-night-glass: rgba(16, 10, 11, 0.86);
+  --color-night-button: #ececec;
+  --color-night-button-hover: #ffffff;
+  --color-night-button-text: #18191b;
+
+  /* Статусы */
+  --color-success: #14804a;
+  --color-success-soft: #e4f5ec;
+  --color-danger: #c4231a;
+  --color-danger-soft: #fdeceb;
+  --color-progress: #2a5bd7;
+  --color-progress-soft: #e9efff;
+  --color-neutral: #66686e;
+  --color-neutral-soft: #eef0f2;
+
+  --status-action: var(--color-accent);
+  --status-action-bg: var(--color-accent-soft);
+  --status-progress: var(--color-progress);
+  --status-progress-bg: var(--color-progress-soft);
+  --status-approved: var(--color-success);
+  --status-approved-bg: var(--color-success-soft);
+  --status-rejected: var(--color-danger);
+  --status-rejected-bg: var(--color-danger-soft);
+  --status-neutral: var(--color-neutral);
+  --status-neutral-bg: var(--color-neutral-soft);
+
+  /* Этапы заявки */
+  --stage-done: var(--color-text);
+  --stage-current: var(--color-accent);
+  --stage-complete: var(--color-success);
+  --stage-failed: var(--color-danger);
+  --stage-todo: var(--color-border-strong);
+
+  --color-skeleton: #e8e9ec;
+  --color-skeleton-shine: #f5f6f7;
+
+  /* Шрифты */
+  --font-family: 'Inter Variable', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-features: 'calt', 'kern', 'liga', 'cv11', 'ss03';
+
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 28px;
+  --font-size-display: 44px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --line-height: 1.45;
+  --line-height-tight: 1.12;
+  --tracking-mono: 0.06em;
+  --tracking-display: -0.01em;
+
+  /* Скругления */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* Отступы, шаг 4 px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 56px;
+  --space-9: 80px;
+
+  /* Тени: «клавиша» — светлый блик сверху, тонкое кольцо, мягкая глубина */
+  --shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(11, 12, 14, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.12),
+    0 24px 48px -24px rgba(0, 0, 0, 0.55);
+  --shadow-card-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(11, 12, 14, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.14),
+    0 32px 60px -24px rgba(0, 0, 0, 0.65);
+  --shadow-button:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.16),
+    0 1px 2px rgba(11, 12, 14, 0.12);
+  --shadow-night-key:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-focus: 0 0 0 3px rgba(239, 49, 36, 0.3);
+
+  /* Движение */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 140ms;
+  --duration-base: 260ms;
+  --duration-slow: 600ms;
+  --stagger: 70ms;
+
+  /* Сетка */
+  --layout-max-width: 1200px;
+  --layout-aside-width: 352px;
+  --layout-gutter: 16px;
+  --header-height: 64px;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --layout-gutter: 24px;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Рабочие поверхности: «жемчуг» (по умолчанию) и «графит».
+ * Переключаются атрибутом data-surface на <html> — переключатель
+ * в шапке, см. theme/surface.ts.
+ * ────────────────────────────────────────────────────────────── */
+
+/* Базовые значения; оба варианта ниже их переопределяют. */
+:root {
+  --surface-fill: var(--color-surface);
+  --control-fill: var(--color-surface);
+  --control-fill-hover: var(--color-surface-muted);
+  --shadow-control:
+    inset 0 0 0 1px var(--color-border-strong),
+    0 1px 2px rgba(11, 12, 14, 0.04);
+  --shadow-control-hover:
+    inset 0 0 0 1px var(--color-text-faint),
+    0 1px 2px rgba(11, 12, 14, 0.06);
+  --highlight-fill:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.98)),
+    linear-gradient(135deg, var(--color-accent-soft), var(--color-surface));
+  --shadow-highlight:
+    inset 0 1px 0 #fff,
+    0 0 0 1px var(--color-accent-border),
+    0 0 0 6px rgba(239, 49, 36, 0.12),
+    0 32px 64px -28px rgba(0, 0, 0, 0.7);
+  --error-ring: rgba(196, 35, 26, 0.18);
+}
+
+/* Жемчуг — тёплый светло-серый, «чуть темнее белого». */
+:root[data-surface='pearl'] {
+  --color-surface: #efebe6;
+  --color-surface-muted: #e7e2dc;
+  --color-surface-sunken: #dfd9d2;
+  --color-text: #17120f;
+  --color-text-muted: #625a54;
+  --color-text-faint: #8f867f;
+  --color-border: rgba(40, 24, 18, 0.1);
+  --color-border-strong: rgba(40, 24, 18, 0.18);
+  --color-accent-soft: #f7ddd7;
+  --color-skeleton: #e2dcd5;
+  --color-skeleton-shine: #f1ece6;
+
+  /* Перламутр: тёплый → розоватый → холодный перелив по диагонали. */
+  --surface-fill: linear-gradient(
+    145deg,
+    #f6f2ed 0%,
+    #ede7e1 38%,
+    #f0e8eb 68%,
+    #e9eaee 100%
+  );
+  --control-fill: rgba(255, 255, 255, 0.55);
+  --control-fill-hover: rgba(255, 255, 255, 0.85);
+  --shadow-control:
+    inset 0 1px 0 #fff,
+    inset 0 0 0 1px rgba(40, 24, 18, 0.14),
+    0 1px 2px rgba(40, 24, 18, 0.08);
+  --shadow-control-hover:
+    inset 0 1px 0 #fff,
+    inset 0 0 0 1px rgba(40, 24, 18, 0.24),
+    0 2px 6px rgba(40, 24, 18, 0.1);
+
+  /* Светящиеся жемчужные края: яркий блик сверху, белый контур,
+     мягкое белое сияние наружу на тёмный фон. */
+  --shadow-card:
+    inset 0 1px 0 #fff,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    0 0 0 1px rgba(255, 246, 240, 0.35),
+    0 0 26px -6px rgba(255, 236, 228, 0.32),
+    0 28px 56px -28px rgba(0, 0, 0, 0.8);
+  --shadow-card-hover:
+    inset 0 1px 0 #fff,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.85),
+    0 0 0 1px rgba(255, 246, 240, 0.5),
+    0 0 36px -4px rgba(255, 236, 228, 0.45),
+    0 36px 64px -28px rgba(0, 0, 0, 0.85);
+
+  /* Блок действий: перламутр с красным отсветом из угла. */
+  --highlight-fill:
+    radial-gradient(120% 90% at 0% 0%, rgba(239, 49, 36, 0.16), transparent 60%),
+    linear-gradient(145deg, #f6f1ec 0%, #eee7e2 50%, #ebe8ec 100%);
+  --shadow-highlight:
+    inset 0 1px 0 #fff,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    0 0 0 1px var(--color-accent-border),
+    0 0 48px -12px rgba(239, 49, 36, 0.4),
+    0 32px 64px -28px rgba(0, 0, 0, 0.85);
+}
+
+/* Графит — тёплый тёмный, «премиальный»: светлый текст, тонкие светящиеся
+   контуры, красный только на действиях. */
+:root[data-surface='graphite'] {
+  --color-surface: #1a1617;
+  --color-surface-muted: #221d1e;
+  --color-surface-sunken: #2a2426;
+
+  --color-text: #f5f0eb;
+  --color-text-muted: #b0a7a2;
+  --color-text-faint: #8f8681;
+
+  --color-border: rgba(255, 240, 230, 0.08);
+  --color-border-strong: rgba(255, 240, 230, 0.16);
+
+  --color-accent-soft: rgba(239, 49, 36, 0.14);
+  --color-accent-border: rgba(255, 92, 76, 0.38);
+
+  --color-success: #4fd393;
+  --color-success-soft: rgba(79, 211, 147, 0.12);
+  --color-danger: #ff6d61;
+  --color-danger-soft: rgba(255, 92, 76, 0.13);
+  --color-progress: #93b2ff;
+  --color-progress-soft: rgba(120, 156, 255, 0.14);
+  --color-neutral: #b0a7a2;
+  --color-neutral-soft: rgba(255, 240, 230, 0.07);
+
+  --stage-done: #f5f0eb;
+  --stage-todo: rgba(255, 240, 230, 0.2);
+
+  --color-skeleton: rgba(255, 240, 230, 0.06);
+  --color-skeleton-shine: rgba(255, 240, 230, 0.12);
+
+  --surface-fill: linear-gradient(180deg, #1e191a 0%, #161213 100%);
+  --control-fill: rgba(255, 240, 230, 0.04);
+  --control-fill-hover: rgba(255, 240, 230, 0.09);
+  --shadow-control:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px var(--color-border-strong);
+  --shadow-control-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 240, 230, 0.28);
+
+  --shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(255, 240, 230, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 28px 56px -28px rgba(0, 0, 0, 0.9);
+  --shadow-card-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(255, 240, 230, 0.14),
+    0 4px 8px rgba(0, 0, 0, 0.32),
+    0 36px 64px -28px rgba(0, 0, 0, 0.95);
+
+  /* Блок действий: тёмный с красным отсветом из угла. */
+  --highlight-fill:
+    radial-gradient(120% 90% at 0% 0%, rgba(239, 49, 36, 0.22), transparent 60%),
+    linear-gradient(180deg, #1f1919 0%, #171314 100%);
+  --shadow-highlight:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 0 1px var(--color-accent-border),
+    0 0 48px -12px rgba(239, 49, 36, 0.35),
+    0 32px 64px -28px rgba(0, 0, 0, 0.9);
+
+  --error-ring: rgba(255, 92, 76, 0.3);
+}
