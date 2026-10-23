@@ -1,0 +1,74 @@
+[
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000aa",
+    "email": "bakery@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Ирина Соколова",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000cc"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a2",
+    "email": "kovalev@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Андрей Ковалёв",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c2"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a3",
+    "email": "stroy@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Олег Белов",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c3"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a4",
+    "email": "melnikova@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Елена Мельникова",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c4"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a5",
+    "email": "vektor@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Павел Гришин",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c5"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a6",
+    "email": "mirage@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Анна Зайцева",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c6"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000a7",
+    "email": "sboy@demo.local",
+    "password": "Demo2026!",
+    "role": "client",
+    "full_name": "Игорь Сбоев",
+    "company_id": "5a0e7d6c-0000-4000-8000-0000000000c7"
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000b1",
+    "email": "underwriter@demo.local",
+    "password": "Demo2026!",
+    "role": "underwriter",
+    "full_name": "Дмитрий Орлов",
+    "company_id": null
+  },
+  {
+    "id": "5a0e7d6c-0000-4000-8000-0000000000b2",
+    "email": "admin@demo.local",
+    "password": "Demo2026!",
+    "role": "admin",
+    "full_name": "Администратор стенда",
+    "company_id": null
+  }
+]

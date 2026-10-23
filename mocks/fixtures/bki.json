@@ -1,0 +1,145 @@
+{
+  "_meta": {
+    "status": "synthetic — значения, которых нет в плане, решены backend по поручению команды (аналитик не участвовал): docs/analyst-questions.md, раздел 8",
+    "contract": "POST /bki/v1/reports {inn, consent: true} — docs/plan.md, раздел 8",
+    "sources": {
+      "P7": "docs/plan.md, раздел 7 (примеры расчёта)",
+      "DERIVED": "однозначно следует из баллов или формулировок плана",
+      "TECH": "технический идентификатор демо-ответа, бизнес-смысла не несёт",
+      "TBD": "в источниках нет; движком не используется",
+      "DECIDED": "решено backend (DECIDED): значения нет в плане, выбрано так, чтобы получился исход из P8"
+    }
+  },
+  "7701000019": {
+    "response": {
+      "report_id": "demo-7701000019",
+      "has_history": true,
+      "bankruptcy": false,
+      "loans": [
+        {
+          "type": null,
+          "balance": null,
+          "monthly_payment": 150000,
+          "max_overdue_days_24m": 0,
+          "current_overdue_days": 0
+        }
+      ],
+      "inquiries_30d": null
+    },
+    "sources": {
+      "report_id": "TECH",
+      "has_history": "DERIVED: F2 = 25 «нет просрочек за 24 мес»",
+      "bankruptcy": "DERIVED: план, «всё чисто»",
+      "loans[0].monthly_payment": "P7 «платежи по кредитам 150 тыс ₽/мес»; разбивка по кредитам TBD (D6)",
+      "loans[0].max_overdue_days_24m": "P7 «просрочек нет»",
+      "loans[0].current_overdue_days": "P7 «просрочек нет»",
+      "loans[0].type": "TBD",
+      "loans[0].balance": "TBD",
+      "inquiries_30d": "TBD"
+    }
+  },
+  "500100001072": {
+    "response": {
+      "report_id": "demo-500100001072",
+      "has_history": true,
+      "bankruptcy": false,
+      "loans": [
+        {
+          "type": null,
+          "balance": null,
+          "monthly_payment": 60000,
+          "max_overdue_days_24m": 30,
+          "current_overdue_days": 0
+        }
+      ],
+      "inquiries_30d": null
+    },
+    "sources": {
+      "report_id": "TECH",
+      "has_history": "P7 «одна просрочка до 30 дней»",
+      "bankruptcy": "DERIVED: R2 в плане не срабатывает",
+      "loans[0].monthly_payment": "P7 «платежи 60 тыс ₽/мес»; разбивка TBD (D6)",
+      "loans[0].max_overdue_days_24m": "P7 «до 30 дней»: взята верхняя граница; любое значение 1–30 даёт F2 = 15; точное число TBD (D6)",
+      "loans[0].current_overdue_days": "DERIVED: просрочка в прошлом, R2 не срабатывает",
+      "loans[0].type": "TBD",
+      "loans[0].balance": "TBD",
+      "inquiries_30d": "TBD"
+    }
+  },
+  "500100002020": {
+    "response": {
+      "report_id": "demo-500100002020",
+      "has_history": false,
+      "bankruptcy": false,
+      "loans": [],
+      "inquiries_30d": null
+    },
+    "sources": {
+      "report_id": "TECH",
+      "has_history": "P7 «кредитной истории нет»",
+      "bankruptcy": "DERIVED: нет кредитной истории",
+      "loans": "P7 «платежей нет»",
+      "inquiries_30d": "TBD"
+    }
+  },
+  "7701000026": {
+    "response": {
+      "report_id": "demo-7701000026",
+      "has_history": true,
+      "bankruptcy": false,
+      "loans": [],
+      "inquiries_30d": null
+    },
+    "sources": {
+      "всё": "DECIDED (D7): история без кредитов и просрочек"
+    }
+  },
+  "7701000033": {
+    "response": {
+      "report_id": "demo-7701000033",
+      "has_history": true,
+      "bankruptcy": false,
+      "loans": [
+        {
+          "type": null,
+          "balance": null,
+          "monthly_payment": 100000,
+          "max_overdue_days_24m": 120,
+          "current_overdue_days": 120
+        }
+      ],
+      "inquiries_30d": null
+    },
+    "sources": {
+      "loans[0].current_overdue_days": "P8 «текущая просрочка 120 дней»",
+      "остальное": "DECIDED (D7)"
+    }
+  },
+  "7701000058": {
+    "response": {
+      "report_id": "demo-7701000058",
+      "has_history": true,
+      "bankruptcy": false,
+      "loans": [
+        {
+          "type": null,
+          "balance": null,
+          "monthly_payment": 50000,
+          "max_overdue_days_24m": 45,
+          "current_overdue_days": 0
+        }
+      ],
+      "inquiries_30d": null
+    },
+    "sources": {
+      "loans[0].max_overdue_days_24m": "P8 «просрочка 30–90 дн»; 45 — DECIDED (D3): 31–90 даёт F2 = 5",
+      "loans[0].monthly_payment": "DECIDED: совпадает с анкетой для демо (50 000)"
+    }
+  },
+  "7701000065": {
+    "http_status": 503,
+    "sources": {
+      "http_status": "P8 «БКИ всегда отвечает 503»"
+    }
+  }
+}

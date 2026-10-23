@@ -4,9 +4,15 @@ version = "0.1.0"
 description = "Backend умного кредитного кабинета предпринимателя (хакатон Альфа-Банка)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "alembic>=1.20.1",
+    "bcrypt>=5.0.0",
     "fastapi>=0.156.8",
+    "psycopg[binary]>=3",
     "pydantic-settings>=2.16.1",
+    "pyjwt>=2.15.1",
     "python-multipart>=0.0.32",
+    "pyyaml>=6.0.3",
+    "sqlalchemy>=2",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -17,6 +23,11 @@ package = false
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra"
+# API-тесты идут на SQLite в памяти: она хранит Numeric без Decimal — для тестовых сумм
+# это безопасно, на PostgreSQL предупреждения нет.
+filterwarnings = [
+    "ignore:Dialect sqlite\\+pysqlite does \\*not\\* support Decimal objects natively",
+]
 
 [tool.ruff]
 target-version = "py312"
@@ -24,6 +35,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.isort]
+# Каталог миграций backend/alembic/ — не наш пакет; alembic — сторонняя библиотека.
+known-third-party = ["alembic"]
 
 [dependency-groups]
 dev = [

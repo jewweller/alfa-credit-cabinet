@@ -65,7 +65,7 @@
           "auth"
         ],
         "summary": "Login",
-        "description": "**Только контракт — ещё не реализовано.**\n\nВход по email и паролю, выдаёт JWT.",
+        "description": "Вход по email и паролю, выдаёт JWT.",
         "operationId": "login",
         "requestBody": {
           "content": {
@@ -109,7 +109,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/auth/me": {
@@ -118,7 +118,7 @@
           "auth"
         ],
         "summary": "Get Me",
-        "description": "**Только контракт — ещё не реализовано.**\n\nТекущий пользователь, роль и компания.",
+        "description": "Текущий пользователь, роль и компания.",
         "operationId": "getMe",
         "responses": {
           "200": {
@@ -147,7 +147,7 @@
             "HTTPBearer": []
           }
         ],
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/products": {
@@ -156,7 +156,7 @@
           "products"
         ],
         "summary": "List Products",
-        "description": "**Только контракт — ещё не реализовано.**\n\nКаталог кредитных продуктов.",
+        "description": "Каталог кредитных продуктов.",
         "operationId": "listProducts",
         "responses": {
           "200": {
@@ -189,69 +189,7 @@
             "HTTPBearer": []
           }
         ],
-        "x-implementation-status": "planned"
-      }
-    },
-    "/api/v1/products/recommend": {
-      "post": {
-        "tags": [
-          "products"
-        ],
-        "summary": "Recommend Products",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
-        "operationId": "recommendProducts",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductRecommendRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProductRecommendation"
-                  },
-                  "type": "array",
-                  "title": "Response Recommendproducts"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации; `field` указывает на поле.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/companies/lookup": {
@@ -260,7 +198,7 @@
           "companies"
         ],
         "summary": "Lookup Company",
-        "description": "**Только контракт — ещё не реализовано.**\n\nАвтозаполнение из ЕГРЮЛ (10 цифр) или ЕГРИП (12 цифр) через сервис моков.",
+        "description": "Автозаполнение из ЕГРЮЛ (10 цифр) или ЕГРИП (12 цифр) через сервис моков.",
         "operationId": "lookupCompany",
         "security": [
           {
@@ -333,7 +271,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications": {
@@ -342,7 +280,7 @@
           "applications"
         ],
         "summary": "List Applications",
-        "description": "**Только контракт — ещё не реализовано.**\n\nЗаявки компании текущего клиента.",
+        "description": "Заявки компании текущего клиента.",
         "operationId": "listApplications",
         "responses": {
           "200": {
@@ -375,14 +313,14 @@
             "HTTPBearer": []
           }
         ],
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       },
       "post": {
         "tags": [
           "applications"
         ],
         "summary": "Create Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nСоздать черновик заявки в статусе `DRAFT`.",
+        "description": "Создать черновик заявки в статусе `DRAFT`.",
         "operationId": "createApplication",
         "requestBody": {
           "content": {
@@ -441,7 +379,7 @@
             "HTTPBearer": []
           }
         ],
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}": {
@@ -450,7 +388,7 @@
           "applications"
         ],
         "summary": "Get Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nЗаявка, статус и активный оффер. Фронт опрашивает каждые 3 секунды (план, раздел 5).",
+        "description": "Заявка, статус и активный оффер. Фронт опрашивает каждые 3 секунды (план, раздел 5).",
         "operationId": "getApplication",
         "security": [
           {
@@ -521,14 +459,14 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       },
       "patch": {
         "tags": [
           "applications"
         ],
         "summary": "Update Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nАвтосохранение черновика.",
+        "description": "Автосохранение черновика.",
         "operationId": "updateApplication",
         "security": [
           {
@@ -619,7 +557,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/submit": {
@@ -628,7 +566,7 @@
           "applications"
         ],
         "summary": "Submit Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПроверка полноты и отправка: `DRAFT` → `SUBMITTED`.",
+        "description": "Проверка полноты и отправка: `DRAFT` → `SUBMITTED`.",
         "operationId": "submitApplication",
         "security": [
           {
@@ -727,7 +665,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/history": {
@@ -736,7 +674,7 @@
           "applications"
         ],
         "summary": "Get Application History",
-        "description": "**Только контракт — ещё не реализовано.**\n\nТаймлайн статусов заявки, от старых к новым.",
+        "description": "Таймлайн статусов заявки, от старых к новым.",
         "operationId": "getApplicationHistory",
         "security": [
           {
@@ -811,7 +749,115 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/applications/{id}/cancel": {
+      "post": {
+        "tags": [
+          "applications"
+        ],
+        "summary": "Cancel Application",
+        "description": "Отозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`.",
+        "operationId": "cancelApplication",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
+              "title": "Idempotency-Key"
+            },
+            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`invalid_transition` — из текущего статуса операция не разрешена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/offers/{offer_id}/accept": {
@@ -820,7 +866,7 @@
           "offers"
         ],
         "summary": "Accept Offer",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПринять оффер: `APPROVED` / `COUNTER_OFFER` → `SIGNING`.",
+        "description": "Принять оффер: `APPROVED` / `COUNTER_OFFER` → `SIGNING`.",
         "operationId": "acceptOffer",
         "security": [
           {
@@ -929,7 +975,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/offers/{offer_id}/decline": {
@@ -938,7 +984,7 @@
           "offers"
         ],
         "summary": "Decline Offer",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОтказаться от оффера: `APPROVED` / `COUNTER_OFFER` → `DECLINED_BY_CLIENT`.",
+        "description": "Отказаться от оффера: `APPROVED` / `COUNTER_OFFER` → `DECLINED_BY_CLIENT`.",
         "operationId": "declineOffer",
         "security": [
           {
@@ -1047,7 +1093,328 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/applications/{id}/documents": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Upload Document",
+        "description": "Загрузить файл в заявку. На диске имя — UUID, хранится sha256 (план, раздел 9).",
+        "operationId": "uploadDocument",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_uploadDocument"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Загрузка разрешена только в `INFO_REQUESTED` (в `DRAFT` — TBD).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "`file_too_large` — файл больше 10 МБ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "`unsupported_media_type` — допустимы только application/pdf, image/jpeg, image/png.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/documents/{id}": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Download Document",
+        "description": "Скачать файл: клиент — из своих заявок, андеррайтер — из любых.",
+        "operationId": "downloadDocument",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Файл с исходным именем в `Content-Disposition`.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Файл из чужой заявки.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Файл не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/applications/{id}/resubmit": {
+      "post": {
+        "tags": [
+          "applications"
+        ],
+        "summary": "Resubmit Application",
+        "description": "Ответить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново.",
+        "operationId": "resubmitApplication",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
+              "title": "Idempotency-Key"
+            },
+            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`invalid_transition` — из текущего статуса операция не разрешена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`documents_required` — не загружены обязательные документы из запроса банка.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/schedule": {
@@ -1056,7 +1423,7 @@
           "offers"
         ],
         "summary": "Get Payment Schedule",
-        "description": "**Только контракт — ещё не реализовано.**\n\nГрафик платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи.",
+        "description": "График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи.",
         "operationId": "getPaymentSchedule",
         "security": [
           {
@@ -1146,6 +1513,68 @@
             }
           }
         },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/products/recommend": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Recommend Products",
+        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
+        "operationId": "recommendProducts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRecommendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductRecommendation"
+                  },
+                  "type": "array",
+                  "title": "Response Recommendproducts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "x-implementation-status": "planned"
       }
     },
@@ -1345,435 +1774,6 @@
           },
           "422": {
             "description": "`invalid_code` — код неверный или истёк; либо ошибка валидации тела.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-implementation-status": "planned"
-      }
-    },
-    "/api/v1/applications/{id}/documents": {
-      "post": {
-        "tags": [
-          "documents"
-        ],
-        "summary": "Upload Document",
-        "description": "**Только контракт — ещё не реализовано.**\n\nЗагрузить файл в заявку. На диске имя — UUID, хранится sha256 (план, раздел 9).",
-        "operationId": "uploadDocument",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_uploadDocument"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DocumentInfo"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Нет доступа к заявке.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Загрузка разрешена только в `INFO_REQUESTED` (в `DRAFT` — TBD).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "`file_too_large` — файл больше 10 МБ.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "`unsupported_media_type` — допустимы только application/pdf, image/jpeg, image/png.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации; `field` указывает на поле.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-implementation-status": "planned"
-      }
-    },
-    "/api/v1/documents/{id}": {
-      "get": {
-        "tags": [
-          "documents"
-        ],
-        "summary": "Download Document",
-        "description": "**Только контракт — ещё не реализовано.**\n\nСкачать файл: клиент — из своих заявок, андеррайтер — из любых.",
-        "operationId": "downloadDocument",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Файл с исходным именем в `Content-Disposition`.",
-            "content": {
-              "application/pdf": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "image/jpeg": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "image/png": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Файл из чужой заявки.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Файл не найден.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации; `field` указывает на поле.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-implementation-status": "planned"
-      }
-    },
-    "/api/v1/applications/{id}/resubmit": {
-      "post": {
-        "tags": [
-          "applications"
-        ],
-        "summary": "Resubmit Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОтветить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново.",
-        "operationId": "resubmitApplication",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Id"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
-              "title": "Idempotency-Key"
-            },
-            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApplicationDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Нет доступа к заявке.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "`invalid_transition` — из текущего статуса операция не разрешена.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "`documents_required` — не загружены обязательные документы из запроса банка.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-implementation-status": "planned"
-      }
-    },
-    "/api/v1/applications/{id}/cancel": {
-      "post": {
-        "tags": [
-          "applications"
-        ],
-        "summary": "Cancel Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОтозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`.",
-        "operationId": "cancelApplication",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Id"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
-              "title": "Idempotency-Key"
-            },
-            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApplicationDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Нет доступа к заявке.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "`invalid_transition` — из текущего статуса операция не разрешена.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации; `field` указывает на поле.",
             "content": {
               "application/json": {
                 "schema": {

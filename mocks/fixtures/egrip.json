@@ -1,0 +1,52 @@
+{
+  "_meta": {
+    "status": "synthetic — значения, которых нет в плане, решены backend по поручению команды (аналитик не участвовал): docs/analyst-questions.md, раздел 8",
+    "contract": "GET /egrip/v1/entrepreneurs/{inn} — docs/plan.md, раздел 8",
+    "sources": {
+      "P7": "docs/plan.md, раздел 7 (примеры расчёта)",
+      "P8": "docs/plan.md, раздел 8 (тестовые случаи)",
+      "FE": "реестр в моках фронта frontend/src/mocks/data.ts",
+      "DECIDED": "решено backend (DECIDED): значения нет в плане, выбрано так, чтобы получился исход из P8"
+    }
+  },
+  "500100001072": {
+    "response": {
+      "inn": "500100001072",
+      "ogrnip": "321500100001072",
+      "fio": "Ковалёв Андрей Сергеевич",
+      "status": "ACTIVE",
+      "registered_at": "2022-06-01",
+      "okved_main": "47.11",
+      "region": "Московская область"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrnip": "FE",
+      "fio": "FE",
+      "status": "FE",
+      "registered_at": "FE (в P7 «3 года» — F1 = 15 в обоих случаях)",
+      "okved_main": "P8",
+      "region": "FE"
+    }
+  },
+  "500100002020": {
+    "response": {
+      "inn": "500100002020",
+      "ogrnip": "324500100002020",
+      "fio": "Мельникова Елена Викторовна",
+      "status": "ACTIVE",
+      "registered_at": "2025-04-23",
+      "okved_main": "96.02",
+      "region": "Московская область"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrnip": "FE",
+      "fio": "FE",
+      "status": "FE",
+      "registered_at": "DECIDED (D1): по P7 «1,5 года» — 23.04.2025; на 23.10.2026 это 1 полный год, F1 = 8, итог 66 как в P7. В моках фронта было 2024-04-10",
+      "okved_main": "P8",
+      "region": "FE"
+    }
+  }
+}

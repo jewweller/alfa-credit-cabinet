@@ -1,0 +1,155 @@
+{
+  "_meta": {
+    "status": "synthetic — значения, которых нет в плане, решены backend по поручению команды (аналитик не участвовал): docs/analyst-questions.md, раздел 8",
+    "contract": "GET /egrul/v1/companies/{inn} — docs/plan.md, раздел 8",
+    "sources": {
+      "P7": "docs/plan.md, раздел 7 (примеры расчёта)",
+      "P8": "docs/plan.md, раздел 8 (тестовые случаи)",
+      "FE": "реестр в моках фронта frontend/src/mocks/data.ts",
+      "TBD": "в источниках нет; движком не используется",
+      "DECIDED": "решено backend (DECIDED): значения нет в плане, выбрано так, чтобы получился исход из P8"
+    }
+  },
+  "7701000019": {
+    "response": {
+      "inn": "7701000019",
+      "ogrn": "1187746000019",
+      "name": "ООО «Пекарня Север»",
+      "status": "ACTIVE",
+      "registered_at": "2018-09-14",
+      "okved_main": "10.71",
+      "okved_extra": [
+        "10.72",
+        "47.24"
+      ],
+      "director": {
+        "fio": "Соколова Ирина Павловна",
+        "inn": null
+      },
+      "founders": null,
+      "address": "г. Москва, ул. Северная, д. 12",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn": "FE",
+      "name": "P8, FE",
+      "status": "FE; P8 «всё чисто»",
+      "registered_at": "FE (в P7 «7 лет» — F1 = 20 в обоих случаях)",
+      "okved_main": "P8",
+      "okved_extra": "FE",
+      "director.fio": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD",
+      "address": "FE",
+      "region": "FE"
+    }
+  },
+  "7701000026": {
+    "response": {
+      "inn": "7701000026",
+      "ogrn": "1157746000026",
+      "name": "ООО «СтройРесурс»",
+      "status": "LIQUIDATED",
+      "registered_at": "2015-03-02",
+      "okved_main": "41.20",
+      "okved_extra": [
+        "43.99"
+      ],
+      "director": {
+        "fio": "Белов Олег Игоревич",
+        "inn": null
+      },
+      "founders": null,
+      "address": "г. Москва, Промышленный пр., д. 4",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn": "FE",
+      "name": "P8, FE",
+      "status": "P8 «ЕГРЮЛ: LIQUIDATED», FE",
+      "registered_at": "FE",
+      "okved_main": "P8",
+      "okved_extra": "FE",
+      "director.fio": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD",
+      "address": "FE",
+      "region": "FE"
+    }
+  },
+  "7701000033": {
+    "response": {
+      "inn": "7701000033",
+      "ogrn": "1197746000033",
+      "name": "ООО «Вектор»",
+      "status": "ACTIVE",
+      "registered_at": "2019-11-20",
+      "okved_main": "46.90",
+      "okved_extra": [],
+      "director": {
+        "fio": "Гришин Павел Олегович",
+        "inn": null
+      },
+      "founders": null,
+      "address": "г. Москва, ул. Лесная, д. 7",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn, name, status, registered_at, okved_main, okved_extra, director.fio, address, region": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD"
+    }
+  },
+  "7701000058": {
+    "response": {
+      "inn": "7701000058",
+      "ogrn": "1207746000058",
+      "name": "ООО «Мираж»",
+      "status": "ACTIVE",
+      "registered_at": "2023-02-17",
+      "okved_main": "56.10",
+      "okved_extra": [],
+      "director": {
+        "fio": "Зайцева Анна Петровна",
+        "inn": null
+      },
+      "founders": null,
+      "address": "г. Москва, ул. Садовая, д. 1",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn, name, status, okved_main, okved_extra, director.fio, address, region": "FE",
+      "registered_at": "DECIDED (D2): 2–5 лет (F1 = 15), чтобы сумма была 40 баллов по P8. В моках фронта было 2020-02-17",
+      "director.inn": "TBD",
+      "founders": "TBD"
+    }
+  },
+  "7701000065": {
+    "response": {
+      "inn": "7701000065",
+      "ogrn": "1217746000065",
+      "name": "ООО «Сбой-Тест»",
+      "status": "ACTIVE",
+      "registered_at": "2021-05-05",
+      "okved_main": "62.01",
+      "okved_extra": [],
+      "director": {
+        "fio": "Сбоев Игорь Иванович",
+        "inn": null
+      },
+      "founders": null,
+      "address": "г. Москва, ул. Тестовая, д. 5",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn, name, status, registered_at, okved_main, okved_extra, director.fio, address, region": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD"
+    }
+  }
+}

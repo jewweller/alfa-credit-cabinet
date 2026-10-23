@@ -1,0 +1,313 @@
+# =============================================================================
+# Конфигурация скоринга и кредитных решений (backend)
+#
+# Требования — конфиг аналитика v1.0.0 (F1–F6, R1–R10, пороги, коды причин, округление,
+# интеграции). Здесь только то, чем владеет backend-движок. Не дублируется:
+#   * продукты, лимиты, сроки, базовые ставки, цели — seed/products.json → таблица products;
+#   * названия целей финансирования — LoanPurpose в контракте API;
+#   * размер и типы файлов — app/schemas/documents.py.
+#
+# Соглашения (как у аналитика)
+#   * Проценты — числа в процентах (35 = 35%); п.п. — процентные пункты.
+#   * Деньги — рубли. Все значения читаются как Decimal через str(), без float.
+#   * Границы: min/max включены, если не указано min_inclusive / max_inclusive: false.
+#   * config_version пишется в результаты скоринга и решения.
+# Открытые вопросы и расхождения — docs/analyst-questions.md.
+# =============================================================================
+
+config_version: "1.0.0"
+
+# -----------------------------------------------------------------------------
+# Расчёты
+# -----------------------------------------------------------------------------
+calculation:
+  annuity:
+    # A = P * i / (1 - (1 + i)^(-n)); i = годовая ставка / 12 (допущение аналитика A-12).
+    rate_conversion: nominal_div_12
+  rounding:
+    # Ежемесячный платёж: до копейки, половина вверх. Решение backend K1 (23.10.2026,
+    # без аналитика): так же считают контракт графика, моки фронта и ML. В конфиге
+    # аналитика было «до рубля»; примеры плана (275 040 ₽) — то же значение для показа.
+    payment: {mode: half_up, step_rub: 0.01}
+    # Суммы, подбираемые системой (R8, R10): вниз до шага.
+    amount: {mode: down, step_rub: 1000}
+    # Проценты за месяц в графике платежей. Решение backend M4 (не из конфига аналитика):
+    # до копейки, как в описании графика в API-контракте.
+    interest: {mode: half_up, step_rub: 0.01}
+  debt_load:
+    max_pct: 35                    # допустимая нагрузка, включительно
+    # Выручка в знаменателе: application | min_application_fns (вопрос аналитика OQ-8).
+    revenue_source: application
+    # Текущие платежи E = max(анкета, сумма ежемесячных платежей БКИ).
+    include_bki_payments: true
+  pricing:
+    # Надбавка к базовой ставке продукта по грейду, п.п. R8 — C; R9 и R10 — A и B.
+    grade_surcharge_pp: {A: 0, B: 2, C: 4}
+
+company:
+  kind_by_inn_length: {10: LLC, 12: IE}
+
+# -----------------------------------------------------------------------------
+# Скоринг
+# -----------------------------------------------------------------------------
+scoring:
+  max_total_points: 100        # сумма максимумов F1–F6 обязана равняться этому значению
+  reference_date: null         # null — дата расчёта (UTC); ISO-дата фиксирует расчёт для демо
+  missing_source_points: 0     # баллы фактора, если его источник недоступен (A-06)
+
+  grades:                      # первый подходящий сверху вниз, min_score включительно
+    - {grade: A, min_score: 80}
+    - {grade: B, min_score: 65}
+    - {grade: C, min_score: 50}
+    - {grade: D, min_score: 35}
+    - {grade: E, min_score: 0}
+
+  factors:
+    F1:
+      name: Возраст бизнеса
+      source: registry         # ЕГРЮЛ (ООО) или ЕГРИП (ИП), registered_at
+      unit: full_years         # полные годовщины регистрации на дату расчёта
+      bands:
+        - {id: lt_1, max: 1, max_inclusive: false, points: 0}
+        - {id: y1_2, min: 1, max: 2, max_inclusive: false, points: 8}
+        - {id: y2_5, min: 2, max: 5, points: 15}
+        - {id: gt_5, min: 5, min_inclusive: false, points: 20}
+    F2:
+      name: Кредитная история
+      source: bki
+      unit: days               # худшая просрочка за 24 мес по всем кредитам
+      no_history_points: 10    # has_history = false
+      bands:
+        - {id: none,     min: 0,  max: 0,  points: 25}
+        - {id: up_to_30, min: 1,  max: 30, points: 15}
+        - {id: d31_90,   min: 31, max: 90, points: 5}
+        - {id: gt_90,    min: 91,          points: 0}
+    F3:
+      name: Кредитная нагрузка
+      source: application_bki  # платёж нового кредита — по БАЗОВОЙ ставке продукта
+      unit: percent
+      bands:
+        - {id: le_25,  max: 25, points: 20}
+        - {id: p25_35, min: 25, min_inclusive: false, max: 35, points: 12}
+        - {id: p35_50, min: 35, min_inclusive: false, max: 50, points: 4}
+        - {id: gt_50,  min: 50, min_inclusive: false, points: 0}
+    F4:
+      name: Динамика выручки
+      source: fns_tb
+      unit: percent            # (последний год − предыдущий) / предыдущий × 100
+      no_data_points: 8        # нет данных за предыдущий год или база ≤ 0
+      bands:
+        - {id: growth_or_zero, min: 0, points: 15}
+        - {id: decline_to_20,  min: -20, max: 0, max_inclusive: false, points: 8}
+        - {id: decline_gt_20,  max: -20, max_inclusive: false, points: 0}
+    F5:
+      name: Налоговая задолженность
+      source: fns_tb
+      unit: rub                # tax_debt_rub
+      bands:
+        - {id: none,       min: 0, max: 0, points: 10}
+        - {id: up_to_100k, min: 0, min_inclusive: false, max: 100000, points: 4}
+        - {id: gt_100k,    min: 100000, min_inclusive: false, points: 0}
+    F6:
+      name: Признаки риска
+      source: fns_tb
+      unit: flags              # число true среди flags
+      flags: [mass_address, unreliable_address, unreliable_director]
+      bands:
+        - {id: zero,     min: 0, max: 0, points: 10}
+        - {id: one,      min: 1, max: 1, points: 3}
+        - {id: two_plus, min: 2, points: 0}
+
+# -----------------------------------------------------------------------------
+# Правила решения. Порядок R1 → R10 зафиксирован в коде, срабатывает первое.
+# -----------------------------------------------------------------------------
+rules:
+  R1:
+    allowed_registry_statuses: [ACTIVE]    # другой статус или 404 реестра → REJECTED
+  R2:
+    overdue_days_gt: 90                    # текущая просрочка строго больше; или bankruptcy
+  R3:
+    scope: any_required_source             # см. integrations.required_sources
+  R4:
+    mismatch_pct_gt: 30                    # |анкета − ФНС| / ФНС × 100 > 30, строго
+    # Аналитик: вид документа revenue_proof («декларация или выписка за прошлый год»).
+    # В контракте такого вида нет. Решение backend K4: декларация или выписка по счёту.
+    proof_document_kinds: [tax_return, bank_statement]
+    request_items:
+      # kind — что показать клиенту; accepts — какие виды документа закрывают пункт.
+      - kind: tax_return
+        title: "Декларация или выписка за прошлый год"
+        required: true
+        accepts: [tax_return, bank_statement]
+  R5:
+    amount_rub_gt: 10000000                # строго больше
+  R6:
+    grades: [E]
+  R7:
+    grades: [D]
+  R8:
+    grades: [C]
+    amount_share_pct: 50                   # не больше 50% запрошенной суммы
+    # Срок = запрошенный (A-17). Если предложение сформировать нельзя (OQ-24):
+    on_no_offer: REJECTED                  # REJECTED | MANUAL_REVIEW
+  R9:
+    grades: [A, B]                         # и нагрузка <= debt_load.max_pct
+  R10:
+    grades: [A, B]                         # и нагрузка > debt_load.max_pct
+    term_step_months: 6
+    include_max_term_as_last_candidate: true
+    search_other_products: true            # шаг 3: другие продукты той же цели
+
+# -----------------------------------------------------------------------------
+# Внешние источники (моки): таймауты и повторы
+# -----------------------------------------------------------------------------
+integrations:
+  timeout_sec: 3
+  retries: 2                   # повторов после первой попытки; всего 3
+  retry_delay_ms: 1000         # фиксированная пауза (A-09)
+  retry_on: [timeout, connection_error, http_5xx]
+  no_retry_on: [http_4xx]      # 4xx, кроме 404 реестра, — ошибка источника без повторов
+  required_sources:
+    LLC: [egrul, fns_tb, bki]
+    IE: [egrip, fns_tb, bki]
+  registry_status_values: [ACTIVE, LIQUIDATING, LIQUIDATED]
+
+# Конвейер: повторы шагов скоринга и решения (A-10).
+# Пауза между шагами для демо — переменная окружения PIPELINE_STEP_DELAY_SEC.
+pipeline:
+  max_step_attempts: 3
+  step_retry_delay_sec: 5
+  on_step_failure_reason_code: SYS_ENGINE_ERROR   # SCORING → MANUAL_REVIEW
+
+# Ручное решение андеррайтера (форма B4, вопрос OQ-33). Движком пока не используется.
+manual_decision:
+  allowed_outcomes: [APPROVED, COUNTER_OFFER, REJECTED, INFO_REQUESTED]
+  enforce_product_limits: true
+  load_over_limit: warn_require_comment            # block | warn_require_comment | allow
+  comment_required: true
+
+# -----------------------------------------------------------------------------
+# Коды причин. Клиенту — простым языком, без подробностей БКИ.
+# client_reason — код RejectReason из контракта API для отказов (сопоставление TBD).
+# Плейсхолдеры: {registry} — ЕГРЮЛ или ЕГРИП; {source} — название источника.
+# -----------------------------------------------------------------------------
+reason_codes:
+  R1_LIQUIDATED:
+    rule: R1
+    outcome: REJECTED
+    client_reason: company_inactive
+    client_message: "По данным {registry} компания ликвидирована, поэтому заявку одобрить нельзя."
+    client_next_step: "Проверьте сведения о компании в реестре. Если они устарели, подайте новую заявку после обновления данных."
+    staff_message: "R1: статус в {registry} — LIQUIDATED."
+  R1_LIQUIDATING:
+    rule: R1
+    outcome: REJECTED
+    client_reason: company_inactive
+    client_message: "По данным {registry} компания находится в процессе ликвидации, поэтому заявку одобрить нельзя."
+    client_next_step: "Подайте новую заявку после завершения процедуры или обновления сведений в реестре."
+    staff_message: "R1: статус в {registry} — LIQUIDATING."
+  R1_NOT_FOUND:
+    rule: R1
+    outcome: REJECTED
+    client_reason: company_inactive
+    client_message: "Компания не найдена в {registry}, поэтому заявку одобрить нельзя."
+    client_next_step: "Проверьте ИНН и подайте новую заявку."
+    staff_message: "R1: ответ {registry} 404, компания не найдена."
+  R2_BANKRUPTCY:
+    rule: R2
+    outcome: REJECTED
+    client_reason: bankruptcy_or_overdue
+    client_message: "По данным кредитной истории заявку одобрить нельзя."
+    client_next_step: "Вы можете подать новую заявку после урегулирования обязательств."
+    staff_message: "R2: в отчёте БКИ bankruptcy = true."
+  R2_OVERDUE:
+    rule: R2
+    outcome: REJECTED
+    client_reason: bankruptcy_or_overdue
+    client_message: "По данным кредитной истории заявку одобрить нельзя."
+    client_next_step: "Вы можете подать новую заявку после погашения просроченной задолженности."
+    staff_message: "R2: текущая просрочка по кредиту более 90 дней."
+  R3_SOURCE_UNAVAILABLE:
+    rule: R3
+    outcome: MANUAL_REVIEW
+    client_message: "Не удалось получить часть данных о компании. Заявку рассматривает специалист банка."
+    client_next_step: "Ничего делать не нужно. Статус обновится здесь."
+    staff_message: "R3: источник недоступен после 2 повторов — {source}."
+  R4_REVENUE_PROOF_REQUIRED:
+    rule: R4
+    outcome: INFO_REQUESTED
+    client_message: "Выручка в заявке заметно отличается от данных ФНС. Её нужно подтвердить."
+    client_next_step: "Загрузите декларацию или выписку за прошлый год и отправьте заявку повторно."
+    staff_message: "R4: расхождение выручки анкеты и ФНС больше порога, документа нет."
+  R4_REVENUE_MISMATCH_REVIEW:
+    rule: R4
+    outcome: MANUAL_REVIEW
+    client_message: "Документ получен. Заявку рассматривает специалист банка."
+    client_next_step: "Ничего делать не нужно. Статус обновится здесь."
+    staff_message: "R4: расхождение выручки сохраняется, документ загружен — нужна ручная проверка."
+  R5_LARGE_AMOUNT:
+    rule: R5
+    outcome: MANUAL_REVIEW
+    client_message: "Заявки на крупные суммы рассматривает специалист банка."
+    client_next_step: "Ничего делать не нужно. Статус обновится здесь."
+    staff_message: "R5: сумма больше 10 млн ₽."
+  R6_GRADE_E:
+    rule: R6
+    outcome: REJECTED
+    client_reason: low_score
+    client_message: "По итогам оценки заявку одобрить нельзя."
+    client_next_step: "Вы можете подать новую заявку с другими условиями или позже."
+    staff_message: "R6: грейд E."
+  R7_GRADE_D:
+    rule: R7
+    outcome: MANUAL_REVIEW
+    client_message: "Заявку рассматривает специалист банка."
+    client_next_step: "Ничего делать не нужно. Статус обновится здесь."
+    staff_message: "R7: грейд D."
+  R8_COUNTER_OFFER:
+    rule: R8
+    outcome: COUNTER_OFFER
+    client_message: "Банк готов предложить другие условия: меньшую сумму."
+    client_next_step: "Сравните «просили» и «предлагаем» и примите или отклоните предложение."
+    staff_message: "R8: грейд C, сумма = min(50% запрошенной, максимум при нагрузке до 35%), ставка база + 4 п.п."
+  R8_NO_OFFER:
+    rule: R8
+    outcome_ref: rules.R8.on_no_offer
+    # В контракте нет отдельного кода для R8; ближайший — no_suitable_terms (описан как R10). TBD.
+    client_reason: no_suitable_terms
+    client_message: "Мы не смогли подобрать условия, подходящие по нагрузке на бизнес."
+    client_next_step: "Попробуйте подать заявку на меньшую сумму или после снижения текущих платежей."
+    staff_message: "R8: предложение сформировать нельзя (допустимый платёж ≤ 0 или сумма ниже минимума продукта)."
+  R9_APPROVED:
+    rule: R9
+    outcome: APPROVED
+    client_message: "Заявка одобрена на запрошенных условиях."
+    client_next_step: "Примите предложение и подпишите документы."
+    staff_message: "R9: грейд A/B, нагрузка не выше 35%."
+  R10_COUNTER_OFFER:
+    rule: R10
+    outcome: COUNTER_OFFER
+    client_message: "Банк готов предложить другие условия, чтобы нагрузка на бизнес была комфортной."
+    client_next_step: "Сравните «просили» и «предлагаем» и примите или отклоните предложение."
+    staff_message: "R10: грейд A/B, нагрузка выше 35%; условия подобраны перебором (срок, сумма, продукт)."
+  R10_NO_OFFER:
+    rule: R10
+    outcome: REJECTED
+    client_reason: no_suitable_terms
+    client_message: "Текущие платежи по кредитам слишком велики для нового кредита."
+    client_next_step: "Снизьте текущие платежи или подайте заявку на меньшую сумму позже."
+    staff_message: "R10: ни один вариант срока, суммы и продукта не дал нагрузки до 35%."
+  SYS_ENGINE_ERROR:
+    rule: system
+    outcome: MANUAL_REVIEW
+    client_message: "Заявку рассматривает специалист банка."
+    client_next_step: "Ничего делать не нужно. Статус обновится здесь."
+    staff_message: "Шаг скоринга или решения завершился ошибкой после повторов: {source}."
+
+# Причины отказа андеррайтера (справочник формы B4; расширяется командой).
+underwriter_rejection_reasons:
+  M_HIGH_DEBT_LOAD: "Высокая долговая нагрузка"
+  M_REVENUE_NOT_CONFIRMED: "Выручка не подтверждена"
+  M_CREDIT_HISTORY: "Неудовлетворительная кредитная история"
+  M_DOCUMENTS_NOT_PROVIDED: "Не предоставлены запрошенные документы"
+  M_BUSINESS_RISK: "Риски бизнеса"

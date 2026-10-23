@@ -1,0 +1,35 @@
+[
+  {
+    "id": "7f1c2b0a-0000-4000-8000-000000000001",
+    "code": "EXPRESS_WC",
+    "name": "Экспресс-оборот",
+    "purpose_tags": ["working_capital", "cash_gap"],
+    "min_amount": "300000.00",
+    "max_amount": "5000000.00",
+    "min_term": 3,
+    "max_term": 24,
+    "base_rate": "18.00"
+  },
+  {
+    "id": "7f1c2b0a-0000-4000-8000-000000000002",
+    "code": "EQUIPMENT",
+    "name": "Инвест-оборудование",
+    "purpose_tags": ["equipment"],
+    "min_amount": "1000000.00",
+    "max_amount": "30000000.00",
+    "min_term": 12,
+    "max_term": 60,
+    "base_rate": "16.00"
+  },
+  {
+    "id": "7f1c2b0a-0000-4000-8000-000000000003",
+    "code": "OVERDRAFT",
+    "name": "Овердрафт для бизнеса",
+    "purpose_tags": ["cash_gap"],
+    "min_amount": "100000.00",
+    "max_amount": "3000000.00",
+    "min_term": 12,
+    "max_term": 12,
+    "base_rate": "20.00"
+  }
+]

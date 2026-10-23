@@ -1,5 +1,6 @@
 """Контракт первой волны: пути из плана (раздел 10), формат ошибок, актуальность openapi.json."""
 
+import re
 from typing import Any
 
 import pytest
@@ -9,24 +10,7 @@ from app.main import create_app
 from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_contract
 
 PLANNED_OPERATIONS = {
-    ("post", "/api/v1/auth/login"),
-    ("get", "/api/v1/auth/me"),
-    ("get", "/api/v1/products"),
     ("post", "/api/v1/products/recommend"),
-    ("get", "/api/v1/companies/lookup"),
-    ("get", "/api/v1/applications"),
-    ("post", "/api/v1/applications"),
-    ("get", "/api/v1/applications/{id}"),
-    ("patch", "/api/v1/applications/{id}"),
-    ("post", "/api/v1/applications/{id}/submit"),
-    ("get", "/api/v1/applications/{id}/history"),
-    ("post", "/api/v1/applications/{id}/offers/{offer_id}/accept"),
-    ("post", "/api/v1/applications/{id}/offers/{offer_id}/decline"),
-    ("get", "/api/v1/applications/{id}/schedule"),
-    ("post", "/api/v1/applications/{id}/documents"),
-    ("get", "/api/v1/documents/{id}"),
-    ("post", "/api/v1/applications/{id}/resubmit"),
-    ("post", "/api/v1/applications/{id}/cancel"),
     ("post", "/api/v1/applications/{id}/signing/code"),
     ("post", "/api/v1/applications/{id}/signing/confirm"),
     ("get", "/api/v1/bank/applications"),
@@ -43,8 +27,29 @@ IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/signing/confirm"),
     ("post", "/api/v1/bank/applications/{id}/decision"),
 }
-IMPLEMENTED_OPERATIONS = {("get", "/health"), ("get", "/api/v1/health")}
-PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *IMPLEMENTED_OPERATIONS}
+IMPLEMENTED_OPERATIONS = {
+    ("get", "/health"),
+    ("get", "/api/v1/health"),
+    ("post", "/api/v1/auth/login"),
+    ("get", "/api/v1/auth/me"),
+    ("get", "/api/v1/products"),
+    ("get", "/api/v1/companies/lookup"),
+    ("get", "/api/v1/applications"),
+    ("post", "/api/v1/applications"),
+    ("get", "/api/v1/applications/{id}"),
+    ("patch", "/api/v1/applications/{id}"),
+    ("post", "/api/v1/applications/{id}/submit"),
+    ("get", "/api/v1/applications/{id}/history"),
+    ("post", "/api/v1/applications/{id}/offers/{offer_id}/accept"),
+    ("post", "/api/v1/applications/{id}/offers/{offer_id}/decline"),
+    ("post", "/api/v1/applications/{id}/cancel"),
+    ("post", "/api/v1/applications/{id}/documents"),
+    ("get", "/api/v1/documents/{id}"),
+    ("post", "/api/v1/applications/{id}/resubmit"),
+    ("get", "/api/v1/applications/{id}/schedule"),
+}
+PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
+PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}
 
 
 @pytest.fixture(scope="module")
@@ -163,10 +168,18 @@ def test_planned_operations_are_not_served_by_app() -> None:
     app = create_app()
     client = TestClient(app)
 
-    assert set(app.openapi()["paths"]) == {"/health", "/api/v1/health"}
-    response = client.get("/api/v1/applications")
-    assert response.status_code == 404
-    assert response.json()["code"] == "not_found"
+    served = {
+        (method, path)
+        for path, operations in app.openapi()["paths"].items()
+        for method in operations
+    }
+    assert served == IMPLEMENTED_OPERATIONS
+    for method, path in PLANNED_OPERATIONS:
+        url = re.sub(r"\{\w+\}", "00000000-0000-4000-8000-000000000000", path)
+        response = client.request(method, url)
+        # Маршрута нет: 404, а если путь занят другим методом — 405.
+        assert response.status_code in (404, 405), (method, path)
+        assert response.json()["code"] in ("not_found", "method_not_allowed")
 
 
 def test_contract_file_is_up_to_date() -> None:
