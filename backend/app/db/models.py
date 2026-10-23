@@ -1,7 +1,8 @@
-"""SQLAlchemy-модели (план, раздел 6). Пока только таблицы, нужные входу и черновику заявки.
+"""SQLAlchemy-модели (план, раздел 6).
 
-Остальные таблицы плана (обогащение, скоринг, решения, офферы, документы, лента, аудит,
-очередь воркера) добавляются отдельными миграциями вместе с их функциональностью.
+Есть: вход, черновик заявки и история (0001); обогащение, скоринг, решение, оффер и запрос
+документов (0002). Документы, подпись, выдача, лента, аудит и очередь воркера — отдельными
+миграциями вместе с их функциональностью.
 """
 
 from datetime import UTC, date, datetime
@@ -20,10 +21,13 @@ from sqlalchemy import (
     String,
     Uuid,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 # purpose_tags[] — массив в PostgreSQL; в SQLite (unit-тесты) хранится как JSON.
 TAG_LIST = ARRAY(String(32)).with_variant(JSON(), "sqlite")
+# Сырые ответы источников, баллы и трасса правил — jsonb в PostgreSQL (план, раздел 6).
+DOCUMENT = JSON().with_variant(JSONB(), "postgresql")
 MONEY = Numeric(14, 2)
 RATE = Numeric(5, 2)
 
@@ -115,4 +119,76 @@ class ApplicationStatusHistory(Base):
     actor_type: Mapped[str] = mapped_column(String(16))
     actor_id: Mapped[UUID | None] = mapped_column(Uuid)
     reason: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class EnrichmentResult(Base):
+    """Ответ одного источника по заявке: что пришло, сколько было попыток."""
+
+    __tablename__ = "enrichment_results"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    source: Mapped[str] = mapped_column(String(16))  # egrul | egrip | fns_tb | bki
+    status: Mapped[str] = mapped_column(String(16))  # ok | not_found | unavailable
+    response: Mapped[dict | None] = mapped_column(DOCUMENT)
+    attempts: Mapped[int] = mapped_column(Integer)
+    error: Mapped[str | None] = mapped_column(String(255))
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ScoringResultRow(Base):
+    __tablename__ = "scoring_results"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    model_version: Mapped[str] = mapped_column(String(32))  # config_version из config.yaml
+    total_score: Mapped[int] = mapped_column(Integer)
+    grade: Mapped[str] = mapped_column(String(1))
+    factors: Mapped[dict] = mapped_column(DOCUMENT)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class DecisionRow(Base):
+    """Кредитное решение. Внутреннее: трасса правил и коды — для сотрудников, не для клиента."""
+
+    __tablename__ = "decisions"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    scoring_result_id: Mapped[UUID | None] = mapped_column(ForeignKey("scoring_results.id"))
+    outcome: Mapped[str] = mapped_column(String(32))
+    reason_code: Mapped[str] = mapped_column(String(64))  # код из config.yaml, например R9_APPROVED
+    client_reason: Mapped[str | None] = mapped_column(String(32))  # RejectReason контракта
+    rules_fired: Mapped[dict] = mapped_column(DOCUMENT)  # config_version + трасса R1–R10
+    decided_by: Mapped[str] = mapped_column(String(16))  # system | underwriter
+    underwriter_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
+    comment: Mapped[str | None] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class OfferRow(Base):
+    __tablename__ = "offers"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    decision_id: Mapped[UUID] = mapped_column(ForeignKey("decisions.id"))
+    product_id: Mapped[UUID] = mapped_column(ForeignKey("products.id"))
+    amount: Mapped[Decimal] = mapped_column(MONEY)
+    term_months: Mapped[int] = mapped_column(Integer)
+    rate: Mapped[Decimal] = mapped_column(RATE)
+    monthly_payment: Mapped[Decimal] = mapped_column(MONEY)
+    status: Mapped[str] = mapped_column(String(16))  # active | accepted | declined
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class InfoRequestRow(Base):
+    __tablename__ = "info_requests"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    decision_id: Mapped[UUID] = mapped_column(ForeignKey("decisions.id"))
+    items: Mapped[list] = mapped_column(DOCUMENT)
+    message: Mapped[str | None] = mapped_column(String(1000))
+    status: Mapped[str] = mapped_column(String(16))  # open | answered
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -8,7 +8,9 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/config.py → корень репозитория; в контейнере /app/app/config.py → «/».
-_DEFAULT_SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DEFAULT_SEED_DIR = _REPO_ROOT / "seed"
+_DEFAULT_FIXTURES_DIR = _REPO_ROOT / "mocks" / "fixtures"
 
 
 class Settings(BaseSettings):
@@ -28,6 +30,8 @@ class Settings(BaseSettings):
     # Демо-данные (учётки, компании, продукты) загружаются только при явном включении.
     seed_demo_data: bool = False
     seed_dir: Path = _DEFAULT_SEED_DIR
+    # Ответы ЕГРЮЛ / ЕГРИП / ФНС / БКИ, пока нет HTTP-сервиса mocks.
+    fixtures_dir: Path = _DEFAULT_FIXTURES_DIR
 
 
 @lru_cache

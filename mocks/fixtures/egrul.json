@@ -1,0 +1,70 @@
+{
+  "_meta": {
+    "status": "draft — не утверждено аналитиком (docs/analyst-questions.md, раздел 6)",
+    "contract": "GET /egrul/v1/companies/{inn} — docs/plan.md, раздел 8",
+    "sources": {
+      "P7": "docs/plan.md, раздел 7 (примеры расчёта)",
+      "P8": "docs/plan.md, раздел 8 (тестовые случаи)",
+      "FE": "реестр в моках фронта frontend/src/mocks/data.ts",
+      "TBD": "в источниках нет; движком не используется"
+    }
+  },
+  "7701000019": {
+    "response": {
+      "inn": "7701000019",
+      "ogrn": "1187746000019",
+      "name": "ООО «Пекарня Север»",
+      "status": "ACTIVE",
+      "registered_at": "2018-09-14",
+      "okved_main": "10.71",
+      "okved_extra": ["10.72", "47.24"],
+      "director": {"fio": "Соколова Ирина Павловна", "inn": null},
+      "founders": null,
+      "address": "г. Москва, ул. Северная, д. 12",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn": "FE",
+      "name": "P8, FE",
+      "status": "FE; P8 «всё чисто»",
+      "registered_at": "FE (в P7 «7 лет» — F1 = 20 в обоих случаях)",
+      "okved_main": "P8",
+      "okved_extra": "FE",
+      "director.fio": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD",
+      "address": "FE",
+      "region": "FE"
+    }
+  },
+  "7701000026": {
+    "response": {
+      "inn": "7701000026",
+      "ogrn": "1157746000026",
+      "name": "ООО «СтройРесурс»",
+      "status": "LIQUIDATED",
+      "registered_at": "2015-03-02",
+      "okved_main": "41.20",
+      "okved_extra": ["43.99"],
+      "director": {"fio": "Белов Олег Игоревич", "inn": null},
+      "founders": null,
+      "address": "г. Москва, Промышленный пр., д. 4",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn": "FE",
+      "name": "P8, FE",
+      "status": "P8 «ЕГРЮЛ: LIQUIDATED», FE",
+      "registered_at": "FE",
+      "okved_main": "P8",
+      "okved_extra": "FE",
+      "director.fio": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD",
+      "address": "FE",
+      "region": "FE"
+    }
+  }
+}

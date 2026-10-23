@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "status": "draft — не утверждено аналитиком (docs/analyst-questions.md, раздел 6)",
+    "contract": "GET /fns-tb/v1/profile/{inn} — docs/plan.md, раздел 8",
+    "sources": {
+      "P7": "docs/plan.md, раздел 7 (примеры расчёта)",
+      "P8": "docs/plan.md, раздел 8: ключи лет «2024», «2025» — как в примере контракта",
+      "DERIVED": "однозначно следует из баллов плана (F4/F5/F6)",
+      "TBD": "в источниках нет; движком не используется"
+    },
+    "missing": "ФНС для 7701000026 (СтройРесурс) не задана (D7): источник ответит «недоступен»; исход определяет R1"
+  },
+  "7701000019": {
+    "response": {
+      "revenue": {"2024": 21428571, "2025": 24000000},
+      "tax_debt_rub": 0,
+      "msp_category": null,
+      "employees": null,
+      "flags": {"mass_address": false, "unreliable_address": false, "unreliable_director": false}
+    },
+    "sources": {
+      "revenue.2025": "P7 «выручка 24 млн ₽/год»",
+      "revenue.2024": "DERIVED из P7 «+12 % к прошлому году»: 24 000 000 / 1,12, округлено до рубля; точное число TBD (D5)",
+      "tax_debt_rub": "DERIVED: F5 = 10",
+      "flags": "DERIVED: F6 = 10",
+      "msp_category": "TBD",
+      "employees": "TBD"
+    }
+  },
+  "500100001072": {
+    "response": {
+      "revenue": {"2024": 5714286, "2025": 6000000},
+      "tax_debt_rub": 0,
+      "msp_category": null,
+      "employees": null,
+      "flags": {"mass_address": false, "unreliable_address": false, "unreliable_director": false}
+    },
+    "sources": {
+      "revenue.2025": "P7 «выручка 6 млн ₽/год»",
+      "revenue.2024": "DERIVED из P7 «+5 %»: 6 000 000 / 1,05, округлено до рубля; точное число TBD (D5)",
+      "tax_debt_rub": "DERIVED: F5 = 10",
+      "flags": "DERIVED: F6 = 10",
+      "msp_category": "TBD",
+      "employees": "TBD"
+    }
+  },
+  "500100002020": {
+    "response": {
+      "revenue": {"2025": 7000000},
+      "tax_debt_rub": 0,
+      "msp_category": null,
+      "employees": null,
+      "flags": {"mass_address": false, "unreliable_address": false, "unreliable_director": false}
+    },
+    "sources": {
+      "revenue.2025": "P7 «по ФНС — 7 млн ₽»",
+      "revenue (один год)": "DERIVED: F4 = 8 «нет данных за прошлый год»",
+      "tax_debt_rub": "DERIVED: F5 = 10",
+      "flags": "DERIVED: F6 = 10",
+      "msp_category": "TBD",
+      "employees": "TBD"
+    }
+  }
+}

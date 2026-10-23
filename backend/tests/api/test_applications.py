@@ -144,9 +144,10 @@ def test_submit_full_draft(client: TestClient, bakery: dict[str, str]) -> None:
 
     assert response.status_code == 200
     submitted = response.json()
-    assert submitted["status"] == "SUBMITTED"
+    # submit сразу обрабатывает заявку: Пекарня по плану одобряется (R9).
+    assert submitted["status"] == "APPROVED"
     assert submitted["submitted_at"] is not None
-    assert submitted["status_changed_at"] == submitted["submitted_at"]
+    assert submitted["status_changed_at"] >= submitted["submitted_at"]
 
 
 @pytest.mark.parametrize(
@@ -239,7 +240,13 @@ def test_history_records_every_status(client: TestClient, bakery: dict[str, str]
 
     assert response.status_code == 200
     steps = [(h["from_status"], h["to_status"], h["actor_type"]) for h in response.json()]
-    assert steps == [(None, "DRAFT", "client"), ("DRAFT", "SUBMITTED", "client")]
+    assert steps == [
+        (None, "DRAFT", "client"),
+        ("DRAFT", "SUBMITTED", "client"),
+        ("SUBMITTED", "ENRICHMENT", "system"),
+        ("ENRICHMENT", "SCORING", "system"),
+        ("SCORING", "APPROVED", "system"),
+    ]
 
 
 def test_history_visibility(client: TestClient, bakery: dict[str, str]) -> None:

@@ -4,9 +4,10 @@
 сгенерировал клиент по контракту, меняется только `x-implementation-status`.
 """
 
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 
 from app.api.deps import ClientUser, CurrentUser, SessionDep
@@ -21,6 +22,8 @@ from app.api.v1.contract import (
 )
 from app.db.models import Product as ProductRow
 from app.db.models import User
+from app.integrations.base import SourceClient
+from app.integrations.fixtures import get_source_client
 from app.schemas.applications import (
     ApplicationCreate,
     ApplicationDetail,
@@ -131,7 +134,7 @@ def list_products(_: CurrentUser, session: SessionDep) -> list[Product]:
 )
 def list_applications(user: ClientUser, session: SessionDep) -> list[ApplicationSummary]:
     """Заявки компании текущего клиента."""
-    return [service.to_summary(a) for a in service.list_for_client(session, user)]
+    return [service.to_summary(session, a) for a in service.list_for_client(session, user)]
 
 
 @api_v1_router.post(
@@ -146,7 +149,7 @@ def create_application(
     body: ApplicationCreate, user: ClientUser, session: SessionDep
 ) -> ApplicationDetail:
     """Создать черновик заявки в статусе `DRAFT`."""
-    return service.to_detail(service.create_draft(session, user, body))
+    return service.to_detail(session, service.create_draft(session, user, body))
 
 
 @api_v1_router.get(
@@ -158,7 +161,7 @@ def create_application(
 )
 def get_application(id: UUID, user: ClientUser, session: SessionDep) -> ApplicationDetail:
     """Заявка, статус и активный оффер. Фронт опрашивает каждые 3 секунды (план, раздел 5)."""
-    return service.to_detail(service.get_visible(session, user, id))
+    return service.to_detail(session, service.get_visible(session, user, id))
 
 
 @api_v1_router.patch(
@@ -178,7 +181,7 @@ def update_application(
     id: UUID, body: ApplicationUpdate, user: ClientUser, session: SessionDep
 ) -> ApplicationDetail:
     """Автосохранение черновика."""
-    return service.to_detail(service.update_draft(session, user, id, body))
+    return service.to_detail(session, service.update_draft(session, user, id, body))
 
 
 @api_v1_router.post(
@@ -198,10 +201,14 @@ def update_application(
     ),
 )
 def submit_application(
-    id: UUID, user: ClientUser, session: SessionDep, idempotency_key: IdempotencyKey = None
+    id: UUID,
+    user: ClientUser,
+    session: SessionDep,
+    sources: Annotated[SourceClient, Depends(get_source_client)],
+    idempotency_key: IdempotencyKey = None,
 ) -> ApplicationDetail:
     """Проверка полноты и отправка: `DRAFT` → `SUBMITTED`."""
-    return service.to_detail(service.submit(session, user, id))
+    return service.to_detail(session, service.submit(session, user, id, sources))
 
 
 @api_v1_router.get(

@@ -1,10 +1,9 @@
-"""Черновик заявки и отправка (план, раздел 4, этапы 1–2; статусы — раздел 5).
+"""Черновик заявки, отправка и то, что видит клиент (план, раздел 4; статусы — раздел 5).
 
-После `submit` заявка остаётся в `SUBMITTED`: обогащение, скоринг и решение выполняет воркер,
-которого пока нет. Офферов, решений, запросов документов и файлов у заявок ещё не бывает.
+`submit` сразу обрабатывает заявку (services/pipeline.py): обогащение, скоринг, решение —
+синхронно, в одной транзакции с отправкой. Файлов у заявок пока не бывает.
 """
 
-from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import Integer, cast, func, select
@@ -13,25 +12,34 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.api.errors import ApiError
-from app.db.models import Application, ApplicationStatusHistory, Product, User
+from app.db.models import (
+    Application,
+    ApplicationStatusHistory,
+    DecisionRow,
+    InfoRequestRow,
+    OfferRow,
+    Product,
+    User,
+)
 from app.domain.inn import is_valid_inn
-from app.domain.state_machine import ApplicationStatus, InvalidTransitionError, ensure_transition
+from app.domain.state_machine import ApplicationStatus, InvalidTransitionError
+from app.integrations.base import SourceClient
 from app.schemas.applications import (
     ApplicationCreate,
     ApplicationDetail,
     ApplicationSummary,
     ApplicationUpdate,
-    StatusActor,
+    Offer,
     StatusHistoryEntry,
 )
 from app.schemas.auth import UserRole
 from app.schemas.common import ErrorCode
+from app.schemas.decisions import ClientDecision, DecisionOutcome
+from app.schemas.documents import InfoRequest, InfoRequestItem
+from app.services.pipeline import process_submitted
+from app.services.status import add_history, change_status, now
 
 _NUMBER_ATTEMPTS = 3
-
-
-def _now() -> datetime:
-    return datetime.now(UTC)
 
 
 def _not_found() -> ApiError:
@@ -41,35 +49,6 @@ def _not_found() -> ApiError:
 
 def _invalid(field: str, message: str) -> ApiError:
     return ApiError(422, ErrorCode.VALIDATION_ERROR, message, field)
-
-
-def _add_history(
-    session: Session,
-    application: Application,
-    from_status: ApplicationStatus | None,
-    actor: User,
-) -> None:
-    session.add(
-        ApplicationStatusHistory(
-            application_id=application.id,
-            from_status=from_status,
-            to_status=application.status,
-            actor_type=StatusActor.CLIENT,
-            actor_id=actor.id,
-            created_at=application.status_changed_at,
-        )
-    )
-
-
-def _change_status(
-    session: Session, application: Application, to_status: ApplicationStatus, actor: User
-) -> None:
-    """Переход по машине состояний + строка истории (план, раздел 5)."""
-    from_status = ApplicationStatus(application.status)
-    ensure_transition(from_status, to_status)
-    application.status = to_status
-    application.status_changed_at = _now()
-    _add_history(session, application, from_status, actor)
 
 
 def _next_number(session: Session) -> str:
@@ -117,7 +96,7 @@ def create_draft(session: Session, user: User, data: ApplicationCreate) -> Appli
             purpose=data.purpose,
             bki_consent=False,
             status=ApplicationStatus.DRAFT,
-            status_changed_at=_now(),
+            status_changed_at=now(),
         )
         session.add(application)
         try:
@@ -127,7 +106,7 @@ def create_draft(session: Session, user: User, data: ApplicationCreate) -> Appli
             if attempt == _NUMBER_ATTEMPTS - 1:
                 raise
             continue
-        _add_history(session, application, None, user)
+        add_history(session, application, None, user)
         session.commit()
         return application
     raise AssertionError("unreachable")
@@ -196,16 +175,20 @@ def _validate_for_submit(application: Application) -> None:
         )
 
 
-def submit(session: Session, user: User, application_id: UUID) -> Application:
+def submit(
+    session: Session, user: User, application_id: UUID, sources: SourceClient
+) -> Application:
     application = get_visible(session, user, application_id)
     current = ApplicationStatus(application.status)
     # Повторная отправка после запроса документов — отдельная операция resubmit.
+    # Повторный submit получает 409 и не запускает обработку второй раз.
     if current != ApplicationStatus.DRAFT:
         raise InvalidTransitionError(current, ApplicationStatus.SUBMITTED)
     _validate_for_submit(application)
 
-    _change_status(session, application, ApplicationStatus.SUBMITTED, user)
+    change_status(session, application, ApplicationStatus.SUBMITTED, user)
     application.submitted_at = application.status_changed_at
+    process_submitted(session, application, sources)
     try:
         session.commit()
     except StaleDataError as exc:
@@ -234,7 +217,59 @@ def history(session: Session, user: User, application_id: UUID) -> list[StatusHi
     ]
 
 
-def to_detail(application: Application) -> ApplicationDetail:
+def _latest[T](
+    session: Session, model: type[T], application: Application, *where: object
+) -> T | None:
+    query = (
+        select(model)
+        .where(model.application_id == application.id, *where)  # type: ignore[attr-defined]
+        .order_by(model.created_at.desc())  # type: ignore[attr-defined]
+        .limit(1)
+    )
+    return session.scalar(query)
+
+
+def _client_decision(row: DecisionRow | None) -> ClientDecision | None:
+    """Клиенту — только итог, кто решил и код отказа. Баллы и трасса правил остаются в БД."""
+    if row is None:
+        return None
+    outcome = DecisionOutcome(row.outcome.lower())
+    return ClientDecision(
+        outcome=outcome,
+        decided_by=row.decided_by,
+        reason_code=row.client_reason if outcome == DecisionOutcome.REJECTED else None,
+        decided_at=row.created_at,
+    )
+
+
+def _client_offer(row: OfferRow | None) -> Offer | None:
+    if row is None:
+        return None
+    return Offer(
+        id=row.id,
+        product_id=row.product_id,
+        amount=row.amount,
+        term_months=row.term_months,
+        rate=row.rate,
+        monthly_payment=row.monthly_payment,
+        status=row.status,
+    )
+
+
+def _open_info_request(session: Session, application: Application) -> InfoRequest | None:
+    row = _latest(session, InfoRequestRow, application, InfoRequestRow.status == "open")
+    if row is None:
+        return None
+    return InfoRequest(
+        id=row.id,
+        status=row.status,
+        items=[InfoRequestItem.model_validate(item) for item in row.items],
+        message=row.message,
+        created_at=row.created_at,
+    )
+
+
+def to_detail(session: Session, application: Application) -> ApplicationDetail:
     return ApplicationDetail(
         id=application.id,
         number=application.number,
@@ -251,15 +286,15 @@ def to_detail(application: Application) -> ApplicationDetail:
         status_changed_at=application.status_changed_at,
         version=application.version,
         submitted_at=application.submitted_at,
-        # Появятся вместе с воркером, решениями, офферами и документами.
-        active_offer=None,
-        decision=None,
-        info_request=None,
-        documents=[],
+        # Последний оффер не обнуляется после принятия (описание поля в контракте).
+        active_offer=_client_offer(_latest(session, OfferRow, application)),
+        decision=_client_decision(_latest(session, DecisionRow, application)),
+        info_request=_open_info_request(session, application),
+        documents=[],  # загрузка документов — следующий этап
     )
 
 
-def to_summary(application: Application) -> ApplicationSummary:
+def to_summary(session: Session, application: Application) -> ApplicationSummary:
     return ApplicationSummary(
         id=application.id,
         number=application.number,
@@ -269,5 +304,5 @@ def to_summary(application: Application) -> ApplicationSummary:
         amount=application.amount,
         term_months=application.term_months,
         submitted_at=application.submitted_at,
-        info_request=None,
+        info_request=_open_info_request(session, application),
     )

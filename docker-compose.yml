@@ -29,8 +29,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:?задайте в .env (cp .env.example .env)}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
       SEED_DIR: /seed
+      # Ответы ЕГРЮЛ/ЕГРИП/ФНС/БКИ, пока нет сервиса mocks (черновик, mocks/fixtures/README.md).
+      FIXTURES_DIR: /fixtures
     volumes:
       - ./seed:/seed:ro
+      - ./mocks/fixtures:/fixtures:ro
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
