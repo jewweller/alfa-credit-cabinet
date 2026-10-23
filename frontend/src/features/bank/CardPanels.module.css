@@ -1,0 +1,179 @@
+.code {
+  flex: none;
+  width: 32px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-mono);
+  color: var(--color-text-faint);
+}
+
+/* ── Факторы скоринга ── */
+
+.factors,
+.rules,
+.docs,
+.requested {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.factor,
+.rule,
+.doc {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.factor:first-child,
+.rule:first-child,
+.doc:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.factorText,
+.ruleText,
+.docText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.factorTitle,
+.ruleTitle,
+.docName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.factorValue,
+.ruleDetail,
+.docMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.points {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  width: 72px;
+}
+
+.pointsValue {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.pointsMax {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-faint);
+}
+
+.bar {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+
+.barFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--stage-done);
+}
+
+/* ── Правила ── */
+
+.ruleState {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.fired .code,
+.fired .ruleState {
+  color: var(--color-accent);
+}
+
+.fired .ruleTitle {
+  font-weight: var(--font-weight-bold);
+}
+
+/* ── Источники ── */
+
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.source:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.sourceHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sourceName {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.json {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  white-space: pre;
+}
+
+/* ── Решение ── */
+
+.requested {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.requested li::before {
+  content: '— ';
+  color: var(--color-text-faint);
+}
+
+.quote {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-border-strong);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

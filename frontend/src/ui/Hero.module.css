@@ -65,6 +65,7 @@
   background: rgba(255, 255, 255, 0.03);
   box-shadow: var(--shadow-night-key);
   backdrop-filter: blur(8px);
+  min-width: 0;
   animation: enter-up var(--duration-slow) var(--ease-out) both;
   animation-delay: calc(120ms + var(--stagger) * var(--i, 0));
 }
@@ -95,6 +96,10 @@
   font-weight: var(--font-weight-medium);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  /* Длинное значение не наезжает на соседнюю карточку. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 860px) {
@@ -129,5 +134,25 @@
 
   .statValue {
     font-size: 24px;
+  }
+}
+
+/* Совсем узко: три карточки в ряд не вмещают суммы — сводка строками, подпись слева. */
+@media (max-width: 480px) {
+  .long {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .long .stat {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-3);
+    min-height: 0;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .long .statValue {
+    font-size: 20px;
   }
 }

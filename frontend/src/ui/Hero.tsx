@@ -16,11 +16,13 @@ export interface HeroProps {
   subtitle?: string | null;
   /** null — данные ещё грузятся. */
   stats?: HeroStat[] | null;
+  /** Длинные значения (суммы): на узком экране сводка идёт строками, а не тремя карточками. */
+  longStats?: boolean;
   action?: ReactNode;
 }
 
 /** Приветствие и сводка прямо на тёмном фоне страницы. */
-export function Hero({ top, eyebrow, title, subtitle, stats, action }: HeroProps) {
+export function Hero({ top, eyebrow, title, subtitle, stats, longStats = false, action }: HeroProps) {
   return (
     <section className={styles.hero}>
       <div className={styles.inner}>
@@ -38,7 +40,7 @@ export function Hero({ top, eyebrow, title, subtitle, stats, action }: HeroProps
         </div>
 
         {stats !== undefined && (
-          <dl className={styles.stats}>
+          <dl className={`${styles.stats} ${longStats ? styles.long : ''}`}>
             {(stats ?? [null, null, null]).map((stat, i) => (
               <div
                 key={stat?.label ?? i}

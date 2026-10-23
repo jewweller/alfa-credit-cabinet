@@ -452,6 +452,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bank/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Bank Applications
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Очередь заявок всех клиентов (экран B2).
+         *
+         *     Черновики (`DRAFT`) банку не видны. Сортировка: сначала `MANUAL_REVIEW`, внутри — дольше
+         *     всего ждущие (по `status_changed_at`), затем остальные, свежие сверху.
+         */
+        get: operations["listBankApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank/applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bank Application
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Полная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение.
+         */
+        get: operations["getBankApplication"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank/applications/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign Bank Application
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Взять заявку в работу. Повторный вызов тем же специалистом ничего не меняет.
+         */
+        post: operations["assignBankApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank/applications/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide Bank Application
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
+         *     документов или отказ. Клиент видит итог в карточке заявки и событие в ленте.
+         */
+        post: operations["decideBankApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -605,6 +697,98 @@ export interface components {
              * @description Согласие на запрос в БКИ.
              */
             bki_consent?: boolean | null;
+        };
+        /**
+         * BankApplicationDetail
+         * @description Полная карточка для андеррайтера (экран B3).
+         */
+        BankApplicationDetail: {
+            application: components["schemas"]["ApplicationDetail"];
+            company: components["schemas"]["CompanyBrief"];
+            /**
+             * Applicant Name
+             * @description Кто из клиента подал заявку.
+             */
+            applicant_name: string;
+            /** @description Данные ЕГРЮЛ / ЕГРИП в едином виде; null — компании нет в реестре. */
+            registry: components["schemas"]["CompanyLookupResponse"] | null;
+            assignee: components["schemas"]["Employee"] | null;
+            /**
+             * Enrichment
+             * @description Ответы источников; пустой список, пока обогащение не прошло.
+             */
+            enrichment: components["schemas"]["EnrichmentResult"][];
+            /** @description null, пока скоринг не посчитан. */
+            scoring: components["schemas"]["ScoringResult"] | null;
+            /**
+             * Rules
+             * @description Проверка R1–R10 по порядку до сработавшего; пусто, пока решения не было.
+             */
+            rules: components["schemas"]["RuleCheck"][];
+            decision: components["schemas"]["BankDecision"] | null;
+        };
+        /**
+         * BankApplicationSummary
+         * @description Строка очереди (экран B2).
+         */
+        BankApplicationSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Number
+             * @example 1051
+             */
+            number: string;
+            company: components["schemas"]["CompanyBrief"];
+            /** Product Id */
+            product_id: string | null;
+            /** Amount */
+            amount: string | null;
+            /** Term Months */
+            term_months: number | null;
+            status: components["schemas"]["ApplicationStatus"];
+            /**
+             * Status Changed At
+             * Format: date-time
+             * @description С этого момента считается «время в статусе».
+             */
+            status_changed_at: string;
+            /** Submitted At */
+            submitted_at: string | null;
+            /**
+             * Score
+             * @description Балл скоринга; null, пока не посчитан.
+             */
+            score: number | null;
+            /** @description Грейд; null, пока скоринг не посчитан. */
+            grade: components["schemas"]["Grade"] | null;
+            /** @description Кто взял в работу; null — никто. */
+            assignee: components["schemas"]["Employee"] | null;
+        };
+        /**
+         * BankDecision
+         * @description Последнее решение по заявке глазами банка: в отличие от клиентского — с комментарием.
+         */
+        BankDecision: {
+            outcome: components["schemas"]["DecisionOutcome"];
+            decided_by: components["schemas"]["DecisionActor"];
+            /** @description Только для `outcome = rejected`. */
+            reason_code: components["schemas"]["RejectReason"] | null;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** @description Кто решил; null — решил движок. */
+            underwriter: components["schemas"]["Employee"] | null;
+            /**
+             * Comment
+             * @description Внутренний комментарий специалиста.
+             */
+            comment: string | null;
         };
         /** Body_uploadDocument */
         Body_uploadDocument: {
@@ -784,11 +968,62 @@ export interface components {
          */
         DocumentKind: "tax_return" | "bank_statement" | "financial_statements" | "contract" | "other";
         /**
+         * Employee
+         * @description Сотрудник банка — кто взял заявку в работу или принял решение.
+         */
+        Employee: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Full Name
+             * @example Дмитрий Орлов
+             */
+            full_name: string;
+        };
+        /**
+         * EnrichmentResult
+         * @description Ответ внешнего источника на этапе обогащения (таблица `enrichment_results`).
+         */
+        EnrichmentResult: {
+            source: components["schemas"]["EnrichmentSource"];
+            status: components["schemas"]["EnrichmentStatus"];
+            /**
+             * Attempts
+             * @description Сколько было попыток: при сбое — до 3 (2 повтора).
+             */
+            attempts: number;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /**
+             * Response
+             * @description Ответ источника как есть (сырой JSON мока); null при ошибке.
+             */
+            response: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * EnrichmentSource
+         * @enum {string}
+         */
+        EnrichmentSource: "egrul" | "egrip" | "fns_tb" | "bki";
+        /**
+         * EnrichmentStatus
+         * @enum {string}
+         */
+        EnrichmentStatus: "ok" | "not_found" | "error";
+        /**
          * ErrorCode
          * @description Технические коды ошибок. Предварительный контракт: в плане не закреплены, TBD.
          * @enum {string}
          */
-        ErrorCode: "validation_error" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "invalid_transition" | "version_conflict" | "company_not_found" | "upstream_unavailable" | "offer_not_active" | "documents_required" | "file_too_large" | "unsupported_media_type" | "invalid_code" | "http_error";
+        ErrorCode: "validation_error" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "invalid_transition" | "version_conflict" | "company_not_found" | "upstream_unavailable" | "offer_not_active" | "documents_required" | "file_too_large" | "unsupported_media_type" | "invalid_code" | "assigned_to_other" | "http_error";
         /**
          * ErrorResponse
          * @description Единый формат ошибки `{code, message, field?}` (план, раздел 10).
@@ -807,6 +1042,12 @@ export interface components {
              */
             field?: string | null;
         };
+        /**
+         * Grade
+         * @description Грейд по баллу скоринга: A ≥ 80, B 65–79, C 50–64, D 35–49, E < 35.
+         * @enum {string}
+         */
+        Grade: "A" | "B" | "C" | "D" | "E";
         /**
          * InfoRequest
          * @description Запрос банка на дополнительные документы (исход «запрос информации»).
@@ -1134,6 +1375,80 @@ export interface components {
          */
         RejectReason: "company_inactive" | "bankruptcy_or_overdue" | "low_score" | "no_suitable_terms" | "underwriter_decision";
         /**
+         * RuleCheck
+         * @description Проверка одного правила движка решения. Правила идут по порядку, срабатывает первое.
+         */
+        RuleCheck: {
+            /**
+             * Code
+             * @example R4
+             */
+            code: string;
+            /**
+             * Title
+             * @example Выручка в анкете расходится с ФНС больше чем на 30%
+             */
+            title: string;
+            /**
+             * Fired
+             * @description true — правило сработало и определило исход.
+             */
+            fired: boolean;
+            /**
+             * Detail
+             * @description Почему сработало или почему нет, с цифрами.
+             */
+            detail: string | null;
+        };
+        /** ScoringFactor */
+        ScoringFactor: {
+            /**
+             * Code
+             * @example F3
+             */
+            code: string;
+            /**
+             * Title
+             * @example Долговая нагрузка
+             */
+            title: string;
+            /**
+             * Value
+             * @description Значение фактора понятными словами.
+             * @example 21,3%
+             */
+            value: string;
+            /** Points */
+            points: number;
+            /** Max Points */
+            max_points: number;
+        };
+        /**
+         * ScoringResult
+         * @description Скоринг — отдельно от решения (план, раздел 7). Считается всегда, даже при отказе.
+         */
+        ScoringResult: {
+            /**
+             * Model Version
+             * @example rules-2026.10
+             */
+            model_version: string;
+            /** Total Score */
+            total_score: number;
+            grade: components["schemas"]["Grade"];
+            /**
+             * Debt Load
+             * @description Нагрузка долей: (текущие платежи + платёж по новому кредиту) / месячная выручка. Платёж — по базовой ставке продукта на запрошенных условиях.
+             * @example 0.213
+             */
+            debt_load: number;
+            /**
+             * Factors
+             * @description F1–F6 по порядку.
+             */
+            factors: components["schemas"]["ScoringFactor"][];
+        };
+        /**
          * SigningCodeResponse
          * @description Одноразовый код подписи. На демо показывается на экране в рамке «Симуляция ПЭП».
          */
@@ -1198,6 +1513,51 @@ export interface components {
              */
             token_type: "bearer";
         };
+        /**
+         * UnderwriterDecisionRequest
+         * @description Решение специалиста (экран B4). Какие поля нужны — зависит от `outcome`.
+         */
+        UnderwriterDecisionRequest: {
+            outcome: components["schemas"]["UnderwriterOutcome"];
+            /**
+             * Product Id
+             * @description `counter_offer`: продукт оффера. Иначе не передаётся.
+             */
+            product_id?: string | null;
+            /**
+             * Amount
+             * @description `counter_offer`: сумма оффера.
+             */
+            amount?: string | null;
+            /**
+             * Term Months
+             * @description `counter_offer`: срок оффера.
+             */
+            term_months?: number | null;
+            /**
+             * Rate
+             * @description `approved` и `counter_offer`: ставка. Для `approved` сумма и срок — из заявки.
+             */
+            rate?: string | null;
+            /**
+             * Info Items
+             * @description `info_requested`: какие документы нужны (хотя бы один).
+             */
+            info_items?: components["schemas"]["InfoRequestItem"][] | null;
+            /** @description `rejected`: причина из справочника. */
+            reason_code?: components["schemas"]["RejectReason"] | null;
+            /**
+             * Comment
+             * @description `info_requested`: сообщение клиенту (обязательно). Для остальных исходов — внутренний комментарий, клиент его не видит.
+             */
+            comment?: string | null;
+        };
+        /**
+         * UnderwriterOutcome
+         * @description Исход ручного рассмотрения: те же 4, что у движка, кроме «на ручное рассмотрение».
+         * @enum {string}
+         */
+        UnderwriterOutcome: "approved" | "counter_offer" | "info_requested" | "rejected";
         /**
          * UserRole
          * @enum {string}
@@ -2417,6 +2777,259 @@ export interface operations {
                 };
             };
             /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listBankApplications: {
+        parameters: {
+            query?: {
+                /** @description Фильтр по статусам; можно несколько. Без фильтра — все, кроме DRAFT. */
+                status?: components["schemas"]["ApplicationStatus"][] | null;
+                /** @description Фильтр по грейду. */
+                grade?: components["schemas"]["Grade"] | null;
+                /** @description Фильтр по продукту. */
+                product_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankApplicationSummary"][];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только сотрудникам банка (роли underwriter и admin). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getBankApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankApplicationDetail"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только сотрудникам банка (роли underwriter и admin). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    assignBankApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankApplicationDetail"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только сотрудникам банка (роли underwriter и admin). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Взять в работу можно только заявку в `MANUAL_REVIEW`. `assigned_to_other` — заявку уже ведёт другой специалист. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    decideBankApplication: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9). */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnderwriterDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankApplicationDetail"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только сотрудникам банка (роли underwriter и admin). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Решение принимается только в `MANUAL_REVIEW`. `assigned_to_other` — заявку ведёт другой специалист; сначала её нужно взять в работу. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации: для выбранного `outcome` не хватает полей или условия вне лимитов продукта. */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -15,6 +15,7 @@ import type {
   LoginRequest,
   Me,
   ProductRecommendRequest,
+  UnderwriterDecisionRequest,
 } from '../api/types';
 import { DEMO_PASSWORD, products, registry, users } from './data';
 import { buildSchedule } from './loanMath';
@@ -73,6 +74,25 @@ function own<T>(request: Request, id: unknown, run: (id: string, user: Me) => T,
       const appId = String(id);
       db.assertOwner(appId, clientOf(user).company.id);
       return run(appId, user);
+    },
+    options,
+  );
+}
+
+/** Сотрудник банка (underwriter, admin); клиенту кабинет банка недоступен. */
+function bankOnly(user: Me) {
+  if (user.role === 'client') {
+    throw new MockHttpError(403, 'forbidden', 'Операция доступна только сотрудникам банка');
+  }
+}
+
+/** Операция кабинета банка над любой заявкой. */
+function bank<T>(request: Request, run: (user: Me) => T, options?: { status?: number; wait?: number }) {
+  return respond(
+    request,
+    (user) => {
+      bankOnly(user);
+      return run(user);
     },
     options,
   );
@@ -147,8 +167,16 @@ export const handlers = [
     own(request, params.id, (id) => db.submit(id, key(request)), { wait: 600 }),
   ),
 
+  // Историю видит и клиент (своя заявка), и сотрудник банка (план, раздел 10).
   http.get(`${API}/applications/:id/history`, ({ request, params }) =>
-    own(request, params.id, (id) => db.history(id), { wait: 250 }),
+    respond(
+      request,
+      (user) => {
+        if (user.role === 'client') db.assertOwner(String(params.id), clientOf(user).company.id);
+        return db.history(String(params.id));
+      },
+      { wait: 250 },
+    ),
   ),
 
   http.get(`${API}/applications/:id/schedule`, ({ request, params }) =>
@@ -230,6 +258,26 @@ export const handlers = [
   http.post(`${API}/applications/:id/cancel`, ({ request, params }) =>
     own(request, params.id, (id) => db.cancel(id, key(request)), { wait: 400 }),
   ),
+
+  // ── Кабинет банка (B2–B4) ──
+
+  http.get(`${API}/bank/applications`, ({ request }) =>
+    bank(request, () => {
+      const params = new URL(request.url).searchParams;
+      return db.bankList({ status: params.getAll('status'), grade: params.get('grade'), productId: params.get('product_id') });
+    }),
+  ),
+
+  http.get(`${API}/bank/applications/:id`, ({ request, params }) => bank(request, () => db.bankDetail(String(params.id)))),
+
+  http.post(`${API}/bank/applications/:id/assign`, ({ request, params }) =>
+    bank(request, (user) => db.assign(String(params.id), user), { wait: 400 }),
+  ),
+
+  http.post(`${API}/bank/applications/:id/decision`, async ({ request, params }) => {
+    const body = (await request.json()) as UnderwriterDecisionRequest;
+    return bank(request, (user) => db.bankDecide(String(params.id), user, body, key(request)), { wait: 600 });
+  }),
 
   http.get(`${API}/feed`, ({ request }) =>
     respond(

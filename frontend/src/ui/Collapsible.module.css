@@ -32,6 +32,22 @@
   box-shadow: var(--shadow-focus);
 }
 
+/* Внутри рабочей карточки: цвета из токенов --toggle-surface-*. */
+.onSurface .summary {
+  color: var(--toggle-surface-text);
+  background: var(--toggle-surface-fill);
+  box-shadow: var(--toggle-surface-ring);
+}
+
+.onSurface .summary:hover {
+  color: var(--toggle-surface-text);
+  background: var(--toggle-surface-hover-fill);
+}
+
+.onSurface .summary:focus-visible {
+  box-shadow: var(--shadow-focus);
+}
+
 .chevron {
   width: 8px;
   height: 8px;
