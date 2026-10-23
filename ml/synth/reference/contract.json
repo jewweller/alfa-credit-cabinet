@@ -1,0 +1,146 @@
+{
+  "repository": "jewweller/alfa-credit-cabinet",
+  "main_commit": "413fbfa667f2dbf0b18f65c71a61c7727e757006",
+  "api_commit": "35ab47d054678eb9d205457c7edae756392b8295",
+  "frontend_commit": "7fea01aa82a4a137f72fc49a13a7a5086cec7ccc",
+  "schemas": {
+    "Product": {
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "title": "Id"
+        },
+        "code": {
+          "type": "string",
+          "title": "Code",
+          "examples": [
+            "EXPRESS_WC"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "title": "Name",
+          "examples": [
+            "Экспресс-оборот"
+          ]
+        },
+        "purpose_tags": {
+          "items": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "type": "array",
+          "title": "Purpose Tags"
+        },
+        "min_amount": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d{2}$",
+          "title": "Min Amount",
+          "description": "Сумма в рублях строкой с двумя знаками после точки.",
+          "examples": [
+            "3000000.00"
+          ]
+        },
+        "max_amount": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d{2}$",
+          "title": "Max Amount",
+          "description": "Сумма в рублях строкой с двумя знаками после точки.",
+          "examples": [
+            "3000000.00"
+          ]
+        },
+        "min_term": {
+          "type": "integer",
+          "title": "Min Term",
+          "description": "Минимальный срок, месяцев."
+        },
+        "max_term": {
+          "type": "integer",
+          "title": "Max Term",
+          "description": "Максимальный срок, месяцев."
+        },
+        "base_rate": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d{2}$",
+          "title": "Base Rate",
+          "description": "Годовая процентная ставка в процентах строкой с двумя знаками после точки: \"18.00\" означает 18% годовых.",
+          "examples": [
+            "18.00"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "id",
+        "code",
+        "name",
+        "purpose_tags",
+        "min_amount",
+        "max_amount",
+        "min_term",
+        "max_term",
+        "base_rate"
+      ],
+      "title": "Product"
+    },
+    "LoanPurpose": {
+      "type": "string",
+      "enum": [
+        "working_capital",
+        "equipment",
+        "cash_gap"
+      ],
+      "title": "LoanPurpose",
+      "description": "Цель кредита: оборотные средства / оборудование / кассовый разрыв (план, раздел 4).\n\nКоды — предварительный контракт: в плане цели названы только по-русски, TBD."
+    },
+    "RejectReason": {
+      "type": "string",
+      "enum": [
+        "company_inactive",
+        "bankruptcy_or_overdue",
+        "low_score",
+        "no_suitable_terms",
+        "underwriter_decision"
+      ],
+      "title": "RejectReason",
+      "description": "Причина отказа. Коды привязаны к правилам движка решения (план, раздел 7).\n\n- `company_inactive` — R1, компания ликвидирована: статус в ЕГРЮЛ/ЕГРИП не «действующая»\n- `bankruptcy_or_overdue` — R2, банкротство или текущая просрочка больше 90 дней по данным БКИ\n- `low_score` — R6, грейд E: скоринговый балл ниже 35\n- `no_suitable_terms` — R10, нагрузка выше 35%, и не подошли ни более длинный срок, ни меньшая сумма, ни другой продукт\n- `underwriter_decision` — ручной отказ кредитного специалиста (этап 6)",
+      "x-enum-descriptions": [
+        "R1, компания ликвидирована: статус в ЕГРЮЛ/ЕГРИП не «действующая»",
+        "R2, банкротство или текущая просрочка больше 90 дней по данным БКИ",
+        "R6, грейд E: скоринговый балл ниже 35",
+        "R10, нагрузка выше 35%, и не подошли ни более длинный срок, ни меньшая сумма, ни другой продукт",
+        "ручной отказ кредитного специалиста (этап 6)"
+      ]
+    },
+    "DecisionOutcome": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "counter_offer",
+        "rejected",
+        "info_requested",
+        "manual_review"
+      ],
+      "title": "DecisionOutcome"
+    },
+    "CompanyKind": {
+      "type": "string",
+      "enum": [
+        "LLC",
+        "IE"
+      ],
+      "title": "CompanyKind"
+    },
+    "CompanyRegistryStatus": {
+      "type": "string",
+      "enum": [
+        "ACTIVE",
+        "LIQUIDATING",
+        "LIQUIDATED"
+      ],
+      "title": "CompanyRegistryStatus",
+      "description": "Статус в реестре.\n\nЗначения взяты из контракта ЕГРЮЛ; для ЕГРИП в плане не перечислены (TBD)."
+    }
+  }
+}
