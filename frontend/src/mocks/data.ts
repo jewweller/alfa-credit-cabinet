@@ -3,6 +3,7 @@
 import type {
   ApplicationDetail,
   CompanyLookup,
+  Employee,
   FeedItem,
   Me,
   Offer,
@@ -109,6 +110,28 @@ export const users: Me[] = [
     full_name: 'Елена Мельникова',
     role: 'client',
     company: company('000c4', '500100002020', 'ИП Мельникова Е.В.', 'IE', '96.02', 'micro'),
+  },
+  // Клиенты только для очереди банка (B2): своих учёток для демо у них нет, заявки — в исходных данных.
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000a5',
+    email: 'vector@demo.local',
+    full_name: 'Павел Гришин',
+    role: 'client',
+    company: company('000c5', '7701000033', 'ООО «Вектор»', 'LLC', '46.90', 'small'),
+  },
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000a6',
+    email: 'mirage@demo.local',
+    full_name: 'Анна Зайцева',
+    role: 'client',
+    company: company('000c6', '7701000058', 'ООО «Мираж»', 'LLC', '56.10', 'small'),
+  },
+  {
+    id: '5a0e7d6c-0000-4000-8000-0000000000a7',
+    email: 'sboi@demo.local',
+    full_name: 'Игорь Сбоев',
+    role: 'client',
+    company: company('000c7', '7701000065', 'ООО «Сбой-Тест»', 'LLC', '62.01', 'small'),
   },
   {
     id: '5a0e7d6c-0000-4000-8000-0000000000b1',
@@ -241,11 +264,24 @@ export function makeOffer(
   };
 }
 
-/** Внутренняя запись мока: карточка + история + все офферы. */
+/** Внутренняя запись мока: карточка + история + все офферы + то, что видит только банк. */
 export interface MockApplication {
   detail: ApplicationDetail;
   history: StatusHistoryEntry[];
   offers: Offer[];
+  /** Кто из специалистов взял заявку в работу. */
+  assignee?: Employee | null;
+  /** Последнее решение специалиста: кто и с каким внутренним комментарием. */
+  review?: { underwriter: Employee; comment: string | null } | null;
+}
+
+/** Специалист из демо-учёток — им подписаны решения в исходных данных. */
+export const UNDERWRITER: Employee = { id: '5a0e7d6c-0000-4000-8000-0000000000b1', full_name: 'Дмитрий Орлов' };
+
+/** Клиент из списка учёток — для заявок других компаний в исходных данных. */
+function applicantOf(email: string) {
+  const user = users.find((u) => u.email === email)!;
+  return { company_id: user.company!.id, applicant_id: user.id };
 }
 
 const base = {
@@ -281,7 +317,7 @@ function pipeline(createdAt: number, submittedAt: number): StatusHistoryEntry[] 
 }
 
 export function seedApplications(): MockApplication[] {
-  const counter = makeOffer('0ffe7000-0000-4000-8000-000000001055', PRODUCT_IDS.EXPRESS_WC, '2000000.00', 24, '20.00');
+  const counter = makeOffer('0ffe7000-0000-4000-8000-000000001055', PRODUCT_IDS.EXPRESS_WC, '2000000.00', 18, '18.00');
   const issued = makeOffer('0ffe7000-0000-4000-8000-000000000987', PRODUCT_IDS.EXPRESS_WC, '1500000.00', 12, '18.00', 'accepted');
 
   return [
@@ -354,7 +390,7 @@ export function seedApplications(): MockApplication[] {
       offers: [],
     },
     {
-      // Другие условия: просили 2 млн на 12 мес, предлагаем на 24 мес (R10, план, раздел 7).
+      // Другие условия: при текущих платежах 550 тыс. нагрузка на 12 мес — 36,7%, на 18 мес — 33,9% (R10).
       detail: {
         ...base,
         id: 'a-1055',
@@ -363,6 +399,7 @@ export function seedApplications(): MockApplication[] {
         amount: '2000000.00',
         term_months: 12,
         purpose: 'working_capital',
+        existing_payments_monthly: '550000.00',
         status: 'COUNTER_OFFER',
         status_changed_at: minutesAgo(1 * HOUR),
         submitted_at: minutesAgo(1 * HOUR + 5),
@@ -399,7 +436,7 @@ export function seedApplications(): MockApplication[] {
       offers: [issued],
     },
     {
-      // Отказ: причина R10 — нагрузка, ничего не подошло.
+      // Отказ специалиста: 25 млн — R5, ручное рассмотрение; нагрузка на 60 мес — 37,9%.
       detail: {
         ...base,
         id: 'a-0950',
@@ -413,12 +450,82 @@ export function seedApplications(): MockApplication[] {
         submitted_at: minutesAgo(90 * DAY + 30),
         decision: {
           outcome: 'rejected',
-          decided_by: 'system',
+          decided_by: 'underwriter',
           reason_code: 'no_suitable_terms',
           decided_at: minutesAgo(90 * DAY),
         },
       },
-      history: [...pipeline(91 * DAY, 90 * DAY + 30), h('SCORING', 'REJECTED', 'system', 90 * DAY)],
+      history: [
+        ...pipeline(91 * DAY, 90 * DAY + 30),
+        h('SCORING', 'MANUAL_REVIEW', 'system', 90 * DAY + 28),
+        h('MANUAL_REVIEW', 'REJECTED', 'underwriter', 90 * DAY),
+      ],
+      offers: [],
+      assignee: UNDERWRITER,
+      review: {
+        underwriter: UNDERWRITER,
+        comment: 'Нагрузка 37,9% даже на максимальном сроке. Меньшая сумма не покрывает покупку линии — клиенту это не нужно.',
+      },
+    },
+    {
+      // ООО «Вектор»: текущая просрочка 120 дней — автоматический отказ (R2).
+      detail: {
+        ...base,
+        ...applicantOf('vector@demo.local'),
+        id: 'a-1060',
+        number: '1060',
+        product_id: PRODUCT_IDS.EXPRESS_WC,
+        amount: '4000000.00',
+        term_months: 18,
+        purpose: 'working_capital',
+        revenue_12m: '16000000.00',
+        existing_payments_monthly: '95000.00',
+        status: 'REJECTED',
+        status_changed_at: minutesAgo(2 * DAY),
+        submitted_at: minutesAgo(2 * DAY + 4),
+        decision: { outcome: 'rejected', decided_by: 'system', reason_code: 'bankruptcy_or_overdue', decided_at: minutesAgo(2 * DAY) },
+      },
+      history: [...pipeline(2 * DAY + 30, 2 * DAY + 4), h('SCORING', 'REJECTED', 'system', 2 * DAY)],
+      offers: [],
+    },
+    {
+      // ООО «Мираж»: грейд D (37 баллов) — ждёт специалиста (R7).
+      detail: {
+        ...base,
+        ...applicantOf('mirage@demo.local'),
+        id: 'a-1063',
+        number: '1063',
+        product_id: PRODUCT_IDS.EXPRESS_WC,
+        amount: '3000000.00',
+        term_months: 24,
+        purpose: 'working_capital',
+        revenue_12m: '9500000.00',
+        existing_payments_monthly: '120000.00',
+        status: 'MANUAL_REVIEW',
+        status_changed_at: minutesAgo(50 * MIN),
+        submitted_at: minutesAgo(54 * MIN),
+      },
+      history: [...pipeline(3 * HOUR, 54 * MIN), h('SCORING', 'MANUAL_REVIEW', 'system', 50 * MIN)],
+      offers: [],
+    },
+    {
+      // ООО «Сбой-Тест»: БКИ не ответило после 2 повторов — ждёт специалиста (R3).
+      detail: {
+        ...base,
+        ...applicantOf('sboi@demo.local'),
+        id: 'a-1066',
+        number: '1066',
+        product_id: PRODUCT_IDS.OVERDRAFT,
+        amount: '1200000.00',
+        term_months: 12,
+        purpose: 'cash_gap',
+        revenue_12m: '18000000.00',
+        existing_payments_monthly: '0.00',
+        status: 'MANUAL_REVIEW',
+        status_changed_at: minutesAgo(25 * MIN),
+        submitted_at: minutesAgo(29 * MIN),
+      },
+      history: [...pipeline(1 * HOUR, 29 * MIN), h('SCORING', 'MANUAL_REVIEW', 'system', 25 * MIN)],
       offers: [],
     },
   ];

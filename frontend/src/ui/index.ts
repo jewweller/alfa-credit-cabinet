@@ -16,6 +16,7 @@ export { ErrorBanner } from './ErrorBanner';
 export { FeedItem } from './FeedItem';
 export { FeedPanel } from './FeedPanel';
 export { FileDrop } from './FileDrop';
+export { FilterChips, type FilterChip } from './FilterChips';
 export { FormGrid } from './FormGrid';
 export { Hero, type HeroStat } from './Hero';
 export { InlineAlert } from './InlineAlert';

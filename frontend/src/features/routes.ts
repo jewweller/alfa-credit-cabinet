@@ -7,8 +7,9 @@ export const ROUTES = {
   login: '/login',
   products: '/products',
   feed: '/feed',
-  /** Кабинет банка (B2) — экраны сотрудников ещё впереди. */
+  /** Кабинет банка: очередь (B2) и карточка заявки с решением (B3–B4). */
   bank: '/bank',
+  bankApplication: (id: string) => `/bank/applications/${id}`,
   application: (id: string) => `/applications/${id}`,
   applicationEdit: (id: string) => `/applications/${id}/edit`,
   signing: (id: string) => `/applications/${id}/signing`,

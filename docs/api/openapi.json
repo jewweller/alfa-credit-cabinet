@@ -1785,6 +1785,416 @@
         },
         "x-implementation-status": "planned"
       }
+    },
+    "/api/v1/bank/applications": {
+      "get": {
+        "tags": [
+          "bank"
+        ],
+        "summary": "List Bank Applications",
+        "description": "**Только контракт — ещё не реализовано.**\n\nОчередь заявок всех клиентов (экран B2).\n\nЧерновики (`DRAFT`) банку не видны. Сортировка: сначала `MANUAL_REVIEW`, внутри — дольше\nвсего ждущие (по `status_changed_at`), затем остальные, свежие сверху.",
+        "operationId": "listBankApplications",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по статусам; можно несколько. Без фильтра — все, кроме DRAFT.",
+              "title": "Status"
+            },
+            "description": "Фильтр по статусам; можно несколько. Без фильтра — все, кроме DRAFT."
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Grade"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по грейду.",
+              "title": "Grade"
+            },
+            "description": "Фильтр по грейду."
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по продукту.",
+              "title": "Product Id"
+            },
+            "description": "Фильтр по продукту."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankApplicationSummary"
+                  },
+                  "title": "Response Listbankapplications"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только сотрудникам банка (роли underwriter и admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
+    },
+    "/api/v1/bank/applications/{id}": {
+      "get": {
+        "tags": [
+          "bank"
+        ],
+        "summary": "Get Bank Application",
+        "description": "**Только контракт — ещё не реализовано.**\n\nПолная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение.",
+        "operationId": "getBankApplication",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankApplicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только сотрудникам банка (роли underwriter и admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
+    },
+    "/api/v1/bank/applications/{id}/assign": {
+      "post": {
+        "tags": [
+          "bank"
+        ],
+        "summary": "Assign Bank Application",
+        "description": "**Только контракт — ещё не реализовано.**\n\nВзять заявку в работу. Повторный вызов тем же специалистом ничего не меняет.",
+        "operationId": "assignBankApplication",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankApplicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только сотрудникам банка (роли underwriter и admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`invalid_transition` — из текущего статуса операция не разрешена. Взять в работу можно только заявку в `MANUAL_REVIEW`. `assigned_to_other` — заявку уже ведёт другой специалист.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
+    },
+    "/api/v1/bank/applications/{id}/decision": {
+      "post": {
+        "tags": [
+          "bank"
+        ],
+        "summary": "Decide Bank Application",
+        "description": "**Только контракт — ещё не реализовано.**\n\nРешение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос\nдокументов или отказ. Клиент видит итог в карточке заявки и событие в ленте.",
+        "operationId": "decideBankApplication",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
+              "title": "Idempotency-Key"
+            },
+            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnderwriterDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankApplicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только сотрудникам банка (роли underwriter и admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`invalid_transition` — из текущего статуса операция не разрешена. Решение принимается только в `MANUAL_REVIEW`. `assigned_to_other` — заявку ведёт другой специалист; сначала её нужно взять в работу.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации: для выбранного `outcome` не хватает полей или условия вне лимитов продукта.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
     }
   },
   "components": {
@@ -2276,6 +2686,285 @@
         "title": "ApplicationUpdate",
         "description": "Автосохранение черновика. Передаются только изменяемые поля.\n\n`version` обязателен: если заявку уже изменили, ответ 409 `version_conflict` (план, раздел 9).\nВ каких статусах разрешено изменение — TBD."
       },
+      "BankApplicationDetail": {
+        "properties": {
+          "application": {
+            "$ref": "#/components/schemas/ApplicationDetail"
+          },
+          "company": {
+            "$ref": "#/components/schemas/CompanyBrief"
+          },
+          "applicant_name": {
+            "type": "string",
+            "title": "Applicant Name",
+            "description": "Кто из клиента подал заявку."
+          },
+          "registry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyLookupResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Данные ЕГРЮЛ / ЕГРИП в едином виде; null — компании нет в реестре."
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Employee"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enrichment": {
+            "items": {
+              "$ref": "#/components/schemas/EnrichmentResult"
+            },
+            "type": "array",
+            "title": "Enrichment",
+            "description": "Ответы источников; пустой список, пока обогащение не прошло."
+          },
+          "scoring": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoringResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null, пока скоринг не посчитан."
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/RuleCheck"
+            },
+            "type": "array",
+            "title": "Rules",
+            "description": "Проверка R1–R10 по порядку до сработавшего; пусто, пока решения не было."
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BankDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "application",
+          "company",
+          "applicant_name",
+          "registry",
+          "assignee",
+          "enrichment",
+          "scoring",
+          "rules",
+          "decision"
+        ],
+        "title": "BankApplicationDetail",
+        "description": "Полная карточка для андеррайтера (экран B3)."
+      },
+      "BankApplicationSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number",
+            "examples": [
+              "1051"
+            ]
+          },
+          "company": {
+            "$ref": "#/components/schemas/CompanyBrief"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d{2}$",
+                "description": "Сумма в рублях строкой с двумя знаками после точки.",
+                "examples": [
+                  "3000000.00"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "term_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term Months"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "status_changed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Status Changed At",
+            "description": "С этого момента считается «время в статусе»."
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "Балл скоринга; null, пока не посчитан."
+          },
+          "grade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Grade"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Грейд; null, пока скоринг не посчитан."
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Employee"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Кто взял в работу; null — никто."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "company",
+          "product_id",
+          "amount",
+          "term_months",
+          "status",
+          "status_changed_at",
+          "submitted_at",
+          "score",
+          "grade",
+          "assignee"
+        ],
+        "title": "BankApplicationSummary",
+        "description": "Строка очереди (экран B2)."
+      },
+      "BankDecision": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/DecisionOutcome"
+          },
+          "decided_by": {
+            "$ref": "#/components/schemas/DecisionActor"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RejectReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Только для `outcome = rejected`."
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Decided At"
+          },
+          "underwriter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Employee"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Кто решил; null — решил движок."
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment",
+            "description": "Внутренний комментарий специалиста."
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome",
+          "decided_by",
+          "reason_code",
+          "decided_at",
+          "underwriter",
+          "comment"
+        ],
+        "title": "BankDecision",
+        "description": "Последнее решение по заявке глазами банка: в отличие от клиентского — с комментарием."
+      },
       "Body_uploadDocument": {
         "properties": {
           "file": {
@@ -2599,6 +3288,92 @@
         "title": "DocumentKind",
         "description": "Тип документа. Набор предварительный (TBD): R4 просит декларацию или выписку."
       },
+      "Employee": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name",
+            "examples": [
+              "Дмитрий Орлов"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name"
+        ],
+        "title": "Employee",
+        "description": "Сотрудник банка — кто взял заявку в работу или принял решение."
+      },
+      "EnrichmentResult": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/EnrichmentSource"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EnrichmentStatus"
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Attempts",
+            "description": "Сколько было попыток: при сбое — до 3 (2 повтора)."
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "response": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response",
+            "description": "Ответ источника как есть (сырой JSON мока); null при ошибке."
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "status",
+          "attempts",
+          "fetched_at",
+          "response"
+        ],
+        "title": "EnrichmentResult",
+        "description": "Ответ внешнего источника на этапе обогащения (таблица `enrichment_results`)."
+      },
+      "EnrichmentSource": {
+        "type": "string",
+        "enum": [
+          "egrul",
+          "egrip",
+          "fns_tb",
+          "bki"
+        ],
+        "title": "EnrichmentSource"
+      },
+      "EnrichmentStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "not_found",
+          "error"
+        ],
+        "title": "EnrichmentStatus"
+      },
       "ErrorCode": {
         "type": "string",
         "enum": [
@@ -2617,6 +3392,7 @@
           "file_too_large",
           "unsupported_media_type",
           "invalid_code",
+          "assigned_to_other",
           "http_error"
         ],
         "title": "ErrorCode",
@@ -2653,6 +3429,18 @@
         ],
         "title": "ErrorResponse",
         "description": "Единый формат ошибки `{code, message, field?}` (план, раздел 10)."
+      },
+      "Grade": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "title": "Grade",
+        "description": "Грейд по баллу скоринга: A ≥ 80, B 65–79, C 50–64, D 35–49, E < 35."
       },
       "InfoRequest": {
         "properties": {
@@ -3217,6 +4005,144 @@
           "ручной отказ кредитного специалиста (этап 6)"
         ]
       },
+      "RuleCheck": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^R([1-9]|10)$",
+            "title": "Code",
+            "examples": [
+              "R4"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "examples": [
+              "Выручка в анкете расходится с ФНС больше чем на 30%"
+            ]
+          },
+          "fired": {
+            "type": "boolean",
+            "title": "Fired",
+            "description": "true — правило сработало и определило исход."
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "description": "Почему сработало или почему нет, с цифрами."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "title",
+          "fired",
+          "detail"
+        ],
+        "title": "RuleCheck",
+        "description": "Проверка одного правила движка решения. Правила идут по порядку, срабатывает первое."
+      },
+      "ScoringFactor": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^F[1-6]$",
+            "title": "Code",
+            "examples": [
+              "F3"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "examples": [
+              "Долговая нагрузка"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Значение фактора понятными словами.",
+            "examples": [
+              "21,3%"
+            ]
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Points"
+          },
+          "max_points": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Max Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "title",
+          "value",
+          "points",
+          "max_points"
+        ],
+        "title": "ScoringFactor"
+      },
+      "ScoringResult": {
+        "properties": {
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "examples": [
+              "rules-2026.10"
+            ]
+          },
+          "total_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Total Score"
+          },
+          "grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "debt_load": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Debt Load",
+            "description": "Нагрузка долей: (текущие платежи + платёж по новому кредиту) / месячная выручка. Платёж — по базовой ставке продукта на запрошенных условиях.",
+            "examples": [
+              0.213
+            ]
+          },
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/ScoringFactor"
+            },
+            "type": "array",
+            "title": "Factors",
+            "description": "F1–F6 по порядку."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_version",
+          "total_score",
+          "grade",
+          "debt_load",
+          "factors"
+        ],
+        "title": "ScoringResult",
+        "description": "Скоринг — отдельно от решения (план, раздел 7). Считается всегда, даже при отказе."
+      },
       "SigningCodeResponse": {
         "properties": {
           "code": {
@@ -3325,6 +4251,130 @@
           "access_token"
         ],
         "title": "TokenResponse"
+      },
+      "UnderwriterDecisionRequest": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/UnderwriterOutcome"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id",
+            "description": "`counter_offer`: продукт оффера. Иначе не передаётся."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d{2}$",
+                "description": "Сумма в рублях строкой с двумя знаками после точки.",
+                "examples": [
+                  "3000000.00"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "`counter_offer`: сумма оффера."
+          },
+          "term_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term Months",
+            "description": "`counter_offer`: срок оффера."
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d{2}$",
+                "description": "Годовая процентная ставка в процентах строкой с двумя знаками после точки: \"18.00\" означает 18% годовых.",
+                "examples": [
+                  "18.00"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate",
+            "description": "`approved` и `counter_offer`: ставка. Для `approved` сумма и срок — из заявки."
+          },
+          "info_items": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/InfoRequestItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Info Items",
+            "description": "`info_requested`: какие документы нужны (хотя бы один)."
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RejectReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`rejected`: причина из справочника."
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment",
+            "description": "`info_requested`: сообщение клиенту (обязательно). Для остальных исходов — внутренний комментарий, клиент его не видит."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outcome"
+        ],
+        "title": "UnderwriterDecisionRequest",
+        "description": "Решение специалиста (экран B4). Какие поля нужны — зависит от `outcome`."
+      },
+      "UnderwriterOutcome": {
+        "type": "string",
+        "enum": [
+          "approved",
+          "counter_offer",
+          "info_requested",
+          "rejected"
+        ],
+        "title": "UnderwriterOutcome",
+        "description": "Исход ручного рассмотрения: те же 4, что у движка, кроме «на ручное рассмотрение»."
       },
       "UserRole": {
         "type": "string",
