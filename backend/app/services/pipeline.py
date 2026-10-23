@@ -1,6 +1,6 @@
 """Обработка отправленной заявки: обогащение → скоринг → решение (план, раздел 4, этапы 3–5).
 
-Пока выполняется синхронно внутри submit, в той же транзакции: либо сохраняется всё
+Пока выполняется синхронно внутри submit и resubmit, в той же транзакции: либо сохраняется всё
 (статусы, история, ответы источников, скоринг, решение, оффер / запрос документов),
 либо ничего. Отдельного воркера и пауз между шагами нет — это следующий этап.
 
@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.db.models import (
     Application,
     DecisionRow,
+    DocumentRow,
     EnrichmentResult,
     InfoRequestRow,
     OfferRow,
@@ -72,6 +73,15 @@ def _jsonable(value: Any) -> Any:
     if isinstance(value, list | tuple):
         return [_jsonable(v) for v in value]
     return value
+
+
+def _has_proof(session: Session, application: Application, config: EngineConfig) -> bool:
+    """R4: загружен ли документ, подтверждающий выручку (виды — config.rules.R4)."""
+    kinds = [str(kind) for kind in config.rules.R4.proof_document_kinds]
+    query = select(DocumentRow.id).where(
+        DocumentRow.application_id == application.id, DocumentRow.kind.in_(kinds)
+    )
+    return session.scalar(query.limit(1)) is not None
 
 
 def _fetch_all(
@@ -197,7 +207,8 @@ def process_submitted(
         applicant = to_applicant_sources(application.company.kind, results)
         scoring = score(request, applicant, config)
         products = [_terms(p) for p in session.scalars(select(Product).order_by(Product.code))]
-        decision = decide(request, applicant, scoring, products, False, config)
+        proof = _has_proof(session, application, config)
+        decision = decide(request, applicant, scoring, products, proof, config)
     except Exception as error:  # noqa: BLE001 — любой сбой движка уходит специалисту
         log.exception("сбой обработки заявки %s", application.id)
         target = _save_engine_failure(session, application, config, error)

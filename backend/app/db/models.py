@@ -192,3 +192,21 @@ class InfoRequestRow(Base):
     message: Mapped[str | None] = mapped_column(String(1000))
     status: Mapped[str] = mapped_column(String(16))  # open | answered
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class DocumentRow(Base):
+    """Файл клиента в заявке (план, разделы 6 и 9). Содержимое — в Storage, имя на диске — UUID."""
+
+    __tablename__ = "documents"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    info_request_id: Mapped[UUID | None] = mapped_column(ForeignKey("info_requests.id"))
+    kind: Mapped[str] = mapped_column(String(32))
+    filename: Mapped[str] = mapped_column(String(255))  # как загрузил клиент
+    mime: Mapped[str] = mapped_column(String(64))
+    size: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    storage_path: Mapped[str] = mapped_column(String(64))  # ключ в Storage (UUID)
+    uploaded_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

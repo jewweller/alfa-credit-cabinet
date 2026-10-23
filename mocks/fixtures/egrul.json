@@ -66,5 +66,72 @@
       "address": "FE",
       "region": "FE"
     }
+  },
+  "7701000033": {
+    "response": {
+      "inn": "7701000033",
+      "ogrn": "1197746000033",
+      "name": "ООО «Вектор»",
+      "status": "ACTIVE",
+      "registered_at": "2019-11-20",
+      "okved_main": "46.90",
+      "okved_extra": [],
+      "director": {"fio": "Гришин Павел Олегович", "inn": null},
+      "founders": null,
+      "address": "г. Москва, ул. Лесная, д. 7",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn, name, status, registered_at, okved_main, okved_extra, director.fio, address, region": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD",
+      "ФНС и БКИ": "не заданы (D7): заявка уйдёт в R3, а не в ожидаемый по P8 отказ R2"
+    }
+  },
+  "7701000058": {
+    "response": {
+      "inn": "7701000058",
+      "ogrn": "1207746000058",
+      "name": "ООО «Мираж»",
+      "status": "ACTIVE",
+      "registered_at": "2020-02-17",
+      "okved_main": "56.10",
+      "okved_extra": [],
+      "director": {"fio": "Зайцева Анна Петровна", "inn": null},
+      "founders": null,
+      "address": "г. Москва, ул. Садовая, д. 1",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn, name, status, okved_main, okved_extra, director.fio, address, region": "FE",
+      "registered_at": "FE. КОНФЛИКТ D2: 6 лет → F1 = 20, а для 40 баллов по P8 нужно F1 = 15",
+      "director.inn": "TBD",
+      "founders": "TBD",
+      "ФНС и БКИ": "не заданы (D4, D7)"
+    }
+  },
+  "7701000065": {
+    "response": {
+      "inn": "7701000065",
+      "ogrn": "1217746000065",
+      "name": "ООО «Сбой-Тест»",
+      "status": "ACTIVE",
+      "registered_at": "2021-05-05",
+      "okved_main": "62.01",
+      "okved_extra": [],
+      "director": {"fio": "Сбоев Игорь Иванович", "inn": null},
+      "founders": null,
+      "address": "г. Москва, ул. Тестовая, д. 5",
+      "region": "Москва"
+    },
+    "sources": {
+      "inn": "P8",
+      "ogrn, name, status, registered_at, okved_main, okved_extra, director.fio, address, region": "FE",
+      "director.inn": "TBD",
+      "founders": "TBD",
+      "ФНС и БКИ": "не заданы (D7); по P8 БКИ всегда отвечает 503 — режим ошибки ещё не реализован"
+    }
   }
 }

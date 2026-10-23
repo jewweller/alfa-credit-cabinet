@@ -16,6 +16,7 @@ from app.db.models import (
     Application,
     ApplicationStatusHistory,
     DecisionRow,
+    DocumentRow,
     InfoRequestRow,
     OfferRow,
     Product,
@@ -35,7 +36,7 @@ from app.schemas.applications import (
 from app.schemas.auth import UserRole
 from app.schemas.common import ErrorCode
 from app.schemas.decisions import ClientDecision, DecisionOutcome
-from app.schemas.documents import InfoRequest, InfoRequestItem
+from app.schemas.documents import DocumentInfo, InfoRequest, InfoRequestItem
 from app.services.pipeline import process_submitted
 from app.services.status import add_history, change_status, now
 
@@ -199,6 +200,54 @@ def submit(
     return application
 
 
+def resubmit(
+    session: Session, user: User, application_id: UUID, sources: SourceClient
+) -> Application:
+    """Ответ на запрос документов: INFO_REQUESTED → SUBMITTED, обработка идёт заново.
+
+    Обязательные пункты запроса должны быть закрыты загруженными документами того же вида,
+    иначе 422 documents_required. Повторный resubmit — 409: статус уже не INFO_REQUESTED.
+    """
+    application = get_visible(session, user, application_id)
+    current = ApplicationStatus(application.status)
+    if current != ApplicationStatus.INFO_REQUESTED:
+        raise InvalidTransitionError(current, ApplicationStatus.SUBMITTED)
+
+    request = _latest(session, InfoRequestRow, application, InfoRequestRow.status == "open")
+    if request is not None:
+        uploaded = {d.kind for d in _document_rows(session, application)}
+        missing = [i for i in request.items if i["required"] and i["kind"] not in uploaded]
+        if missing:
+            titles = "; ".join(i["title"] for i in missing)
+            raise ApiError(422, ErrorCode.DOCUMENTS_REQUIRED, f"Загрузите документы: {titles}")
+        request.status = "answered"
+
+    change_status(session, application, ApplicationStatus.SUBMITTED, user)
+    process_submitted(session, application, sources)
+    try:
+        session.commit()
+    except StaleDataError as exc:
+        session.rollback()
+        raise ApiError(
+            409, ErrorCode.VERSION_CONFLICT, "Заявку уже изменили, обновите страницу"
+        ) from exc
+    return application
+
+
+def cancel(session: Session, user: User, application_id: UUID) -> Application:
+    """Отозвать заявку: DRAFT / INFO_REQUESTED → CANCELLED; из других статусов — 409."""
+    application = get_visible(session, user, application_id)
+    change_status(session, application, ApplicationStatus.CANCELLED, user)
+    try:
+        session.commit()
+    except StaleDataError as exc:
+        session.rollback()
+        raise ApiError(
+            409, ErrorCode.VERSION_CONFLICT, "Заявку уже изменили, обновите страницу"
+        ) from exc
+    return application
+
+
 def history(session: Session, user: User, application_id: UUID) -> list[StatusHistoryEntry]:
     application = get_visible(session, user, application_id)
     query = (
@@ -257,6 +306,9 @@ def _client_offer(row: OfferRow | None) -> Offer | None:
 
 
 def _open_info_request(session: Session, application: Application) -> InfoRequest | None:
+    # Контракт: null, если банк ничего не ждёт — например, заявку отозвали из INFO_REQUESTED.
+    if application.status != ApplicationStatus.INFO_REQUESTED:
+        return None
     row = _latest(session, InfoRequestRow, application, InfoRequestRow.status == "open")
     if row is None:
         return None
@@ -290,7 +342,28 @@ def to_detail(session: Session, application: Application) -> ApplicationDetail:
         active_offer=_client_offer(_latest(session, OfferRow, application)),
         decision=_client_decision(_latest(session, DecisionRow, application)),
         info_request=_open_info_request(session, application),
-        documents=[],  # загрузка документов — следующий этап
+        documents=[to_document_info(d) for d in _document_rows(session, application)],
+    )
+
+
+def _document_rows(session: Session, application: Application) -> list[DocumentRow]:
+    query = (
+        select(DocumentRow)
+        .where(DocumentRow.application_id == application.id)
+        .order_by(DocumentRow.created_at)
+    )
+    return list(session.scalars(query))
+
+
+def to_document_info(document: DocumentRow) -> DocumentInfo:
+    return DocumentInfo(
+        id=document.id,
+        kind=document.kind,
+        filename=document.filename,
+        mime=document.mime,
+        size_bytes=document.size,
+        info_request_id=document.info_request_id,
+        uploaded_at=document.created_at,
     )
 
 

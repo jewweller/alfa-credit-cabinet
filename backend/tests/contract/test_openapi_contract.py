@@ -10,14 +10,7 @@ from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_c
 
 PLANNED_OPERATIONS = {
     ("post", "/api/v1/products/recommend"),
-    ("get", "/api/v1/companies/lookup"),
-    ("post", "/api/v1/applications/{id}/offers/{offer_id}/accept"),
-    ("post", "/api/v1/applications/{id}/offers/{offer_id}/decline"),
     ("get", "/api/v1/applications/{id}/schedule"),
-    ("post", "/api/v1/applications/{id}/documents"),
-    ("get", "/api/v1/documents/{id}"),
-    ("post", "/api/v1/applications/{id}/resubmit"),
-    ("post", "/api/v1/applications/{id}/cancel"),
 }
 IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/submit"),
@@ -32,12 +25,19 @@ IMPLEMENTED_OPERATIONS = {
     ("post", "/api/v1/auth/login"),
     ("get", "/api/v1/auth/me"),
     ("get", "/api/v1/products"),
+    ("get", "/api/v1/companies/lookup"),
     ("get", "/api/v1/applications"),
     ("post", "/api/v1/applications"),
     ("get", "/api/v1/applications/{id}"),
     ("patch", "/api/v1/applications/{id}"),
     ("post", "/api/v1/applications/{id}/submit"),
     ("get", "/api/v1/applications/{id}/history"),
+    ("post", "/api/v1/applications/{id}/offers/{offer_id}/accept"),
+    ("post", "/api/v1/applications/{id}/offers/{offer_id}/decline"),
+    ("post", "/api/v1/applications/{id}/cancel"),
+    ("post", "/api/v1/applications/{id}/documents"),
+    ("get", "/api/v1/documents/{id}"),
+    ("post", "/api/v1/applications/{id}/resubmit"),
 }
 PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}

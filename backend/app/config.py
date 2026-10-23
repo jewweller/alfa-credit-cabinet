@@ -1,5 +1,6 @@
 """Конфигурация приложения из переменных окружения (секреты только из env, см. план, раздел 9)."""
 
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -32,6 +33,8 @@ class Settings(BaseSettings):
     seed_dir: Path = _DEFAULT_SEED_DIR
     # Ответы ЕГРЮЛ / ЕГРИП / ФНС / БКИ, пока нет HTTP-сервиса mocks.
     fixtures_dir: Path = _DEFAULT_FIXTURES_DIR
+    # Файлы клиентов. В Docker — volume `uploads`; по умолчанию — вне репозитория.
+    uploads_dir: Path = Path(tempfile.gettempdir()) / "alfa-credit-uploads"
 
 
 @lru_cache

@@ -21,7 +21,8 @@ COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
 
-RUN useradd --system --uid 10001 --no-create-home app
+RUN useradd --system --uid 10001 --no-create-home app \
+    && mkdir /uploads && chown app /uploads
 USER app
 
 ENV PATH="/app/.venv/bin:$PATH"

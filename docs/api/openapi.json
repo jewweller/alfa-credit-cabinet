@@ -192,6 +192,88 @@
         "x-implementation-status": "implemented"
       }
     },
+    "/api/v1/companies/lookup": {
+      "get": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Lookup Company",
+        "description": "Автозаполнение из ЕГРЮЛ (10 цифр) или ЕГРИП (12 цифр) через сервис моков.",
+        "operationId": "lookupCompany",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "inn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(\\d{10}|\\d{12})$",
+              "description": "ИНН: 10 цифр (ООО) или 12 (ИП).",
+              "title": "Inn"
+            },
+            "description": "ИНН: 10 цифр (ООО) или 12 (ИП)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyLookupResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Компания не найдена в реестре (`company_not_found`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ИНН не из 10 или 12 цифр.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Реестр недоступен (`upstream_unavailable`). Предварительно, TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
     "/api/v1/applications": {
       "get": {
         "tags": [
@@ -670,41 +752,92 @@
         "x-implementation-status": "implemented"
       }
     },
-    "/api/v1/products/recommend": {
+    "/api/v1/applications/{id}/cancel": {
       "post": {
         "tags": [
-          "products"
+          "applications"
         ],
-        "summary": "Recommend Products",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
-        "operationId": "recommendProducts",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductRecommendRequest"
-              }
+        "summary": "Cancel Application",
+        "description": "Отозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`.",
+        "operationId": "cancelApplication",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
             }
           },
-          "required": true
-        },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
+              "title": "Idempotency-Key"
+            },
+            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProductRecommendation"
-                  },
-                  "type": "array",
-                  "title": "Response Recommendproducts"
+                  "$ref": "#/components/schemas/ApplicationDetail"
                 }
               }
             }
           },
           "401": {
             "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`invalid_transition` — из текущего статуса операция не разрешена.",
             "content": {
               "application/json": {
                 "schema": {
@@ -724,94 +857,7 @@
             }
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "x-implementation-status": "planned"
-      }
-    },
-    "/api/v1/companies/lookup": {
-      "get": {
-        "tags": [
-          "companies"
-        ],
-        "summary": "Lookup Company",
-        "description": "**Только контракт — ещё не реализовано.**\n\nАвтозаполнение из ЕГРЮЛ (10 цифр) или ЕГРИП (12 цифр) через сервис моков.",
-        "operationId": "lookupCompany",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "inn",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^(\\d{10}|\\d{12})$",
-              "description": "ИНН: 10 цифр (ООО) или 12 (ИП).",
-              "title": "Inn"
-            },
-            "description": "ИНН: 10 цифр (ООО) или 12 (ИП)."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompanyLookupResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Компания не найдена в реестре (`company_not_found`).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "ИНН не из 10 или 12 цифр.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Реестр недоступен (`upstream_unavailable`). Предварительно, TBD.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/offers/{offer_id}/accept": {
@@ -820,7 +866,7 @@
           "offers"
         ],
         "summary": "Accept Offer",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПринять оффер: `APPROVED` / `COUNTER_OFFER` → `SIGNING`.",
+        "description": "Принять оффер: `APPROVED` / `COUNTER_OFFER` → `SIGNING`.",
         "operationId": "acceptOffer",
         "security": [
           {
@@ -929,7 +975,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/offers/{offer_id}/decline": {
@@ -938,7 +984,7 @@
           "offers"
         ],
         "summary": "Decline Offer",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОтказаться от оффера: `APPROVED` / `COUNTER_OFFER` → `DECLINED_BY_CLIENT`.",
+        "description": "Отказаться от оффера: `APPROVED` / `COUNTER_OFFER` → `DECLINED_BY_CLIENT`.",
         "operationId": "declineOffer",
         "security": [
           {
@@ -1047,106 +1093,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
-      }
-    },
-    "/api/v1/applications/{id}/schedule": {
-      "get": {
-        "tags": [
-          "offers"
-        ],
-        "summary": "Get Payment Schedule",
-        "description": "**Только контракт — ещё не реализовано.**\n\nГрафик платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи.",
-        "operationId": "getPaymentSchedule",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Id"
-            }
-          },
-          {
-            "name": "offer_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Какой оффер. По умолчанию — активный, после принятия — принятый.",
-              "title": "Offer Id"
-            },
-            "description": "Какой оффер. По умолчанию — активный, после принятия — принятый."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentSchedule"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Нет доступа к заявке.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Заявка не найдена или по ней нет оффера.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации; `field` указывает на поле.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/documents": {
@@ -1155,7 +1102,7 @@
           "documents"
         ],
         "summary": "Upload Document",
-        "description": "**Только контракт — ещё не реализовано.**\n\nЗагрузить файл в заявку. На диске имя — UUID, хранится sha256 (план, раздел 9).",
+        "description": "Загрузить файл в заявку. На диске имя — UUID, хранится sha256 (план, раздел 9).",
         "operationId": "uploadDocument",
         "security": [
           {
@@ -1266,7 +1213,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/documents/{id}": {
@@ -1275,7 +1222,7 @@
           "documents"
         ],
         "summary": "Download Document",
-        "description": "**Только контракт — ещё не реализовано.**\n\nСкачать файл: клиент — из своих заявок, андеррайтер — из любых.",
+        "description": "Скачать файл: клиент — из своих заявок, андеррайтер — из любых.",
         "operationId": "downloadDocument",
         "security": [
           {
@@ -1359,7 +1306,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/resubmit": {
@@ -1368,7 +1315,7 @@
           "applications"
         ],
         "summary": "Resubmit Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОтветить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново.",
+        "description": "Ответить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново.",
         "operationId": "resubmitApplication",
         "security": [
           {
@@ -1467,17 +1414,79 @@
             }
           }
         },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/products/recommend": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Recommend Products",
+        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
+        "operationId": "recommendProducts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRecommendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductRecommendation"
+                  },
+                  "type": "array",
+                  "title": "Response Recommendproducts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "x-implementation-status": "planned"
       }
     },
-    "/api/v1/applications/{id}/cancel": {
-      "post": {
+    "/api/v1/applications/{id}/schedule": {
+      "get": {
         "tags": [
-          "applications"
+          "offers"
         ],
-        "summary": "Cancel Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОтозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`.",
-        "operationId": "cancelApplication",
+        "summary": "Get Payment Schedule",
+        "description": "**Только контракт — ещё не реализовано.**\n\nГрафик платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи.",
+        "operationId": "getPaymentSchedule",
         "security": [
           {
             "HTTPBearer": []
@@ -1495,22 +1504,23 @@
             }
           },
           {
-            "name": "Idempotency-Key",
-            "in": "header",
+            "name": "offer_id",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "format": "uuid"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9).",
-              "title": "Idempotency-Key"
+              "description": "Какой оффер. По умолчанию — активный, после принятия — принятый.",
+              "title": "Offer Id"
             },
-            "description": "Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9)."
+            "description": "Какой оффер. По умолчанию — активный, после принятия — принятый."
           }
         ],
         "responses": {
@@ -1519,7 +1529,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApplicationDetail"
+                  "$ref": "#/components/schemas/PaymentSchedule"
                 }
               }
             }
@@ -1545,17 +1555,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "`invalid_transition` — из текущего статуса операция не разрешена.",
+            "description": "Заявка не найдена или по ней нет оффера.",
             "content": {
               "application/json": {
                 "schema": {

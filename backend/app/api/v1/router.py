@@ -5,18 +5,32 @@
 """
 
 from typing import Annotated
+from urllib.parse import quote
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy import func, select
 
 from app.api.deps import ClientUser, CurrentUser, SessionDep
 from app.api.v1.contract import (
+    _ALLOWED_TYPES,
     _E401,
     _E403_APP,
     _E403_CLIENT,
     _E404_APP,
+    _E409_TRANSITION,
     _E422,
+    _MAX_MB,
     IdempotencyKey,
     _errors,
 )
@@ -32,10 +46,14 @@ from app.schemas.applications import (
     StatusHistoryEntry,
 )
 from app.schemas.auth import LoginRequest, MeResponse, TokenResponse
-from app.schemas.companies import CompanyBrief
+from app.schemas.common import INN_PATTERN
+from app.schemas.companies import CompanyBrief, CompanyLookupResponse
+from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, DocumentInfo, DocumentKind
 from app.schemas.products import Product
 from app.security import create_access_token, verify_password
 from app.services import applications as service
+from app.services import companies, documents, offers
+from app.storage import Storage, get_storage
 
 api_v1_router = APIRouter(prefix="/api/v1")
 
@@ -122,6 +140,32 @@ def list_products(_: CurrentUser, session: SessionDep) -> list[Product]:
     ]
 
 
+# ── Автозаполнение компании ───────────────────────────────────────────────────
+
+Sources = Annotated[SourceClient, Depends(get_source_client)]
+
+
+@api_v1_router.get(
+    "/companies/lookup",
+    response_model=CompanyLookupResponse,
+    operation_id="lookupCompany",
+    tags=["companies"],
+    responses=_errors(
+        e401=_E401,
+        e404="Компания не найдена в реестре (`company_not_found`).",
+        e422="ИНН не из 10 или 12 цифр.",
+        e503="Реестр недоступен (`upstream_unavailable`). Предварительно, TBD.",
+    ),
+)
+def lookup_company(
+    inn: Annotated[str, Query(pattern=INN_PATTERN, description="ИНН: 10 цифр (ООО) или 12 (ИП).")],
+    _: CurrentUser,
+    sources: Sources,
+) -> CompanyLookupResponse:
+    """Автозаполнение из ЕГРЮЛ (10 цифр) или ЕГРИП (12 цифр) через сервис моков."""
+    return companies.lookup(sources, inn)
+
+
 # ── Заявки ────────────────────────────────────────────────────────────────────
 
 
@@ -204,7 +248,7 @@ def submit_application(
     id: UUID,
     user: ClientUser,
     session: SessionDep,
-    sources: Annotated[SourceClient, Depends(get_source_client)],
+    sources: Sources,
     idempotency_key: IdempotencyKey = None,
 ) -> ApplicationDetail:
     """Проверка полноты и отправка: `DRAFT` → `SUBMITTED`."""
@@ -223,3 +267,164 @@ def get_application_history(
 ) -> list[StatusHistoryEntry]:
     """Таймлайн статусов заявки, от старых к новым."""
     return service.history(session, user, id)
+
+
+@api_v1_router.post(
+    "/applications/{id}/cancel",
+    response_model=ApplicationDetail,
+    operation_id="cancelApplication",
+    tags=["applications"],
+    responses=_errors(
+        e401=_E401, e403=_E403_APP, e404=_E404_APP, e409=_E409_TRANSITION, e422=_E422
+    ),
+)
+def cancel_application(
+    id: UUID, user: ClientUser, session: SessionDep, idempotency_key: IdempotencyKey = None
+) -> ApplicationDetail:
+    """Отозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`."""
+    return service.to_detail(session, service.cancel(session, user, id))
+
+
+# ── Ответ на оффер ────────────────────────────────────────────────────────────
+
+_E409_OFFER = f"{_E409_TRANSITION} `offer_not_active` — оффер уже принят, отклонён или заменён."
+
+
+@api_v1_router.post(
+    "/applications/{id}/offers/{offer_id}/accept",
+    response_model=ApplicationDetail,
+    operation_id="acceptOffer",
+    tags=["offers"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404="Заявка или оффер не найдены.",
+        e409=_E409_OFFER,
+        e422=_E422,
+    ),
+)
+def accept_offer(
+    id: UUID,
+    offer_id: UUID,
+    user: ClientUser,
+    session: SessionDep,
+    idempotency_key: IdempotencyKey = None,
+) -> ApplicationDetail:
+    """Принять оффер: `APPROVED` / `COUNTER_OFFER` → `SIGNING`."""
+    return service.to_detail(session, offers.respond(session, user, id, offer_id, accept=True))
+
+
+@api_v1_router.post(
+    "/applications/{id}/offers/{offer_id}/decline",
+    response_model=ApplicationDetail,
+    operation_id="declineOffer",
+    tags=["offers"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404="Заявка или оффер не найдены.",
+        e409=_E409_OFFER,
+        e422=_E422,
+    ),
+)
+def decline_offer(
+    id: UUID,
+    offer_id: UUID,
+    user: ClientUser,
+    session: SessionDep,
+    idempotency_key: IdempotencyKey = None,
+) -> ApplicationDetail:
+    """Отказаться от оффера: `APPROVED` / `COUNTER_OFFER` → `DECLINED_BY_CLIENT`."""
+    return service.to_detail(session, offers.respond(session, user, id, offer_id, accept=False))
+
+
+# ── Документы и ответ на запрос банка ─────────────────────────────────────────
+
+Files = Annotated[Storage, Depends(get_storage)]
+
+
+@api_v1_router.post(
+    "/applications/{id}/documents",
+    response_model=DocumentInfo,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="uploadDocument",
+    tags=["documents"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409="Загрузка разрешена только в `INFO_REQUESTED` (в `DRAFT` — TBD).",
+        e413=f"`file_too_large` — файл больше {_MAX_MB} МБ.",
+        e415=f"`unsupported_media_type` — допустимы только {_ALLOWED_TYPES}.",
+        e422=_E422,
+    ),
+)
+def upload_document(
+    id: UUID,
+    file: Annotated[UploadFile, File(description=f"PDF, JPG или PNG до {_MAX_MB} МБ.")],
+    kind: Annotated[DocumentKind, Form(description="Тип документа.")],
+    user: ClientUser,
+    session: SessionDep,
+    storage: Files,
+    info_request_id: Annotated[
+        UUID | None, Form(description="Ответом на какой запрос банка загружается файл.")
+    ] = None,
+) -> DocumentInfo:
+    """Загрузить файл в заявку. На диске имя — UUID, хранится sha256 (план, раздел 9)."""
+    document = documents.upload(session, user, id, file, kind, info_request_id, storage)
+    return service.to_document_info(document)
+
+
+@api_v1_router.get(
+    "/documents/{id}",
+    response_class=Response,
+    operation_id="downloadDocument",
+    tags=["documents"],
+    responses={
+        200: {
+            "description": "Файл с исходным именем в `Content-Disposition`.",
+            "content": {
+                mime: {"schema": {"type": "string", "format": "binary"}}
+                for mime in ALLOWED_UPLOAD_MIME_TYPES
+            },
+        },
+        **_errors(
+            e401=_E401,
+            e403="Файл из чужой заявки.",
+            e404="Файл не найден.",
+            e422=_E422,
+        ),
+    },
+)
+def download_document(id: UUID, user: CurrentUser, session: SessionDep, storage: Files) -> Response:
+    """Скачать файл: клиент — из своих заявок, андеррайтер — из любых."""
+    document, content = documents.download(session, user, id, storage)
+    return Response(
+        content=content,
+        media_type=document.mime,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(document.filename)}"},
+    )
+
+
+@api_v1_router.post(
+    "/applications/{id}/resubmit",
+    response_model=ApplicationDetail,
+    operation_id="resubmitApplication",
+    tags=["applications"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=_E409_TRANSITION,
+        e422="`documents_required` — не загружены обязательные документы из запроса банка.",
+    ),
+)
+def resubmit_application(
+    id: UUID,
+    user: ClientUser,
+    session: SessionDep,
+    sources: Sources,
+    idempotency_key: IdempotencyKey = None,
+) -> ApplicationDetail:
+    """Ответить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново."""
+    return service.to_detail(session, service.resubmit(session, user, id, sources))
