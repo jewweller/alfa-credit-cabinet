@@ -2,6 +2,7 @@
   ["POST", "/api/v1/auth/login"],
   ["GET", "/api/v1/auth/me"],
   ["GET", "/api/v1/products"],
+  ["POST", "/api/v1/products/recommend"],
   ["GET", "/api/v1/companies/lookup"],
   ["GET", "/api/v1/applications"],
   ["POST", "/api/v1/applications"],
@@ -15,5 +16,11 @@
   ["POST", "/api/v1/applications/{id}/documents"],
   ["GET", "/api/v1/documents/{id}"],
   ["POST", "/api/v1/applications/{id}/resubmit"],
-  ["GET", "/api/v1/applications/{id}/schedule"]
+  ["GET", "/api/v1/applications/{id}/schedule"],
+  ["POST", "/api/v1/applications/{id}/signing/code"],
+  ["POST", "/api/v1/applications/{id}/signing/confirm"],
+  ["GET", "/api/v1/bank/applications"],
+  ["GET", "/api/v1/bank/applications/{id}"],
+  ["POST", "/api/v1/bank/applications/{id}/assign"],
+  ["POST", "/api/v1/bank/applications/{id}/decision"]
 ]

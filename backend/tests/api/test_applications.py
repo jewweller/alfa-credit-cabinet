@@ -253,8 +253,8 @@ def test_history_visibility(client: TestClient, bakery: dict[str, str]) -> None:
     app = _create(client, bakery)
     path = f"/api/v1/applications/{app['id']}/history"
 
-    underwriter = auth_headers(client, "underwriter@demo.local")
-    assert client.get(path, headers=underwriter).status_code == 200
+    for staff in ("underwriter@demo.local", "admin@demo.local"):
+        assert client.get(path, headers=auth_headers(client, staff)).status_code == 200
     assert client.get(path, headers=auth_headers(client, "kovalev@demo.local")).status_code == 404
     assert client.get(path).status_code == 401
 

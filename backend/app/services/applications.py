@@ -33,7 +33,7 @@ from app.schemas.applications import (
     Offer,
     StatusHistoryEntry,
 )
-from app.schemas.auth import UserRole
+from app.schemas.auth import BANK_ROLES, UserRole
 from app.schemas.common import ErrorCode
 from app.schemas.decisions import ClientDecision, DecisionOutcome
 from app.schemas.documents import DocumentInfo, InfoRequest, InfoRequestItem
@@ -64,11 +64,11 @@ def _check_product(session: Session, product_id: UUID | None) -> None:
 
 
 def get_visible(session: Session, user: User, application_id: UUID) -> Application:
-    """Клиент видит заявки своей компании; андеррайтер — любые (план, раздел 9)."""
+    """Клиент видит заявки своей компании; сотрудник банка — любые (план, раздел 9)."""
     application = session.get(Application, application_id)
     if application is None:
         raise _not_found()
-    if user.role == UserRole.UNDERWRITER:
+    if user.role in BANK_ROLES:
         return application
     if user.role == UserRole.CLIENT and application.company_id == user.company_id:
         return application

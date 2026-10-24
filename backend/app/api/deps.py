@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import User
 from app.db.session import get_session
-from app.schemas.auth import UserRole
+from app.schemas.auth import BANK_ROLES, UserRole
 from app.security import InvalidTokenError, decode_access_token
 
 # Описание совпадает с contract.py: в OpenAPI это одна и та же схема безопасности.
@@ -44,3 +44,12 @@ def require_client(user: CurrentUser) -> User:
 
 
 ClientUser = Annotated[User, Depends(require_client)]
+
+
+def require_bank_staff(user: CurrentUser) -> User:
+    if user.role not in BANK_ROLES:
+        raise HTTPException(403, "Операция доступна только сотрудникам банка")
+    return user
+
+
+BankUser = Annotated[User, Depends(require_bank_staff)]

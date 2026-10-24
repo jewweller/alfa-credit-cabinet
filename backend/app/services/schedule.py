@@ -4,8 +4,8 @@
   * ежемесячный платёж — сохранённый в оффере (его округление — config.yaml, вопрос K1);
   * проценты за месяц — calculation.rounding.interest (сейчас до копейки, вопрос M4);
   * последний платёж закрывает остаток (описание графика в контракте, вопрос M3);
-  * даты — от сегодняшнего дня: выдачи ещё нет, контракт говорит «до выдачи — от текущей
-    даты» (вопрос M6); дальше то же число месяца, а если его нет — последний день месяца.
+  * даты — от дня выдачи, а до выдачи — от текущей даты, как в контракте (вопрос M6);
+    дальше то же число месяца, а если его нет — последний день месяца.
 """
 
 import calendar
@@ -13,10 +13,11 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.errors import ApiError
-from app.db.models import OfferRow, User
+from app.db.models import DisbursementRow, OfferRow, User
 from app.domain.loan_math import annuity_schedule
 from app.schemas.common import ErrorCode
 from app.schemas.schedule import PaymentSchedule, PaymentScheduleItem
@@ -56,7 +57,15 @@ def build(
     rows = annuity_schedule(
         offer.amount, offer.rate, offer.term_months, offer.monthly_payment, rule.step_rub, rule.mode
     )
-    start = today or datetime.now(UTC).date()
+    disbursement = session.scalar(
+        select(DisbursementRow).where(
+            DisbursementRow.application_id == application.id, DisbursementRow.offer_id == offer.id
+        )
+    )
+    if disbursement is not None:
+        start = disbursement.executed_at.date()
+    else:
+        start = today or datetime.now(UTC).date()
     total = sum((row.payment for row in rows), Decimal(0))
     return PaymentSchedule(
         offer_id=offer.id,

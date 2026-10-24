@@ -21,11 +21,12 @@ from fastapi import (
 )
 from sqlalchemy import func, select
 
-from app.api.deps import ClientUser, CurrentUser, SessionDep
+from app.api.deps import BankUser, ClientUser, CurrentUser, SessionDep
 from app.api.v1.contract import (
     _ALLOWED_TYPES,
     _E401,
     _E403_APP,
+    _E403_BANK,
     _E403_CLIENT,
     _E404_APP,
     _E409_TRANSITION,
@@ -34,8 +35,8 @@ from app.api.v1.contract import (
     IdempotencyKey,
     _errors,
 )
-from app.db.models import Product as ProductRow
 from app.db.models import User
+from app.domain.state_machine import ApplicationStatus
 from app.integrations.base import SourceClient
 from app.integrations.fixtures import get_source_client
 from app.schemas.applications import (
@@ -46,14 +47,21 @@ from app.schemas.applications import (
     StatusHistoryEntry,
 )
 from app.schemas.auth import LoginRequest, MeResponse, TokenResponse
+from app.schemas.bank import (
+    BankApplicationDetail,
+    BankApplicationSummary,
+    Grade,
+    UnderwriterDecisionRequest,
+)
 from app.schemas.common import INN_PATTERN
 from app.schemas.companies import CompanyBrief, CompanyLookupResponse
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, DocumentInfo, DocumentKind
-from app.schemas.products import Product
+from app.schemas.products import Product, ProductRecommendation, ProductRecommendRequest
 from app.schemas.schedule import PaymentSchedule
+from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 from app.security import create_access_token, verify_password
 from app.services import applications as service
-from app.services import companies, documents, offers, schedule
+from app.services import bank, companies, documents, offers, products, schedule, signing
 from app.storage import Storage, get_storage
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -124,21 +132,25 @@ def get_me(user: CurrentUser) -> MeResponse:
 )
 def list_products(_: CurrentUser, session: SessionDep) -> list[Product]:
     """Каталог кредитных продуктов."""
-    rows = session.scalars(select(ProductRow).order_by(ProductRow.code))
-    return [
-        Product(
-            id=row.id,
-            code=row.code,
-            name=row.name,
-            purpose_tags=row.purpose_tags,
-            min_amount=row.min_amount,
-            max_amount=row.max_amount,
-            min_term=row.min_term,
-            max_term=row.max_term,
-            base_rate=row.base_rate,
-        )
-        for row in rows
-    ]
+    return [products.to_product(row) for row in products.catalog(session)]
+
+
+@api_v1_router.post(
+    "/products/recommend",
+    response_model=list[ProductRecommendation],
+    operation_id="recommendProducts",
+    tags=["products"],
+    responses=_errors(e401=_E401, e422=_E422),
+)
+def recommend_products(
+    body: ProductRecommendRequest, _: CurrentUser, session: SessionDep
+) -> list[ProductRecommendation]:
+    """Подбор продукта по цели, сумме и сроку (экран C3).
+
+    Возвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят
+    без изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.
+    """
+    return products.recommend(session, body)
 
 
 # ── Автозаполнение компании ───────────────────────────────────────────────────
@@ -457,3 +469,145 @@ def get_payment_schedule(
 ) -> PaymentSchedule:
     """График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи."""
     return schedule.build(session, user, id, offer_id)
+
+
+# ── Подписание договора и выдача (экраны C6–C7) ───────────────────────────────
+
+
+@api_v1_router.post(
+    "/applications/{id}/signing/code",
+    response_model=SigningCodeResponse,
+    operation_id="createSigningCode",
+    tags=["signing"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Код выдаётся только в статусе `SIGNING`.",
+    ),
+)
+def create_signing_code(id: UUID, user: ClientUser, session: SessionDep) -> SigningCodeResponse:
+    """Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.
+
+    Код действует 5 минут; новый запрос заменяет прежний код.
+    """
+    return signing.create_code(session, user, id)
+
+
+@api_v1_router.post(
+    "/applications/{id}/signing/confirm",
+    response_model=ApplicationDetail,
+    operation_id="confirmSigning",
+    tags=["signing"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Подтверждение возможно только в статусе `SIGNING`.",
+        e422="`invalid_code` — код неверный или истёк; либо ошибка валидации тела.",
+    ),
+)
+def confirm_signing(
+    id: UUID,
+    body: SigningConfirmRequest,
+    user: ClientUser,
+    session: SessionDep,
+    idempotency_key: IdempotencyKey = None,
+) -> ApplicationDetail:
+    """Подтвердить подпись кодом: `SIGNING` → `SIGNED` → `ISSUED`.
+
+    Выдача (симуляция) проходит сразу, в том же запросе: ответ уже в статусе `ISSUED`.
+    На один код — 5 попыток, дальше нужен новый код.
+    """
+    return service.to_detail(session, signing.confirm(session, user, id, body.code))
+
+
+# ── Кабинет банка (экраны B2–B4) ──────────────────────────────────────────────
+
+
+@api_v1_router.get(
+    "/bank/applications",
+    response_model=list[BankApplicationSummary],
+    operation_id="listBankApplications",
+    tags=["bank"],
+    responses=_errors(e401=_E401, e403=_E403_BANK, e422=_E422),
+)
+def list_bank_applications(
+    _: BankUser,
+    session: SessionDep,
+    status: Annotated[
+        list[ApplicationStatus] | None,
+        Query(description="Фильтр по статусам; можно несколько. Без фильтра — все, кроме DRAFT."),
+    ] = None,
+    grade: Annotated[Grade | None, Query(description="Фильтр по грейду.")] = None,
+    product_id: Annotated[UUID | None, Query(description="Фильтр по продукту.")] = None,
+) -> list[BankApplicationSummary]:
+    """Очередь заявок всех клиентов (экран B2).
+
+    Черновики (`DRAFT`) банку не видны. Сортировка: сначала `MANUAL_REVIEW`, внутри — дольше
+    всего ждущие (по `status_changed_at`), затем остальные, свежие сверху.
+    """
+    return bank.list_queue(session, status, grade, product_id)
+
+
+@api_v1_router.get(
+    "/bank/applications/{id}",
+    response_model=BankApplicationDetail,
+    operation_id="getBankApplication",
+    tags=["bank"],
+    responses=_errors(e401=_E401, e403=_E403_BANK, e404=_E404_APP),
+)
+def get_bank_application(id: UUID, _: BankUser, session: SessionDep) -> BankApplicationDetail:
+    """Полная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение."""
+    return bank.detail(session, id)
+
+
+@api_v1_router.post(
+    "/bank/applications/{id}/assign",
+    response_model=BankApplicationDetail,
+    operation_id="assignBankApplication",
+    tags=["bank"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_BANK,
+        e404=_E404_APP,
+        e409=(
+            f"{_E409_TRANSITION} Взять в работу можно только заявку в `MANUAL_REVIEW`. "
+            "`assigned_to_other` — заявку уже ведёт другой специалист."
+        ),
+    ),
+)
+def assign_bank_application(id: UUID, user: BankUser, session: SessionDep) -> BankApplicationDetail:
+    """Взять заявку в работу. Повторный вызов тем же специалистом ничего не меняет."""
+    return bank.assign(session, user, id)
+
+
+@api_v1_router.post(
+    "/bank/applications/{id}/decision",
+    response_model=BankApplicationDetail,
+    operation_id="decideBankApplication",
+    tags=["bank"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_BANK,
+        e404=_E404_APP,
+        e409=(
+            f"{_E409_TRANSITION} Решение принимается только в `MANUAL_REVIEW`. "
+            "`assigned_to_other` — заявку ведёт другой специалист; сначала её нужно взять в работу."
+        ),
+        e422=(
+            "Ошибка валидации: для выбранного `outcome` не хватает полей "
+            "или условия вне лимитов продукта."
+        ),
+    ),
+)
+def decide_bank_application(
+    id: UUID,
+    body: UnderwriterDecisionRequest,
+    user: BankUser,
+    session: SessionDep,
+    idempotency_key: IdempotencyKey = None,
+) -> BankApplicationDetail:
+    """Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
+    документов или отказ. Клиент видит итог в карточке заявки и событие в ленте."""
+    return bank.decide(session, user, id, body)
