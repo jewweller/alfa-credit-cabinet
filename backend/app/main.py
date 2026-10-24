@@ -26,8 +26,8 @@ def create_app() -> FastAPI:
     async def remember_client_ip(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        # IP для журнала действий. За nginx фронта это адрес прокси: X-Forwarded-For не
-        # используем, его может подставить кто угодно.
+        # IP для журнала действий. В Docker uvicorn запущен с --proxy-headers (backend/Dockerfile):
+        # request.client — адрес из X-Forwarded-For, который передаёт nginx фронта.
         token = client_ip.set(request.client.host if request.client else None)
         try:
             return await call_next(request)
