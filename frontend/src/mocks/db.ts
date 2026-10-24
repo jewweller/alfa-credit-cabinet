@@ -850,8 +850,9 @@ export const db = {
     void clearFiles();
     signingCodes.clear();
     idempotent.clear();
-    for (const app of seedApplications()) apps.set(app.detail.id, app);
-    feed = seedFeed();
+    // Как на бэке: после сброса заявок нет совсем, демо-заявки заново не создаются.
+    // Вернуть исходные заявки моков — ?reset=1 в адресе.
+    feed = [];
     log('demo.reset', staff(user), null, `удалено заявок: ${deleted}`, { applications_deleted: deleted });
     save();
     startTimers();
