@@ -24,6 +24,7 @@ from app.schemas.documents import (
     ALLOWED_UPLOAD_MIME_TYPES,
     MAX_UPLOAD_BYTES,
 )
+from app.schemas.feed import FeedItemKind, FeedResponse
 from app.schemas.products import ProductRecommendation, ProductRecommendRequest
 from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 
@@ -204,3 +205,47 @@ def decide_bank_application(
 ) -> None:
     """Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
     документов или отказ. Клиент видит итог в карточке заявки и событие в ленте."""
+
+
+# ── Лента (экраны C2, C8) ─────────────────────────────────────────────────────
+
+
+@contract_router.get(
+    "/feed",
+    response_model=FeedResponse,
+    operation_id="getFeed",
+    tags=["feed"],
+    dependencies=_AUTH,
+    responses=_errors(e401=_E401, e403=_E403_CLIENT, e422=_E422),
+)
+def get_feed(
+    kind: Annotated[
+        FeedItemKind | None,
+        Query(description="Только события или только новости (фильтр C8). Без фильтра — всё."),
+    ] = None,
+    news_limit: Annotated[
+        int, Query(ge=1, le=30, description="Сколько новостей вернуть, лучших по весу.")
+    ] = 10,
+) -> None:
+    """Персональная лента клиента (план, раздел 11).
+
+    Сверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`
+    по убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое
+    модели — по формуле. У каждой новости есть `reasons` — строка «Почему вы это видите».
+    """
+
+
+@contract_router.post(
+    "/feed/events/{id}/read",
+    status_code=204,
+    operation_id="markFeedEventRead",
+    tags=["feed"],
+    dependencies=_AUTH,
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_CLIENT,
+        e404="Событие не найдено или принадлежит другому клиенту.",
+    ),
+)
+def mark_feed_event_read(id: UUID) -> None:
+    """Отметить событие прочитанным. Повторный вызов ничего не меняет."""

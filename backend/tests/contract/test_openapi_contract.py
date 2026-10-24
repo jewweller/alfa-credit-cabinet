@@ -17,6 +17,8 @@ PLANNED_OPERATIONS = {
     ("get", "/api/v1/bank/applications/{id}"),
     ("post", "/api/v1/bank/applications/{id}/assign"),
     ("post", "/api/v1/bank/applications/{id}/decision"),
+    ("get", "/api/v1/feed"),
+    ("post", "/api/v1/feed/events/{id}/read"),
 }
 IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/submit"),
