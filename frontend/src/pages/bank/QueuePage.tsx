@@ -5,10 +5,12 @@ import { QueueTable } from '../../features/bank/QueueTable';
 import { useProductMap, useProducts } from '../../features/products/useProducts';
 import { ClientHeader } from '../../features/session/ClientHeader';
 import { useMe } from '../../features/session/useMe';
+import { ROUTES } from '../../features/routes';
 import { useNow } from '../../features/useNow';
-import { BANK, HOME, type QueueGroup } from '../../i18n/ru';
+import { ADMIN, BANK, HOME, type QueueGroup } from '../../i18n/ru';
 import {
   AppShell,
+  BackLink,
   EmptyState,
   ErrorBanner,
   FilterBar,
@@ -72,7 +74,7 @@ export function QueuePage() {
   return (
     <AppShell
       header={<ClientHeader />}
-      hero={<Hero eyebrow={BANK.eyebrow} title={Q.title} subtitle={Q.subtitle} stats={stats} action={filters} />}
+      hero={<Hero top={me?.role === 'admin' ? <BackLink to={ROUTES.admin} label={ADMIN.toAdmin} /> : undefined} eyebrow={BANK.eyebrow} title={Q.title} subtitle={Q.subtitle} stats={stats} action={filters} />}
     >
       {queue.isError && !queue.data ? (
         <ErrorBanner

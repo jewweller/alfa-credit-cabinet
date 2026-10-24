@@ -111,6 +111,10 @@ function underwriterOnly(user: Me) {
   }
 }
 
+function adminOnly(user: Me) {
+  if (user.role !== 'admin') throw new MockHttpError(403, 'forbidden', 'Операция доступна только администратору');
+}
+
 /** Операция кабинета банка над любой заявкой. */
 function bank<T>(request: Request, run: (user: Me) => T, options?: { status?: number; wait?: number }) {
   return respond(
@@ -132,8 +136,10 @@ export const handlers = [
     const email = body.email?.trim().toLowerCase() ?? '';
     const user = users.find((u) => u.email === email);
     if (!user || body.password !== DEMO_PASSWORD) {
+      db.logLogin(null, email);
       return errorJson(401, 'unauthorized', 'Неверный email или пароль');
     }
+    db.logLogin(user, email);
     return HttpResponse.json({ access_token: TOKEN_PREFIX + user.email, token_type: 'bearer' });
   }),
 
@@ -264,7 +270,7 @@ export const handlers = [
     const user = currentUser(request);
     if (!user) return errorJson(401, 'unauthorized', 'Войдите заново');
     try {
-      const { blob, doc } = db.file(String(params.id), user.role === 'client' ? (user.company?.id ?? null) : null);
+      const { blob, doc } = db.file(String(params.id), user);
       return new HttpResponse(blob, {
         headers: {
           'Content-Type': doc.mime,
@@ -318,6 +324,32 @@ export const handlers = [
       { wait: 600 },
     );
   }),
+
+  // ── Журнал и сброс демо ──
+
+  http.get(`${API}/bank/audit`, ({ request }) =>
+    bank(request, () => {
+      const params = new URL(request.url).searchParams;
+      return db.audit({
+        applicationId: params.get('application_id'),
+        actions: params.getAll('action'),
+        actorRole: params.get('actor_role'),
+        before: params.get('before'),
+        limit: Math.min(500, Number(params.get('limit') ?? 100) || 100),
+      });
+    }),
+  ),
+
+  http.post(`${API}/admin/demo/reset`, ({ request }) =>
+    respond(
+      request,
+      (user) => {
+        adminOnly(user);
+        return db.demoReset(user);
+      },
+      { wait: 700 },
+    ),
+  ),
 
   http.get(`${API}/feed`, ({ request }) =>
     respond(

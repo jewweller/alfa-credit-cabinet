@@ -2,6 +2,7 @@ import { useParams } from 'react-router';
 import { ApiError } from '../../api/client';
 import type { BankApplicationDetail, Product } from '../../api/types';
 import { useApplicationHistory } from '../../features/application/queries';
+import { AuditPanel } from '../../features/audit/AuditPanel';
 import { HistoryPanel } from '../../features/application/SidePanels';
 import {
   DecisionResultPanel,
@@ -19,7 +20,7 @@ import { ROUTES } from '../../features/routes';
 import { ClientHeader } from '../../features/session/ClientHeader';
 import { useMe } from '../../features/session/useMe';
 import { useNow } from '../../features/useNow';
-import { BANK, BANK_STATUS, HOME, MONEY } from '../../i18n/ru';
+import { ADMIN, BANK, BANK_STATUS, HOME, MONEY } from '../../i18n/ru';
 import {
   AppShell,
   BackLink,
@@ -160,6 +161,7 @@ export function BankApplicationPage() {
             <ScoringPanel scoring={scoring} index={1} />
             <RulesPanel rules={data.rules} index={2} />
             <SourcesPanel enrichment={data.enrichment} index={3} />
+            <AuditPanel title={ADMIN.audit.applicationTitle} filter={{ applicationId: app.id }} index={4} />
           </>
         }
         aside={

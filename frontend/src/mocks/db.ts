@@ -4,6 +4,8 @@
 // начинает с исходных данных, ?reset=1 сбрасывает текущую. Загруженные файлы
 // живут только до перезагрузки (в списке остаются, скачать уже нельзя).
 import type {
+  AuditEntry,
+  DemoResetResult,
   ApplicationCreate,
   ApplicationDetail,
   ApplicationStatus,
@@ -25,6 +27,7 @@ import type {
   StatusActor,
 } from '../api/types';
 import { formatMoney } from '../features/format';
+import { entry, filterAudit, owner, seedAudit, staff, SYSTEM, type Actor, type AuditFilter } from './audit';
 import { makeOffer, me as bakery, products, seedApplications, seedFeed, users, type MockApplication } from './data';
 import { decide, evaluate, REVENUE_INFO_REQUEST, sourcesOf, type Verdict } from './decision';
 import { rawRegistry } from './sources';
@@ -69,10 +72,11 @@ const apps = new Map<string, MockApplication>();
 const files = new Map<string, Blob>();
 const idempotent = new Map<string, unknown>();
 let feed: FeedItem[] = [];
+let auditLog: AuditEntry[] = [];
 
 function save() {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ apps: [...apps.values()], feed }));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ apps: [...apps.values()], feed, auditLog }));
   } catch {
     // хранилище недоступно — состояние проживёт до перезагрузки
   }
@@ -83,9 +87,10 @@ function load(): boolean {
     if (new URLSearchParams(window.location.search).has('reset')) sessionStorage.removeItem(STORAGE_KEY);
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
-    const saved = JSON.parse(raw) as { apps: MockApplication[]; feed: FeedItem[] };
+    const saved = JSON.parse(raw) as { apps: MockApplication[]; feed: FeedItem[]; auditLog?: AuditEntry[] };
     for (const app of saved.apps) apps.set(app.detail.id, app);
     feed = saved.feed;
+    auditLog = saved.auditLog ?? seedAudit([...apps.values()]);
     return true;
   } catch {
     return false;
@@ -96,8 +101,16 @@ function reset() {
   apps.clear();
   for (const app of seedApplications()) apps.set(app.detail.id, app);
   feed = seedFeed();
+  auditLog = seedAudit([...apps.values()]);
   save();
 }
+
+/** Строка в журнал действий (audit_log). */
+function log(action: AuditEntry['action'], actor: Actor, app: MockApplication | null, summary: string, details: Record<string, unknown> = {}) {
+  auditLog = [entry(action, actor, app, summary, details), ...auditLog];
+}
+
+const change = (from: ApplicationStatus, to: ApplicationStatus) => ({ from_status: from, to_status: to });
 
 // ── Вспомогательное ────────────────────────────────────────────────────────
 
@@ -115,6 +128,10 @@ function transition(app: MockApplication, to: ApplicationStatus, actor: StatusAc
   const at = new Date().toISOString();
   app.detail = { ...app.detail, status: to, status_changed_at: at, version: app.detail.version + 1 };
   app.history = [...app.history, { from_status: from, to_status: to, actor_type: actor, created_at: at }];
+  // Действия клиента и специалиста пишут в журнал сами — со своим именем; здесь только система.
+  if (actor === 'system') {
+    log(to === 'ISSUED' ? 'loan.issued' : 'application.status_changed', SYSTEM, app, `${from} → ${to}`, change(from, to));
+  }
   notify(app, to);
 }
 
@@ -294,13 +311,18 @@ function scheduleIssue(id: string) {
   }, ISSUE_DELAY_MS);
 }
 
+/** Таймеры конвейера и выдачи — при загрузке и после сброса демо. */
+function startTimers() {
+  // №1051 в исходных данных «оценивается» — через 10 секунд банк её одобрит (проверка опроса).
+  for (const id of apps.keys()) {
+    continuePipeline(id, id === 'a-1051' ? 10_000 : STEP_MS);
+    if (apps.get(id)!.detail.status === 'SIGNED') scheduleIssue(id);
+  }
+}
+
 // Запуск — после объявления констант выше: scheduleIssue читает ISSUE_DELAY_MS.
 if (!load()) reset();
-// №1051 в исходных данных «оценивается» — через 10 секунд банк её одобрит (проверка опроса).
-for (const id of apps.keys()) {
-  continuePipeline(id, id === 'a-1051' ? 10_000 : STEP_MS);
-  if (apps.get(id)!.detail.status === 'SIGNED') scheduleIssue(id);
-}
+startTimers();
 
 /** Карточка наружу — как на бэке: запрос документов виден только в статусе INFO_REQUESTED. */
 function view(detail: ApplicationDetail): ApplicationDetail {
@@ -490,6 +512,7 @@ export const db = {
       history: [{ from_status: null, to_status: 'DRAFT', actor_type: 'client', created_at: at }],
       offers: [],
     });
+    log('application.created', staff(user), apps.get(detail.id)!, 'DRAFT');
     save();
     return detail;
   },
@@ -530,6 +553,7 @@ export const db = {
       }
       checkComplete(app.detail);
       transition(app, 'SUBMITTED', 'client');
+      log('application.submitted', owner(app), app, 'DRAFT → SUBMITTED', change('DRAFT', 'SUBMITTED'));
       app.detail = { ...app.detail, submitted_at: app.detail.status_changed_at };
       save();
       continuePipeline(id);
@@ -541,8 +565,10 @@ export const db = {
     return withIdempotency(key, `accept:${id}`, () => {
       const app = find(id);
       activeOffer(app, offerId);
+      const from = app.detail.status;
       transition(app, 'SIGNING', 'client');
       setOfferStatus(app, offerId, 'accepted');
+      log('offer.accepted', owner(app), app, `${from} → SIGNING`, { ...change(from, 'SIGNING'), offer_id: offerId });
       save();
       return view(app.detail);
     });
@@ -552,8 +578,10 @@ export const db = {
     return withIdempotency(key, `decline:${id}`, () => {
       const app = find(id);
       activeOffer(app, offerId);
+      const from = app.detail.status;
       transition(app, 'DECLINED_BY_CLIENT', 'client');
       setOfferStatus(app, offerId, 'declined');
+      log('offer.declined', owner(app), app, `${from} → DECLINED_BY_CLIENT`, { ...change(from, 'DECLINED_BY_CLIENT'), offer_id: offerId });
       save();
       return view(app.detail);
     });
@@ -570,6 +598,8 @@ export const db = {
       expires_at: new Date(Date.now() + SIGNING_CODE_TTL_MS).toISOString(),
     };
     signingCodes.set(id, code);
+    log('signing.code_issued', owner(app), app, `действует до ${new Date(code.expires_at).toLocaleTimeString('ru-RU')}`, { expires_at: code.expires_at });
+    save();
     return code;
   },
 
@@ -585,6 +615,7 @@ export const db = {
       }
       signingCodes.delete(id);
       transition(app, 'SIGNED', 'client');
+      log('signing.confirmed', owner(app), app, 'SIGNING → SIGNED', change('SIGNING', 'SIGNED'));
       save();
       scheduleIssue(id);
       return view(app.detail);
@@ -613,19 +644,25 @@ export const db = {
     };
     files.set(doc.id, file);
     app.detail = { ...app.detail, documents: [...app.detail.documents, doc], version: app.detail.version + 1 };
+    log('document.uploaded', owner(app), app, doc.filename, { document_id: doc.id, kind, size_bytes: doc.size_bytes });
     save();
     return doc;
   },
 
-  /** Файл заявки; companyId — компания клиента (сотрудник банка — null): чужой файл → 403, как на бэке. */
-  file(documentId: string, companyId: string | null): { blob: Blob; doc: DocumentInfo } {
+  /** Файл заявки: клиенту — только своей компании (чужой → 403, как на бэке), банку — любой. */
+  file(documentId: string, user: Me): { blob: Blob; doc: DocumentInfo } {
+    const companyId = user.role === 'client' ? (user.company?.id ?? null) : null;
     for (const app of apps.values()) {
       const doc = app.detail.documents.find((d) => d.id === documentId);
       const blob = files.get(documentId);
       if (doc && companyId && app.detail.company_id !== companyId) {
         throw new MockHttpError(403, 'forbidden', 'Нет доступа к файлу');
       }
-      if (doc && blob) return { blob, doc };
+      if (doc && blob) {
+        log('document.downloaded', staff(user), app, doc.filename, { document_id: doc.id });
+        save();
+        return { blob, doc };
+      }
     }
     throw new MockHttpError(404, 'not_found', 'Файл не найден');
   },
@@ -647,7 +684,9 @@ export const db = {
           );
         }
       }
+      const from = app.detail.status;
       transition(app, 'SUBMITTED', 'client');
+      log('application.resubmitted', owner(app), app, `${from} → SUBMITTED`, change(from, 'SUBMITTED'));
       app.detail = {
         ...app.detail,
         info_request: request ? { ...request, status: 'answered' } : null,
@@ -662,7 +701,9 @@ export const db = {
   cancel(id: string, key: string | null): ApplicationDetail {
     return withIdempotency(key, `cancel:${id}`, () => {
       const app = find(id);
+      const from = app.detail.status;
       transition(app, 'CANCELLED', 'client');
+      log('application.cancelled', owner(app), app, `${from} → CANCELLED`, change(from, 'CANCELLED'));
       app.detail = {
         ...app.detail,
         info_request: app.detail.info_request ? { ...app.detail.info_request, status: 'answered' } : null,
@@ -716,6 +757,7 @@ export const db = {
     if (app.assignee && app.assignee.id !== user.id) {
       throw new MockHttpError(409, 'assigned_to_other', `Заявку уже ведёт ${app.assignee.full_name}`);
     }
+    if (!app.assignee) log('bank.assigned', staff(user), app, user.full_name);
     app.assignee = { id: user.id, full_name: user.full_name };
     save();
     return bankDetailOf(app);
@@ -734,10 +776,40 @@ export const db = {
       const verdict = underwriterVerdict(app, body);
       const me = { id: user.id, full_name: user.full_name };
       apply(app, verdict, 'underwriter');
+      log('bank.decision', staff(user), app, `MANUAL_REVIEW → ${app.detail.status}`, {
+        ...change('MANUAL_REVIEW', app.detail.status),
+        outcome: body.outcome,
+      });
       app.assignee = me;
       app.review = { underwriter: me, comment: body.outcome === 'info_requested' ? null : body.comment?.trim() || null };
       save();
       return bankDetailOf(app);
     });
+  },
+
+  /** Вход и неудачная попытка — в журнал; пароль не пишем. */
+  logLogin(user: Me | null, email: string) {
+    if (user) log('auth.login', staff(user), null, email);
+    else log('auth.login_failed', { role: 'client', id: null, name: email }, null, email);
+    save();
+  },
+
+  audit(filter: AuditFilter): AuditEntry[] {
+    return filterAudit(auditLog, filter);
+  },
+
+  /** Сброс демо: заявки — к исходным, файлы и коды — прочь; журнал остаётся и пополняется. */
+  demoReset(user: Me): DemoResetResult {
+    const deleted = apps.size;
+    apps.clear();
+    files.clear();
+    signingCodes.clear();
+    idempotent.clear();
+    for (const app of seedApplications()) apps.set(app.detail.id, app);
+    feed = seedFeed();
+    log('demo.reset', staff(user), null, `удалено заявок: ${deleted}`, { applications_deleted: deleted });
+    save();
+    startTimers();
+    return { reset_at: new Date().toISOString(), applications_deleted: deleted };
   },
 };

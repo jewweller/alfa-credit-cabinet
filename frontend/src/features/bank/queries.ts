@@ -54,6 +54,7 @@ export function useBankActions(id: string) {
     queryClient.setQueryData(bankApplicationKey(id), detail);
     void queryClient.invalidateQueries({ queryKey: ['bank-queue'] });
     void queryClient.invalidateQueries({ queryKey: ['application-history', id] });
+    void queryClient.invalidateQueries({ queryKey: ['audit'] });
   };
 
   const assign = useMutation({

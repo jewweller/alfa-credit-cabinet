@@ -108,6 +108,7 @@ class ErrorCode(StrEnum):
     UNSUPPORTED_MEDIA_TYPE = "unsupported_media_type"
     INVALID_CODE = "invalid_code"
     ASSIGNED_TO_OTHER = "assigned_to_other"
+    DEMO_MODE_DISABLED = "demo_mode_disabled"
     HTTP_ERROR = "http_error"
 
 
