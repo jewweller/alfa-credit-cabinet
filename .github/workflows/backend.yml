@@ -1,11 +1,12 @@
 # Проверки backend (план, раздел 12: «PR в main через CI»): линтер, формат, актуальность
-# docs/api/openapi.json, тесты и миграции на настоящем PostgreSQL.
+# docs/api/openapi.json, тесты (включая модель ленты из ml/) и миграции на PostgreSQL.
 name: backend
 
 on:
   pull_request:
     paths:
       - "backend/**"
+      - "ml/**"
       - "docs/api/**"
       - "seed/**"
       - "mocks/fixtures/**"
@@ -15,6 +16,7 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "ml/**"
       - "docs/api/**"
       - "seed/**"
       - "mocks/fixtures/**"
@@ -44,8 +46,9 @@ jobs:
         with:
           version: "0.13.4"
       - run: uv sync --frozen
-      - run: uv run --frozen ruff check .
-      - run: uv run --frozen ruff format --check .
+      # ml/ — модель ленты; проверяется теми же правилами, что backend.
+      - run: uv run --frozen ruff check . ../ml
+      - run: uv run --frozen ruff format --check . ../ml
       - name: docs/api/openapi.json соответствует коду
         run: uv run --frozen python -m app.openapi --check
       - run: uv run --frozen pytest -q
