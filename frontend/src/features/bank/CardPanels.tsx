@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type {
   ApplicationDetail,
   BankDecision,
@@ -8,10 +9,13 @@ import type {
 } from '../../api/types';
 import { APPLICATION, BANK, MONEY } from '../../i18n/ru';
 import {
+  Button,
   CodeBlock,
   Collapsible,
+  DocumentViewer,
   FactorList,
   FileList,
+  InlineAlert,
   KeyValueList,
   Meter,
   MetaNote,
@@ -23,7 +27,7 @@ import {
   StatusBadge,
   type KeyValue,
 } from '../../ui';
-import { downloadDocument } from '../application/download';
+import { downloadDocument, isViewable, useDocumentFile, type DocumentRef } from '../application/download';
 import { formatBytes, formatDate, formatDateTime, formatMoney, formatPercent, formatRate, formatTerm } from '../format';
 import { GRADE_TONE } from './format';
 
@@ -168,24 +172,74 @@ export function FactsPanel({ app, products, index = 0 }: { app: ApplicationDetai
   );
 }
 
-/** Файлы, которые загрузил клиент. */
+type ClientDocument = ApplicationDetail['documents'][number];
+
+const docMeta = (doc: ClientDocument) => `${APPLICATION.documentKind[doc.kind]} · ${formatBytes(doc.size_bytes)}`;
+
+/** Файл во всплывающем окне: PDF и картинки — прямо в карточке, плюс новая вкладка и скачивание. */
+function DocumentPreview({ doc, onClose }: { doc: ClientDocument | null; onClose: () => void }) {
+  const D = BANK.documents;
+  const ref: DocumentRef | null = doc && { id: doc.id, filename: doc.filename, mime: doc.mime };
+  const file = useDocumentFile(ref);
+  const viewable = doc ? isViewable(doc.mime) : false;
+  const kind = !viewable ? 'other' : doc?.mime === 'application/pdf' ? 'pdf' : 'image';
+  const placeholder = file.error ? D.viewer.error(file.error) : !viewable ? D.viewer.unsupported : D.viewer.loading;
+
+  return (
+    <DocumentViewer
+      open={Boolean(doc)}
+      title={doc?.filename ?? ''}
+      meta={doc ? docMeta(doc) : ''}
+      kind={kind}
+      src={file.url}
+      placeholder={placeholder}
+      closeLabel={D.viewer.close}
+      onClose={onClose}
+      actions={
+        <>
+          {viewable && (
+            <Button variant="ghost" disabled={!file.url} onClick={() => file.url && window.open(file.url, '_blank', 'noopener')}>
+              {D.viewer.newTab}
+            </Button>
+          )}
+          <Button variant="secondary" disabled={!file.url} onClick={file.download}>
+            {D.download}
+          </Button>
+        </>
+      }
+    />
+  );
+}
+
+/** Файлы, которые загрузил клиент: открыть в окне или скачать. */
 export function DocumentsPanel({ app, index = 0 }: { app: ApplicationDetail; index?: number }) {
   const D = BANK.documents;
+  const [viewing, setViewing] = useState<ClientDocument | null>(null);
+  const [downloadError, setDownloadError] = useState(false);
+  const download = (doc: ClientDocument) => {
+    setDownloadError(false);
+    downloadDocument(doc.id, doc.filename).catch(() => setDownloadError(true));
+  };
+
   return (
     <Panel title={D.title} index={index}>
       {app.documents.length === 0 ? (
         <MetaNote>{D.empty}</MetaNote>
       ) : (
         <FileList
-          actionLabel={D.download}
           items={app.documents.map((doc) => ({
             id: doc.id,
             name: doc.filename,
-            meta: `${APPLICATION.documentKind[doc.kind]} · ${formatBytes(doc.size_bytes)}`,
-            onAction: () => void downloadDocument(doc.id, doc.filename),
+            meta: docMeta(doc),
+            actions: [
+              { label: D.open, onClick: () => setViewing(doc) },
+              { label: D.download, onClick: () => download(doc) },
+            ],
           }))}
         />
       )}
+      {downloadError && <InlineAlert>{D.downloadError}</InlineAlert>}
+      <DocumentPreview doc={viewing} onClose={() => setViewing(null)} />
     </Panel>
   );
 }

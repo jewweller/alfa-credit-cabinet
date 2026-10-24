@@ -1,15 +1,20 @@
 import { Button } from './Button';
 import styles from './FileList.module.css';
 
+export interface FileListAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface FileListItem {
   id: string;
   name: string;
   meta: string;
-  onAction: () => void;
+  actions: FileListAction[];
 }
 
-/** Список файлов: имя, подпись (вид и размер) и действие справа, например «Скачать». */
-export function FileList({ items, actionLabel }: { items: FileListItem[]; actionLabel: string }) {
+/** Список файлов: имя, подпись (вид и размер) и действия справа, например «Открыть» и «Скачать». */
+export function FileList({ items }: { items: FileListItem[] }) {
   return (
     <ul className={styles.list}>
       {items.map((item) => (
@@ -18,9 +23,13 @@ export function FileList({ items, actionLabel }: { items: FileListItem[]; action
             <span className={styles.name}>{item.name}</span>
             <span className={styles.meta}>{item.meta}</span>
           </span>
-          <Button variant="ghost" onClick={item.onAction}>
-            {actionLabel}
-          </Button>
+          <span className={styles.actions}>
+            {item.actions.map((action) => (
+              <Button key={action.label} variant="ghost" onClick={action.onClick}>
+                {action.label}
+              </Button>
+            ))}
+          </span>
         </li>
       ))}
     </ul>

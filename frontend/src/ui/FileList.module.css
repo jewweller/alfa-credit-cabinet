@@ -36,3 +36,9 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+}
