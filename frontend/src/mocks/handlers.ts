@@ -104,6 +104,13 @@ function bankOnly(user: Me) {
   }
 }
 
+/** Взять в работу и решить может только кредитный специалист: решение админа история записала бы как underwriter. */
+function underwriterOnly(user: Me) {
+  if (user.role !== 'underwriter') {
+    throw new MockHttpError(403, 'forbidden', 'Операция доступна только кредитному специалисту');
+  }
+}
+
 /** Операция кабинета банка над любой заявкой. */
 function bank<T>(request: Request, run: (user: Me) => T, options?: { status?: number; wait?: number }) {
   return respond(
@@ -290,12 +297,26 @@ export const handlers = [
   http.get(`${API}/bank/applications/:id`, ({ request, params }) => bank(request, () => db.bankDetail(String(params.id)))),
 
   http.post(`${API}/bank/applications/:id/assign`, ({ request, params }) =>
-    bank(request, (user) => db.assign(String(params.id), user), { wait: 400 }),
+    bank(
+      request,
+      (user) => {
+        underwriterOnly(user);
+        return db.assign(String(params.id), user);
+      },
+      { wait: 400 },
+    ),
   ),
 
   http.post(`${API}/bank/applications/:id/decision`, async ({ request, params }) => {
     const body = (await request.json()) as UnderwriterDecisionRequest;
-    return bank(request, (user) => db.bankDecide(String(params.id), user, body, key(request)), { wait: 600 });
+    return bank(
+      request,
+      (user) => {
+        underwriterOnly(user);
+        return db.bankDecide(String(params.id), user, body, key(request));
+      },
+      { wait: 600 },
+    );
   }),
 
   http.get(`${API}/feed`, ({ request }) =>
