@@ -22,7 +22,11 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./backend
+    build:
+      context: ./backend
+      # Пакет ml (ранжирование ленты) копируется в образ рядом с app — см. backend/Dockerfile.
+      additional_contexts:
+        ml: ./ml
     environment:
       APP_ENV: ${APP_ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -35,6 +39,8 @@ services:
       UPLOADS_DIR: /uploads
       # Сброс демо-данных администратором (POST /admin/demo/reset).
       DEMO_MODE: ${DEMO_MODE:-true}
+      # Порядок новостей в ленте моделью ML (docs/ml-ranking.md); при сбое — правила.
+      ML_RANKING_ENABLED: ${ML_RANKING_ENABLED:-false}
     volumes:
       - ./seed:/seed:ro
       - ./mocks/fixtures:/fixtures:ro

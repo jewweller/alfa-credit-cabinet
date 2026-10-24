@@ -1,18 +1,23 @@
 """Лента: события при смене статуса, новости по профилю, фильтры, отметка прочтения, доступ."""
 
+import time
 from datetime import UTC, datetime
+from pathlib import Path
 
+import pytest
 from conftest import auth_headers
 from demo_flows import BAKERY, KOVALEV, MIRAGE, create_draft, submit_demo
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db.models import User
 from app.domain.feed_ranking import MODEL_VERSION, rank_news
 from app.services import feed as feed_service
 
 NOW = datetime(2026, 10, 26, 12, tzinfo=UTC)
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _feed(client: TestClient, headers: dict, **params) -> dict:  # noqa: ANN003
@@ -182,3 +187,98 @@ def test_feed_is_for_clients_only(client: TestClient) -> None:
     assert client.get("/api/v1/feed", headers=underwriter).status_code == 403
     assert _read(client, event["id"], underwriter).status_code == 403
     assert client.get("/api/v1/feed").status_code == 401
+
+
+# ── Ранжирование моделью ML ─────────────────────────────────────────────────
+
+
+@pytest.fixture
+def ml_enabled(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
+    monkeypatch.setattr(get_settings(), "ml_ranking_enabled", True)
+    return monkeypatch
+
+
+def _rules_order(client: TestClient, headers: dict) -> list[str]:
+    return [i["id"] for i in _feed(client, headers, kind="news", news_limit=30)["items"]]
+
+
+def test_ml_reorders_news_and_reports_method(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
+    _, headers = submit_demo(client, *BAKERY)
+    seen: list[dict] = []
+
+    def reverse(payload: dict) -> dict:
+        seen.append(payload)
+        ids = [c["id"] for c in payload["candidates"]][::-1]
+        reason = [{"code": "general", "text": "Модель так решила"}]
+        return {
+            "model_version": "test-ranker-1",
+            "ranking": [
+                {"id": i, "score": 1 - n / len(ids), "reasons": reason if n == 0 else []}
+                for n, i in enumerate(ids)
+            ],
+        }
+
+    ml_enabled.setattr(feed_service, "_ranker", lambda: reverse)
+    body = _feed(client, headers, kind="news", news_limit=30)
+
+    assert body["ranking"] == {"method": "ml", "model_version": "test-ranker-1"}
+    candidates = [c["id"] for c in seen[0]["candidates"]]
+    assert [i["id"] for i in body["items"]] == candidates[::-1]
+    assert body["items"][0]["reasons"] == [{"code": "general", "text": "Модель так решила"}]
+    assert body["items"][1]["reasons"]  # модель причин не дала — остались причины правил
+    profile = seen[0]["profile"]
+    assert "inn" not in profile and "name" not in profile
+    assert profile["revenue"] == {"2024": 21428571, "2025": 24000000}  # из ответа ФНС
+    assert profile["applications"][0]["status"] == "APPROVED"
+
+
+@pytest.mark.parametrize(
+    "broken",
+    [
+        lambda payload: (_ for _ in ()).throw(RuntimeError("модель упала")),
+        lambda payload: {"model_version": "x", "ranking": []},  # не те кандидаты
+        lambda payload: {
+            "model_version": "x",
+            "ranking": [{"id": c["id"], "score": 5} for c in payload["candidates"]],
+        },  # score вне 0…1
+    ],
+)
+def test_broken_model_falls_back_to_rules(client: TestClient, ml_enabled, broken) -> None:  # noqa: ANN001
+    headers = auth_headers(client, "bakery@demo.local")
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", False)
+    expected = _rules_order(client, headers)
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", True)
+    ml_enabled.setattr(feed_service, "_ranker", lambda: broken)
+
+    body = _feed(client, headers, kind="news", news_limit=30)
+
+    assert body["ranking"]["method"] == "rules"
+    assert [i["id"] for i in body["items"]] == expected
+
+
+def test_slow_model_falls_back_to_rules(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
+    headers = auth_headers(client, "bakery@demo.local")
+    ml_enabled.setattr(get_settings(), "ml_timeout_sec", 0.05)
+
+    def slow(payload: dict) -> dict:
+        time.sleep(0.5)
+        return {}
+
+    ml_enabled.setattr(feed_service, "_ranker", lambda: slow)
+
+    assert _feed(client, headers, kind="news")["ranking"]["method"] == "rules"
+
+
+def test_real_ml_stub_keeps_rules_order(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
+    """Настоящий пакет ml из репозитория: заглушка возвращает порядок бэкенда."""
+    ml_enabled.syspath_prepend(str(REPO_ROOT))
+    headers = auth_headers(client, "bakery@demo.local")
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", False)
+    expected = _rules_order(client, headers)
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", True)
+
+    body = _feed(client, headers, kind="news", news_limit=30)
+
+    assert body["ranking"]["method"] == "ml"
+    assert body["ranking"]["model_version"].startswith("feed-")
+    assert [i["id"] for i in body["items"]] == expected

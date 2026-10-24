@@ -72,6 +72,13 @@ RULE_TITLES = {
     "R10": "Грейд A/B и нагрузка выше 35%",
 }
 
+# Признаки риска ФНС (F6) — как на экране моков фронта (frontend/src/mocks/scoring.ts).
+FLAG_TITLES = {
+    "mass_address": "массовый адрес",
+    "unreliable_address": "недостоверный адрес",
+    "unreliable_director": "недостоверный руководитель",
+}
+
 _ENRICHMENT_STATUS = {"ok": EnrichmentStatus.OK, "not_found": EnrichmentStatus.NOT_FOUND}
 _REGISTRY = {"egrul": _from_egrul, "egrip": _from_egrip}
 
@@ -193,7 +200,11 @@ def _factor_value(unit: str, value: str | None, note: str | None) -> str:
         return f"{_number(str(Decimal(value).quantize(Decimal('0.1'))))}%"
     if unit == "rub":
         return "нет" if Decimal(value) == 0 else f"{Decimal(value):,.0f} ₽".replace(",", " ")
-    return _number(value)  # flags — число признаков
+    # flags: движок кладёт в note коды сработавших признаков через запятую.
+    if Decimal(value) == 0:
+        return "нет"
+    codes = [code.strip() for code in (note or "").split(",") if code.strip()]
+    return ", ".join(FLAG_TITLES.get(code, code) for code in codes) or _number(value)
 
 
 def _scoring(row: ScoringResultRow | None, config: EngineConfig) -> ScoringResult | None:

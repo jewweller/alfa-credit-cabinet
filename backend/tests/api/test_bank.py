@@ -371,3 +371,21 @@ def test_client_cannot_use_bank_actions(client: TestClient) -> None:
     assert _assign(client, app["id"], headers).status_code == 403
     body = {"outcome": "approved", "rate": "20.00"}
     assert _decide(client, app["id"], headers, body).status_code == 403
+
+
+def test_card_texts_are_readable(client: TestClient) -> None:
+    """Суммы в правилах — с разрядами, признаки ФНС — по-русски, «нет» вместо 0."""
+    mirage, _ = submit_demo(client, *MIRAGE)
+    bakery, _ = submit_demo(client, *BAKERY)
+    bank = _bank(client)
+
+    card = _card(client, mirage["id"], bank).json()
+    clean = _card(client, bakery["id"], bank).json()
+
+    r4 = next(r for r in card["rules"] if r["code"] == "R4")
+    assert r4["detail"].startswith("анкета 12 000 000 ₽, ФНС 12 000 000 ₽")
+    r5 = next(r for r in card["rules"] if r["code"] == "R5")
+    assert r5["detail"] == "сумма 1 500 000 ₽, порог 10 000 000 ₽"
+    f6 = {f["code"]: f["value"] for f in card["scoring"]["factors"]}["F6"]
+    assert f6 == "массовый адрес, недостоверный адрес"
+    assert {f["code"]: f["value"] for f in clean["scoring"]["factors"]}["F6"] == "нет"

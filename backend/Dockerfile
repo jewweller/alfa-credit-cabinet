@@ -20,6 +20,9 @@ RUN uv sync --frozen --no-dev
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
+# Ранжирование ленты моделью ML: только стандартная библиотека и веса в JSON (docs/ml-howto.md).
+# Контекст `ml` задаёт docker-compose.yml (additional_contexts).
+COPY --from=ml . ./ml
 
 RUN useradd --system --uid 10001 --no-create-home app \
     && mkdir /uploads && chown app /uploads
