@@ -1,10 +1,12 @@
-"""Смена статуса заявки по машине состояний и запись истории (план, раздел 5)."""
+"""Смена статуса заявки по машине состояний, запись истории и событие в ленту клиента
+(план, разделы 4 и 5)."""
 
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.db.models import Application, ApplicationStatusHistory, User
+from app.db.models import Application, ApplicationStatusHistory, FeedEventRow, User
+from app.domain.feed_events import event_text
 from app.domain.state_machine import ApplicationStatus, ensure_transition
 from app.schemas.applications import StatusActor
 from app.schemas.auth import UserRole
@@ -47,3 +49,21 @@ def change_status(
     application.status = to_status
     application.status_changed_at = now()
     add_history(session, application, from_status, actor)
+    notify(session, application)
+
+
+def notify(session: Session, application: Application) -> None:
+    """Событие в ленту клиента о новом статусе — уведомление вместо email/SMS (план, раздел 4)."""
+    text = event_text(ApplicationStatus(application.status), application.number)
+    if text is None:
+        return
+    session.add(
+        FeedEventRow(
+            user_id=application.applicant_id,
+            application_id=application.id,
+            status=application.status,
+            title=text[0],
+            body=text[1],
+            created_at=application.status_changed_at,
+        )
+    )

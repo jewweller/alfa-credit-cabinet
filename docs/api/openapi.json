@@ -2202,7 +2202,7 @@
           "feed"
         ],
         "summary": "Get Feed",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПерсональная лента клиента (план, раздел 11).\n\nСверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`\nпо убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое\nмодели — по формуле. У каждой новости есть `reasons` — строка «Почему вы это видите».",
+        "description": "Персональная лента клиента (план, раздел 11).\n\nСверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`\nпо убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое\nмодели — по формуле. У каждой новости есть `reasons` — строка «Почему вы это видите».",
         "operationId": "getFeed",
         "security": [
           {
@@ -2285,7 +2285,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/feed/events/{id}/read": {
@@ -2294,7 +2294,7 @@
           "feed"
         ],
         "summary": "Mark Feed Event Read",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОтметить событие прочитанным. Повторный вызов ничего не меняет.",
+        "description": "Отметить событие прочитанным. Повторный вызов ничего не меняет.",
         "operationId": "markFeedEventRead",
         "security": [
           {
@@ -2358,7 +2358,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/bank/audit": {

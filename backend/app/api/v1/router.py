@@ -56,12 +56,13 @@ from app.schemas.bank import (
 from app.schemas.common import INN_PATTERN
 from app.schemas.companies import CompanyBrief, CompanyLookupResponse
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, DocumentInfo, DocumentKind
+from app.schemas.feed import FeedItemKind, FeedResponse
 from app.schemas.products import Product, ProductRecommendation, ProductRecommendRequest
 from app.schemas.schedule import PaymentSchedule
 from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 from app.security import create_access_token, verify_password
 from app.services import applications as service
-from app.services import bank, companies, documents, offers, products, schedule, signing
+from app.services import bank, companies, documents, feed, offers, products, schedule, signing
 from app.storage import Storage, get_storage
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -611,3 +612,49 @@ def decide_bank_application(
     """Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
     документов или отказ. Клиент видит итог в карточке заявки и событие в ленте."""
     return bank.decide(session, user, id, body)
+
+
+# ── Лента (экраны C2, C8) ─────────────────────────────────────────────────────
+
+
+@api_v1_router.get(
+    "/feed",
+    response_model=FeedResponse,
+    operation_id="getFeed",
+    tags=["feed"],
+    responses=_errors(e401=_E401, e403=_E403_CLIENT, e422=_E422),
+)
+def get_feed(
+    user: ClientUser,
+    session: SessionDep,
+    kind: Annotated[
+        FeedItemKind | None,
+        Query(description="Только события или только новости (фильтр C8). Без фильтра — всё."),
+    ] = None,
+    news_limit: Annotated[
+        int, Query(ge=1, le=30, description="Сколько новостей вернуть, лучших по весу.")
+    ] = 10,
+) -> FeedResponse:
+    """Персональная лента клиента (план, раздел 11).
+
+    Сверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`
+    по убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое
+    модели — по формуле. У каждой новости есть `reasons` — строка «Почему вы это видите».
+    """
+    return feed.feed(session, user, kind, news_limit)
+
+
+@api_v1_router.post(
+    "/feed/events/{id}/read",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="markFeedEventRead",
+    tags=["feed"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_CLIENT,
+        e404="Событие не найдено или принадлежит другому клиенту.",
+    ),
+)
+def mark_feed_event_read(id: UUID, user: ClientUser, session: SessionDep) -> None:
+    """Отметить событие прочитанным. Повторный вызов ничего не меняет."""
+    feed.mark_read(session, user, id)
