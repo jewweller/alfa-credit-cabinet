@@ -287,8 +287,7 @@ def test_download_access(client: TestClient, melnikova: tuple[dict, dict]) -> No
 
     other = client.get(path, headers=auth_headers(client, "bakery@demo.local"))
     assert other.status_code == 403  # контракт: «файл из чужой заявки» — 403
-    assert (
-        client.get(path, headers=auth_headers(client, "underwriter@demo.local")).status_code == 200
-    )
+    for staff in ("underwriter@demo.local", "admin@demo.local"):
+        assert client.get(path, headers=auth_headers(client, staff)).status_code == 200
     assert client.get(path).status_code == 401
     assert client.get(f"/api/v1/documents/{UUID(int=9)}", headers=headers).status_code == 404

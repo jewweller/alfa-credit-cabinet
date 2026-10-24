@@ -1,5 +1,8 @@
-"""Пароли (bcrypt) и токены доступа (JWT HS256) — план, раздел 9."""
+"""Пароли (bcrypt), токены доступа (JWT HS256) и коды подписи — план, раздел 9."""
 
+import hashlib
+import hmac
+import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -56,3 +59,17 @@ def decode_access_token(token: str) -> UUID:
         return UUID(payload["sub"])
     except (jwt.PyJWTError, ValueError) as exc:
         raise InvalidTokenError("Токен недействителен или истёк") from exc
+
+
+def new_signing_code() -> str:
+    """Шесть случайных цифр для симуляции ПЭП."""
+    return f"{secrets.randbelow(10**6):06d}"
+
+
+def hash_signing_code(code: str) -> str:
+    """HMAC-SHA256 на секрете JWT: по таблице signatures код не восстановить перебором."""
+    return hmac.new(_secret().encode(), code.encode(), hashlib.sha256).hexdigest()
+
+
+def verify_signing_code(code: str, code_hash: str) -> bool:
+    return hmac.compare_digest(hash_signing_code(code), code_hash)

@@ -101,6 +101,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/recommend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recommend Products
+         * @description Подбор продукта по цели, сумме и сроку (экран C3).
+         *
+         *     Возвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят
+         *     без изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.
+         */
+        post: operations["recommendProducts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/lookup": {
         parameters: {
             query?: never;
@@ -349,31 +372,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/products/recommend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Recommend Products
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Подбор продукта по цели, сумме и сроку (экран C3).
-         *
-         *     Возвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят
-         *     без изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.
-         */
-        post: operations["recommendProducts"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/applications/{id}/signing/code": {
         parameters: {
             query?: never;
@@ -385,9 +383,9 @@ export interface paths {
         put?: never;
         /**
          * Create Signing Code
-         * @description **Только контракт — ещё не реализовано.**
+         * @description Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.
          *
-         *     Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.
+         *     Код действует 5 минут; новый запрос заменяет прежний код.
          */
         post: operations["createSigningCode"];
         delete?: never;
@@ -407,9 +405,10 @@ export interface paths {
         put?: never;
         /**
          * Confirm Signing
-         * @description **Только контракт — ещё не реализовано.**
+         * @description Подтвердить подпись кодом: `SIGNING` → `SIGNED` → `ISSUED`.
          *
-         *     Подтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`).
+         *     Выдача (симуляция) проходит сразу, в том же запросе: ответ уже в статусе `ISSUED`.
+         *     На один код — 5 попыток, дальше нужен новый код.
          */
         post: operations["confirmSigning"];
         delete?: never;
@@ -427,9 +426,7 @@ export interface paths {
         };
         /**
          * List Bank Applications
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Очередь заявок всех клиентов (экран B2).
+         * @description Очередь заявок всех клиентов (экран B2).
          *
          *     Черновики (`DRAFT`) банку не видны. Сортировка: сначала `MANUAL_REVIEW`, внутри — дольше
          *     всего ждущие (по `status_changed_at`), затем остальные, свежие сверху.
@@ -452,9 +449,7 @@ export interface paths {
         };
         /**
          * Get Bank Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Полная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение.
+         * @description Полная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение.
          */
         get: operations["getBankApplication"];
         put?: never;
@@ -476,9 +471,7 @@ export interface paths {
         put?: never;
         /**
          * Assign Bank Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Взять заявку в работу. Повторный вызов тем же специалистом ничего не меняет.
+         * @description Взять заявку в работу. Повторный вызов тем же специалистом ничего не меняет.
          */
         post: operations["assignBankApplication"];
         delete?: never;
@@ -498,9 +491,7 @@ export interface paths {
         put?: never;
         /**
          * Decide Bank Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
+         * @description Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
          *     документов или отказ. Клиент видит итог в карточке заявки и событие в ленте.
          */
         post: operations["decideBankApplication"];
@@ -1839,6 +1830,48 @@ export interface operations {
             };
         };
     };
+    recommendProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRecommendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRecommendation"][];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     lookupCompany: {
         parameters: {
             query: {
@@ -2709,48 +2742,6 @@ export interface operations {
             };
             /** @description Заявка не найдена или по ней нет оффера. */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Ошибка валидации; `field` указывает на поле. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    recommendProducts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProductRecommendRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProductRecommendation"][];
-                };
-            };
-            /** @description Нет токена или он недействителен. */
-            401: {
                 headers: {
                     [name: string]: unknown;
                 };

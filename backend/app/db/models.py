@@ -1,8 +1,8 @@
 """SQLAlchemy-модели (план, раздел 6).
 
 Есть: вход, черновик заявки и история (0001); обогащение, скоринг, решение, оффер и запрос
-документов (0002). Документы, подпись, выдача, лента, аудит и очередь воркера — отдельными
-миграциями вместе с их функциональностью.
+документов (0002); документы (0003); подпись и выдача (0004); исполнитель заявки в банке
+(0005). Лента, аудит и очередь воркера — отдельными миграциями вместе с их функциональностью.
 """
 
 from datetime import UTC, date, datetime
@@ -100,9 +100,12 @@ class Application(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # Сотрудник банка, который взял заявку в работу (экран B2, «взять в работу»).
+    assignee_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
 
     company: Mapped[Company] = relationship(lazy="joined")
     product: Mapped[Product | None] = relationship(lazy="joined")
+    assignee: Mapped[User | None] = relationship(foreign_keys=[assignee_id], lazy="joined")
 
     # Оптимистическая блокировка (план, раздел 9): SQLAlchemy сам увеличивает version
     # и бросает StaleDataError, если запись успели изменить параллельно.
@@ -210,3 +213,35 @@ class DocumentRow(Base):
     storage_path: Mapped[str] = mapped_column(String(64))  # ключ в Storage (UUID)
     uploaded_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class SignatureRow(Base):
+    """Симуляция ПЭП (план, раздел 6): одноразовый код подписи по принятому офферу.
+
+    Хранится только HMAC кода. Новый запрос кода заменяет прежний; `signed_at` — код подтверждён.
+    """
+
+    __tablename__ = "signatures"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    offer_id: Mapped[UUID] = mapped_column(ForeignKey("offers.id"))
+    code_hash: Mapped[str] = mapped_column(String(64))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    signer_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class DisbursementRow(Base):
+    """Симуляция выдачи (план, раздел 6): одна выдача на заявку."""
+
+    __tablename__ = "disbursements"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), unique=True)
+    offer_id: Mapped[UUID] = mapped_column(ForeignKey("offers.id"))
+    amount: Mapped[Decimal] = mapped_column(MONEY)
+    account_mask: Mapped[str] = mapped_column(String(16))
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

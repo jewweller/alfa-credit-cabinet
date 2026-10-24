@@ -192,6 +192,68 @@
         "x-implementation-status": "implemented"
       }
     },
+    "/api/v1/products/recommend": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Recommend Products",
+        "description": "Подбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
+        "operationId": "recommendProducts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRecommendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductRecommendation"
+                  },
+                  "type": "array",
+                  "title": "Response Recommendproducts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-implementation-status": "implemented"
+      }
+    },
     "/api/v1/companies/lookup": {
       "get": {
         "tags": [
@@ -1516,75 +1578,13 @@
         "x-implementation-status": "implemented"
       }
     },
-    "/api/v1/products/recommend": {
-      "post": {
-        "tags": [
-          "products"
-        ],
-        "summary": "Recommend Products",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
-        "operationId": "recommendProducts",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductRecommendRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProductRecommendation"
-                  },
-                  "type": "array",
-                  "title": "Response Recommendproducts"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации; `field` указывает на поле.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "x-implementation-status": "planned"
-      }
-    },
     "/api/v1/applications/{id}/signing/code": {
       "post": {
         "tags": [
           "signing"
         ],
         "summary": "Create Signing Code",
-        "description": "**Только контракт — ещё не реализовано.**\n\nСгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.",
+        "description": "Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.\n\nКод действует 5 минут; новый запрос заменяет прежний код.",
         "operationId": "createSigningCode",
         "security": [
           {
@@ -1665,7 +1665,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/signing/confirm": {
@@ -1674,7 +1674,7 @@
           "signing"
         ],
         "summary": "Confirm Signing",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПодтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`).",
+        "description": "Подтвердить подпись кодом: `SIGNING` → `SIGNED` → `ISSUED`.\n\nВыдача (симуляция) проходит сразу, в том же запросе: ответ уже в статусе `ISSUED`.\nНа один код — 5 попыток, дальше нужен новый код.",
         "operationId": "confirmSigning",
         "security": [
           {
@@ -1783,7 +1783,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/bank/applications": {
@@ -1792,7 +1792,7 @@
           "bank"
         ],
         "summary": "List Bank Applications",
-        "description": "**Только контракт — ещё не реализовано.**\n\nОчередь заявок всех клиентов (экран B2).\n\nЧерновики (`DRAFT`) банку не видны. Сортировка: сначала `MANUAL_REVIEW`, внутри — дольше\nвсего ждущие (по `status_changed_at`), затем остальные, свежие сверху.",
+        "description": "Очередь заявок всех клиентов (экран B2).\n\nЧерновики (`DRAFT`) банку не видны. Сортировка: сначала `MANUAL_REVIEW`, внутри — дольше\nвсего ждущие (по `status_changed_at`), затем остальные, свежие сверху.",
         "operationId": "listBankApplications",
         "security": [
           {
@@ -1905,7 +1905,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/bank/applications/{id}": {
@@ -1914,7 +1914,7 @@
           "bank"
         ],
         "summary": "Get Bank Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПолная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение.",
+        "description": "Полная карточка для андеррайтера (экран B3): анкета, источники, скоринг, правила, решение.",
         "operationId": "getBankApplication",
         "security": [
           {
@@ -1985,7 +1985,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/bank/applications/{id}/assign": {
@@ -1994,7 +1994,7 @@
           "bank"
         ],
         "summary": "Assign Bank Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nВзять заявку в работу. Повторный вызов тем же специалистом ничего не меняет.",
+        "description": "Взять заявку в работу. Повторный вызов тем же специалистом ничего не меняет.",
         "operationId": "assignBankApplication",
         "security": [
           {
@@ -2075,7 +2075,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/bank/applications/{id}/decision": {
@@ -2084,7 +2084,7 @@
           "bank"
         ],
         "summary": "Decide Bank Application",
-        "description": "**Только контракт — ещё не реализовано.**\n\nРешение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос\nдокументов или отказ. Клиент видит итог в карточке заявки и событие в ленте.",
+        "description": "Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос\nдокументов или отказ. Клиент видит итог в карточке заявки и событие в ленте.",
         "operationId": "decideBankApplication",
         "security": [
           {
@@ -2193,7 +2193,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/feed": {

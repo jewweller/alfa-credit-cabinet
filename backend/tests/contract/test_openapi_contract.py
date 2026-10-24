@@ -9,14 +9,8 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_contract
 
+# Первая волна реализована; запланированные операции, которых ещё нет в router.py:
 PLANNED_OPERATIONS = {
-    ("post", "/api/v1/products/recommend"),
-    ("post", "/api/v1/applications/{id}/signing/code"),
-    ("post", "/api/v1/applications/{id}/signing/confirm"),
-    ("get", "/api/v1/bank/applications"),
-    ("get", "/api/v1/bank/applications/{id}"),
-    ("post", "/api/v1/bank/applications/{id}/assign"),
-    ("post", "/api/v1/bank/applications/{id}/decision"),
     ("get", "/api/v1/feed"),
     ("post", "/api/v1/feed/events/{id}/read"),
 }
@@ -35,6 +29,7 @@ IMPLEMENTED_OPERATIONS = {
     ("post", "/api/v1/auth/login"),
     ("get", "/api/v1/auth/me"),
     ("get", "/api/v1/products"),
+    ("post", "/api/v1/products/recommend"),
     ("get", "/api/v1/companies/lookup"),
     ("get", "/api/v1/applications"),
     ("post", "/api/v1/applications"),
@@ -49,6 +44,12 @@ IMPLEMENTED_OPERATIONS = {
     ("get", "/api/v1/documents/{id}"),
     ("post", "/api/v1/applications/{id}/resubmit"),
     ("get", "/api/v1/applications/{id}/schedule"),
+    ("post", "/api/v1/applications/{id}/signing/code"),
+    ("post", "/api/v1/applications/{id}/signing/confirm"),
+    ("get", "/api/v1/bank/applications"),
+    ("get", "/api/v1/bank/applications/{id}"),
+    ("post", "/api/v1/bank/applications/{id}/assign"),
+    ("post", "/api/v1/bank/applications/{id}/decision"),
 }
 PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}
