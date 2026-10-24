@@ -20,6 +20,7 @@ import type {
 import { DEMO_PASSWORD, products, registry, users } from './data';
 import { buildSchedule } from './loanMath';
 import { db, MockHttpError } from './db';
+import { apiMode } from './mode';
 import { recommend } from './recommend';
 
 const API = '/api/v1';
@@ -302,7 +303,9 @@ export const handlers = [
       request,
       (user) => {
         const items = db.feed(clientOf(user).company.id);
-        return scenario() === 'empty' ? items.filter((f) => f.kind === 'news') : items;
+        // В mixed заявки настоящие, а события моков — про выдуманные: оставляем только новости.
+        const newsOnly = scenario() === 'empty' || apiMode() === 'mixed';
+        return newsOnly ? items.filter((f) => f.kind === 'news') : items;
       },
       { wait: 300 },
     ),

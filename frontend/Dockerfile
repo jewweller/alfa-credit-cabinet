@@ -1,13 +1,13 @@
 # Кабинет клиента и банка: сборка Vite → статика в nginx, /api проксируется в сервис api
 # (план, раздел 9). Режим данных — VITE_API_MODE (mocks / mixed / real, src/mocks/mode.ts);
-# пустой — по старому флагу VITE_USE_MOCKS (true — моки в браузере).
+# по умолчанию mixed; пустой — по старому флагу VITE_USE_MOCKS (true — моки в браузере).
 
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-ARG VITE_API_MODE=
+ARG VITE_API_MODE=mixed
 ARG VITE_USE_MOCKS=true
 ARG VITE_DEMO_MODE=true
 ENV VITE_API_MODE=$VITE_API_MODE \
