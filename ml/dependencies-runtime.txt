@@ -1,0 +1,4 @@
+# Install in the environment that calls ml.rank_feed; version matches ml/uv.lock.
+xgboost==3.4.1
+numpy==2.5.4
+scikit-learn==1.9.1

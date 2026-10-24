@@ -1,0 +1,60 @@
+{
+  "model_version": "feed-xgb-0.2.0-seed-42",
+  "feature_version": "feed-features-1",
+  "features": [
+    "m_okved",
+    "m_status",
+    "m_product",
+    "m_segment",
+    "m_general",
+    "topic_product",
+    "topic_industry",
+    "topic_step",
+    "topic_support",
+    "fresh_7d",
+    "micro",
+    "young",
+    "no_apps",
+    "action_needed",
+    "product_known",
+    "growth",
+    "step_x_action",
+    "support_x_small_or_young",
+    "product_topic_x_no_apps",
+    "equipment_x_growth"
+  ],
+  "model_sha256": "b8cace8303766497a55df1b22e75776134bb359cd91657f23bab7153ca885a62",
+  "seed": 42,
+  "selected_config": {
+    "objective": "rank:ndcg",
+    "eval_metric": "ndcg@5-",
+    "tree_method": "hist",
+    "n_estimators": 1000,
+    "learning_rate": 0.15,
+    "subsample": 0.7,
+    "colsample_bytree": 0.8,
+    "lambdarank_pair_method": "topk",
+    "lambdarank_num_pair_per_sample": 5,
+    "early_stopping_rounds": 70,
+    "n_jobs": 2,
+    "max_depth": 2,
+    "min_child_weight": 20,
+    "reg_lambda": 30,
+    "reg_alpha": 0.1,
+    "best_iteration": 215
+  },
+  "objective": "rank:ndcg",
+  "selection_metric": "mean validation click NDCG@5 across seeds 42/43/44",
+  "score_transform": "sigmoid(raw ranking score); not a click probability",
+  "versions": {
+    "numpy": "2.5.4",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1"
+  },
+  "data_sha256": {
+    "requests.jsonl": "1c45f4a8d9d7f52179451e9413a6224ce6738ef0002ec7b797518d416ec7d1d4",
+    "metadata.jsonl": "1c270807944c30cea705b44fe486389395b2b8958f761ce6089291c2ad95334d",
+    "clicks.csv": "f4a7b3caebd9318643c6dd6526ce28063fddfc4f0704dd035f6b1e3147c05e5b"
+  },
+  "tuning_report": "reports/tuning.json"
+}

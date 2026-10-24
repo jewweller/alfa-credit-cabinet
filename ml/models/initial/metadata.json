@@ -1,0 +1,48 @@
+{
+  "model_version": "feed-xgb-0.1.0-seed-42",
+  "feature_version": "feed-features-1",
+  "features": [
+    "m_okved",
+    "m_status",
+    "m_product",
+    "m_segment",
+    "m_general",
+    "topic_product",
+    "topic_industry",
+    "topic_step",
+    "topic_support",
+    "fresh_7d",
+    "micro",
+    "young",
+    "no_apps",
+    "action_needed",
+    "product_known",
+    "growth",
+    "step_x_action",
+    "support_x_small_or_young",
+    "product_topic_x_no_apps",
+    "equipment_x_growth"
+  ],
+  "model_sha256": "be4f88f745fef85b5c5a4f77f09d8d5e5713c7a406f7ea3a49605f8ad963e13b",
+  "seed": 42,
+  "selected_config": {
+    "max_depth": 3,
+    "min_child_weight": 20,
+    "reg_lambda": 10,
+    "validation_ndcg@5": 0.48222904983329623,
+    "best_iteration": 122
+  },
+  "objective": "rank:ndcg",
+  "selection_metric": "validation click NDCG@5",
+  "score_transform": "sigmoid(raw ranking score); not a click probability",
+  "versions": {
+    "numpy": "2.5.4",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1"
+  },
+  "data_sha256": {
+    "requests.jsonl": "1c45f4a8d9d7f52179451e9413a6224ce6738ef0002ec7b797518d416ec7d1d4",
+    "metadata.jsonl": "1c270807944c30cea705b44fe486389395b2b8958f761ce6089291c2ad95334d",
+    "clicks.csv": "f4a7b3caebd9318643c6dd6526ce28063fddfc4f0704dd035f6b1e3147c05e5b"
+  }
+}
