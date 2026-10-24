@@ -36,7 +36,7 @@ import {
   StatusBadge,
 } from '../../ui';
 
-/** Ручное рассмотрение: взять в работу → форма решения (B4). */
+/** Ручное рассмотрение: взять в работу → форма решения (B4). Администратор только смотрит. */
 function ReviewPanel({ card, productList }: { card: BankApplicationDetail; productList: Product[] }) {
   const R = BANK.review;
   const me = useMe().data;
@@ -57,6 +57,8 @@ function ReviewPanel({ card, productList }: { card: BankApplicationDetail; produ
         />
       ) : card.assignee ? (
         <InlineAlert tone="info">{BANK.card.assignedToOther(card.assignee.full_name)}</InlineAlert>
+      ) : me?.role === 'admin' ? (
+        <p>{R.adminText}</p>
       ) : (
         <>
           <p>{R.waitText}</p>
