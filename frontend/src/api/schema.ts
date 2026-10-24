@@ -52,9 +52,7 @@ export interface paths {
         put?: never;
         /**
          * Login
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Вход по email и паролю, выдаёт JWT.
+         * @description Вход по email и паролю, выдаёт JWT.
          */
         post: operations["login"];
         delete?: never;
@@ -72,9 +70,7 @@ export interface paths {
         };
         /**
          * Get Me
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Текущий пользователь, роль и компания.
+         * @description Текущий пользователь, роль и компания.
          */
         get: operations["getMe"];
         put?: never;
@@ -94,11 +90,257 @@ export interface paths {
         };
         /**
          * List Products
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Каталог кредитных продуктов.
+         * @description Каталог кредитных продуктов.
          */
         get: operations["listProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup Company
+         * @description Автозаполнение из ЕГРЮЛ (10 цифр) или ЕГРИП (12 цифр) через сервис моков.
+         */
+        get: operations["lookupCompany"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Applications
+         * @description Заявки компании текущего клиента.
+         */
+        get: operations["listApplications"];
+        put?: never;
+        /**
+         * Create Application
+         * @description Создать черновик заявки в статусе `DRAFT`.
+         */
+        post: operations["createApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Application
+         * @description Заявка, статус и активный оффер. Фронт опрашивает каждые 3 секунды (план, раздел 5).
+         */
+        get: operations["getApplication"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Application
+         * @description Автосохранение черновика.
+         */
+        patch: operations["updateApplication"];
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Application
+         * @description Проверка полноты и отправка: `DRAFT` → `SUBMITTED`.
+         */
+        post: operations["submitApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Application History
+         * @description Таймлайн статусов заявки, от старых к новым.
+         */
+        get: operations["getApplicationHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Application
+         * @description Отозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`.
+         */
+        post: operations["cancelApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/offers/{offer_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Offer
+         * @description Принять оффер: `APPROVED` / `COUNTER_OFFER` → `SIGNING`.
+         */
+        post: operations["acceptOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/offers/{offer_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline Offer
+         * @description Отказаться от оффера: `APPROVED` / `COUNTER_OFFER` → `DECLINED_BY_CLIENT`.
+         */
+        post: operations["declineOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Document
+         * @description Загрузить файл в заявку. На диске имя — UUID, хранится sha256 (план, раздел 9).
+         */
+        post: operations["uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Document
+         * @description Скачать файл: клиент — из своих заявок, андеррайтер — из любых.
+         */
+        get: operations["downloadDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/resubmit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resubmit Application
+         * @description Ответить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново.
+         */
+        post: operations["resubmitApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Payment Schedule
+         * @description График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи.
+         */
+        get: operations["getPaymentSchedule"];
         put?: never;
         post?: never;
         delete?: never;
@@ -126,194 +368,6 @@ export interface paths {
          *     без изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.
          */
         post: operations["recommendProducts"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/lookup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Lookup Company
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Автозаполнение из ЕГРЮЛ (10 цифр) или ЕГРИП (12 цифр) через сервис моков.
-         */
-        get: operations["lookupCompany"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Applications
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Заявки компании текущего клиента.
-         */
-        get: operations["listApplications"];
-        put?: never;
-        /**
-         * Create Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Создать черновик заявки в статусе `DRAFT`.
-         */
-        post: operations["createApplication"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Заявка, статус и активный оффер. Фронт опрашивает каждые 3 секунды (план, раздел 5).
-         */
-        get: operations["getApplication"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Автосохранение черновика.
-         */
-        patch: operations["updateApplication"];
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Проверка полноты и отправка: `DRAFT` → `SUBMITTED`.
-         */
-        post: operations["submitApplication"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Application History
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Таймлайн статусов заявки, от старых к новым.
-         */
-        get: operations["getApplicationHistory"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/offers/{offer_id}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Accept Offer
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Принять оффер: `APPROVED` / `COUNTER_OFFER` → `SIGNING`.
-         */
-        post: operations["acceptOffer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/offers/{offer_id}/decline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Decline Offer
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Отказаться от оффера: `APPROVED` / `COUNTER_OFFER` → `DECLINED_BY_CLIENT`.
-         */
-        post: operations["declineOffer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/schedule": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Payment Schedule
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи.
-         */
-        get: operations["getPaymentSchedule"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -358,94 +412,6 @@ export interface paths {
          *     Подтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`).
          */
         post: operations["confirmSigning"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/documents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Upload Document
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Загрузить файл в заявку. На диске имя — UUID, хранится sha256 (план, раздел 9).
-         */
-        post: operations["uploadDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/documents/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Download Document
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Скачать файл: клиент — из своих заявок, андеррайтер — из любых.
-         */
-        get: operations["downloadDocument"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/resubmit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Resubmit Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Ответить на запрос документов: `INFO_REQUESTED` → `SUBMITTED`, конвейер идёт заново.
-         */
-        post: operations["resubmitApplication"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/applications/{id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Cancel Application
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Отозвать заявку: `DRAFT` / `INFO_REQUESTED` → `CANCELLED`.
-         */
-        post: operations["cancelApplication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -538,6 +504,54 @@ export interface paths {
          *     документов или отказ. Клиент видит итог в карточке заявки и событие в ленте.
          */
         post: operations["decideBankApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Feed
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Персональная лента клиента (план, раздел 11).
+         *
+         *     Сверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`
+         *     по убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое
+         *     модели — по формуле. У каждой новости есть `reasons` — строка «Почему вы это видите».
+         */
+        get: operations["getFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feed/events/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Feed Event Read
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Отметить событие прочитанным. Повторный вызов ничего не меняет.
+         */
+        post: operations["markFeedEventRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1041,6 +1055,115 @@ export interface components {
              * @description Поле запроса, к которому относится ошибка. Нет, если ошибка не про поле.
              */
             field?: string | null;
+        };
+        /**
+         * FeedItem
+         * @description Событие по заявке или новость.
+         */
+        FeedItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["FeedItemKind"];
+            /**
+             * Title
+             * @example Заявка №1051 одобрена
+             */
+            title: string;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Событие — когда произошло; новость — дата публикации.
+             */
+            created_at: string;
+            /**
+             * Read
+             * @description Прочитано ли событие. У новостей всегда true: отметка только для событий.
+             */
+            read: boolean;
+            /**
+             * Application Id
+             * @description Заявка события; у новостей null.
+             */
+            application_id: string | null;
+            /**
+             * Application Number
+             * @description Номер заявки события.
+             * @example 1051
+             */
+            application_number: string | null;
+            /** @description Статус, в который перешла заявка; у новостей null. */
+            status: components["schemas"]["ApplicationStatus"] | null;
+            /**
+             * Reasons
+             * @description «Почему вы это видите», самое сильное совпадение первым. У событий пусто.
+             */
+            reasons: components["schemas"]["FeedReason"][];
+            /**
+             * Score
+             * @description Вес новости в выбранном методе (`ranking.method`); у событий null.
+             */
+            score: number | null;
+        };
+        /**
+         * FeedItemKind
+         * @enum {string}
+         */
+        FeedItemKind: "event" | "news";
+        /** FeedRanking */
+        FeedRanking: {
+            method: components["schemas"]["FeedRankingMethod"];
+            /**
+             * Model Version
+             * @example feed-rules-1.0
+             */
+            model_version: string;
+        };
+        /**
+         * FeedRankingMethod
+         * @description Чем отсортированы новости.
+         *
+         *     - `rules` — формула весов плана: 3·ОКВЭД + 2·сегмент + 2·продукт + 3·статус + свежесть
+         *     - `ml` — модель ML-команды; при ошибке или таймауте — откат на rules
+         * @enum {string}
+         */
+        FeedRankingMethod: "rules" | "ml";
+        /**
+         * FeedReason
+         * @description Строка «Почему вы это видите».
+         */
+        FeedReason: {
+            code: components["schemas"]["FeedReasonCode"];
+            /**
+             * Text
+             * @example Ваш ОКВЭД 10.71 — производство хлеба
+             */
+            text: string;
+        };
+        /**
+         * FeedReasonCode
+         * @description Какой тег новости совпал с профилем клиента.
+         *
+         *     - `okved` — группа ОКВЭД компании, например «Ваш ОКВЭД 10.71 — производство хлеба»
+         *     - `segment` — сегмент: микро или малый бизнес
+         *     - `product` — продукт в одной из заявок клиента
+         *     - `status` — текущий статус одной из заявок клиента
+         *     - `general` — ни один тег не совпал — новость для всех клиентов
+         * @enum {string}
+         */
+        FeedReasonCode: "okved" | "segment" | "product" | "status" | "general";
+        /**
+         * FeedResponse
+         * @description Лента: сверху события (свежие первыми), ниже новости по убыванию `score`.
+         */
+        FeedResponse: {
+            /** Items */
+            items: components["schemas"]["FeedItem"][];
+            ranking: components["schemas"]["FeedRanking"];
         };
         /**
          * Grade
@@ -1716,48 +1839,6 @@ export interface operations {
             };
         };
     };
-    recommendProducts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProductRecommendRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProductRecommendation"][];
-                };
-            };
-            /** @description Нет токена или он недействителен. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Ошибка валидации; `field` указывает на поле. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     lookupCompany: {
         parameters: {
             query: {
@@ -2154,6 +2235,76 @@ export interface operations {
             };
         };
     };
+    cancelApplication: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9). */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Нет доступа к заявке. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `invalid_transition` — из текущего статуса операция не разрешена. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     acceptOffer: {
         parameters: {
             query?: never;
@@ -2286,208 +2437,6 @@ export interface operations {
                 };
             };
             /** @description Ошибка валидации; `field` указывает на поле. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getPaymentSchedule: {
-        parameters: {
-            query?: {
-                /** @description Какой оффер. По умолчанию — активный, после принятия — принятый. */
-                offer_id?: string | null;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentSchedule"];
-                };
-            };
-            /** @description Нет токена или он недействителен. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Нет доступа к заявке. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Заявка не найдена или по ней нет оффера. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Ошибка валидации; `field` указывает на поле. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    createSigningCode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SigningCodeResponse"];
-                };
-            };
-            /** @description Нет токена или он недействителен. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Нет доступа к заявке. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Код выдаётся только в статусе `SIGNING`. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    confirmSigning: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description Повторный запрос с тем же ключом не создаёт дубль (план, раздел 9). */
-                "Idempotency-Key"?: string | null;
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SigningConfirmRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApplicationDetail"];
-                };
-            };
-            /** @description Нет токена или он недействителен. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Нет доступа к заявке. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Подтверждение возможно только в статусе `SIGNING`. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description `invalid_code` — код неверный или истёк; либо ошибка валидации тела. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2717,7 +2666,177 @@ export interface operations {
             };
         };
     };
-    cancelApplication: {
+    getPaymentSchedule: {
+        parameters: {
+            query?: {
+                /** @description Какой оффер. По умолчанию — активный, после принятия — принятый. */
+                offer_id?: string | null;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentSchedule"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Нет доступа к заявке. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена или по ней нет оффера. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRecommendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRecommendation"][];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createSigningCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningCodeResponse"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Нет доступа к заявке. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Код выдаётся только в статусе `SIGNING`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmSigning: {
         parameters: {
             query?: never;
             header?: {
@@ -2729,7 +2848,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningConfirmRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -2767,7 +2890,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `invalid_transition` — из текущего статуса операция не разрешена. */
+            /** @description `invalid_transition` — из текущего статуса операция не разрешена. Подтверждение возможно только в статусе `SIGNING`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2776,7 +2899,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Ошибка валидации; `field` указывает на поле. */
+            /** @description `invalid_code` — код неверный или истёк; либо ошибка валидации тела. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -3030,6 +3153,114 @@ export interface operations {
                 };
             };
             /** @description Ошибка валидации: для выбранного `outcome` не хватает полей или условия вне лимитов продукта. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getFeed: {
+        parameters: {
+            query?: {
+                /** @description Только события или только новости (фильтр C8). Без фильтра — всё. */
+                kind?: components["schemas"]["FeedItemKind"] | null;
+                /** @description Сколько новостей вернуть, лучших по весу. */
+                news_limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedResponse"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только роли client. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    markFeedEventRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только роли client. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Событие не найдено или принадлежит другому клиенту. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
             422: {
                 headers: {
                     [name: string]: unknown;

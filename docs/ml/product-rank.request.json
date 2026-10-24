@@ -1,0 +1,62 @@
+{
+  "request": {
+    "purpose": "cash_gap",
+    "amount": "1000000.00",
+    "term_months": 12
+  },
+  "profile": {
+    "kind": "LLC",
+    "okved_main": "10.71",
+    "region": "Москва",
+    "segment": "small",
+    "registered_at": "2018-09-14",
+    "revenue": {
+      "2024": 21428571,
+      "2025": 24000000
+    },
+    "applications": []
+  },
+  "candidates": [
+    {
+      "product": {
+        "id": "7f1c2b0a-0000-4000-8000-000000000001",
+        "code": "EXPRESS_WC",
+        "name": "Экспресс-оборот",
+        "purpose_tags": [
+          "working_capital",
+          "cash_gap"
+        ],
+        "min_amount": "300000.00",
+        "max_amount": "5000000.00",
+        "min_term": 3,
+        "max_term": 24,
+        "base_rate": "18.00"
+      },
+      "amount": "1000000.00",
+      "term_months": 12,
+      "rate": "18.00",
+      "monthly_payment": "91679.99",
+      "adjusted": []
+    },
+    {
+      "product": {
+        "id": "7f1c2b0a-0000-4000-8000-000000000003",
+        "code": "OVERDRAFT",
+        "name": "Овердрафт для бизнеса",
+        "purpose_tags": [
+          "cash_gap"
+        ],
+        "min_amount": "100000.00",
+        "max_amount": "3000000.00",
+        "min_term": 12,
+        "max_term": 12,
+        "base_rate": "20.00"
+      },
+      "amount": "1000000.00",
+      "term_months": 12,
+      "rate": "20.00",
+      "monthly_payment": "92634.51",
+      "adjusted": []
+    }
+  ]
+}

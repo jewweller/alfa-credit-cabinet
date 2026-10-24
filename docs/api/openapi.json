@@ -2195,6 +2195,171 @@
         },
         "x-implementation-status": "planned"
       }
+    },
+    "/api/v1/feed": {
+      "get": {
+        "tags": [
+          "feed"
+        ],
+        "summary": "Get Feed",
+        "description": "**Только контракт — ещё не реализовано.**\n\nПерсональная лента клиента (план, раздел 11).\n\nСверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`\nпо убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое\nмодели — по формуле. У каждой новости есть `reasons` — строка «Почему вы это видите».",
+        "operationId": "getFeed",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FeedItemKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Только события или только новости (фильтр C8). Без фильтра — всё.",
+              "title": "Kind"
+            },
+            "description": "Только события или только новости (фильтр C8). Без фильтра — всё."
+          },
+          {
+            "name": "news_limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "description": "Сколько новостей вернуть, лучших по весу.",
+              "default": 10,
+              "title": "News Limit"
+            },
+            "description": "Сколько новостей вернуть, лучших по весу."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только роли client.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
+    },
+    "/api/v1/feed/events/{id}/read": {
+      "post": {
+        "tags": [
+          "feed"
+        ],
+        "summary": "Mark Feed Event Read",
+        "description": "**Только контракт — ещё не реализовано.**\n\nОтметить событие прочитанным. Повторный вызов ничего не меняет.",
+        "operationId": "markFeedEventRead",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только роли client.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Событие не найдено или принадлежит другому клиенту.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
     }
   },
   "components": {
@@ -3429,6 +3594,218 @@
         ],
         "title": "ErrorResponse",
         "description": "Единый формат ошибки `{code, message, field?}` (план, раздел 10)."
+      },
+      "FeedItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FeedItemKind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "examples": [
+              "Заявка №1051 одобрена"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Событие — когда произошло; новость — дата публикации."
+          },
+          "read": {
+            "type": "boolean",
+            "title": "Read",
+            "description": "Прочитано ли событие. У новостей всегда true: отметка только для событий."
+          },
+          "application_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id",
+            "description": "Заявка события; у новостей null."
+          },
+          "application_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Number",
+            "description": "Номер заявки события.",
+            "examples": [
+              "1051"
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Статус, в который перешла заявка; у новостей null."
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/FeedReason"
+            },
+            "type": "array",
+            "title": "Reasons",
+            "description": "«Почему вы это видите», самое сильное совпадение первым. У событий пусто."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "Вес новости в выбранном методе (`ranking.method`); у событий null."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "created_at",
+          "read",
+          "application_id",
+          "application_number",
+          "status",
+          "reasons",
+          "score"
+        ],
+        "title": "FeedItem",
+        "description": "Событие по заявке или новость."
+      },
+      "FeedItemKind": {
+        "type": "string",
+        "enum": [
+          "event",
+          "news"
+        ],
+        "title": "FeedItemKind"
+      },
+      "FeedRanking": {
+        "properties": {
+          "method": {
+            "$ref": "#/components/schemas/FeedRankingMethod"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "examples": [
+              "feed-rules-1.0"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "method",
+          "model_version"
+        ],
+        "title": "FeedRanking"
+      },
+      "FeedRankingMethod": {
+        "type": "string",
+        "enum": [
+          "rules",
+          "ml"
+        ],
+        "title": "FeedRankingMethod",
+        "description": "Чем отсортированы новости.\n\n- `rules` — формула весов плана: 3·ОКВЭД + 2·сегмент + 2·продукт + 3·статус + свежесть\n- `ml` — модель ML-команды; при ошибке или таймауте — откат на rules",
+        "x-enum-descriptions": [
+          "формула весов плана: 3·ОКВЭД + 2·сегмент + 2·продукт + 3·статус + свежесть",
+          "модель ML-команды; при ошибке или таймауте — откат на rules"
+        ]
+      },
+      "FeedReason": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/FeedReasonCode"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Text",
+            "examples": [
+              "Ваш ОКВЭД 10.71 — производство хлеба"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "text"
+        ],
+        "title": "FeedReason",
+        "description": "Строка «Почему вы это видите»."
+      },
+      "FeedReasonCode": {
+        "type": "string",
+        "enum": [
+          "okved",
+          "segment",
+          "product",
+          "status",
+          "general"
+        ],
+        "title": "FeedReasonCode",
+        "description": "Какой тег новости совпал с профилем клиента.\n\n- `okved` — группа ОКВЭД компании, например «Ваш ОКВЭД 10.71 — производство хлеба»\n- `segment` — сегмент: микро или малый бизнес\n- `product` — продукт в одной из заявок клиента\n- `status` — текущий статус одной из заявок клиента\n- `general` — ни один тег не совпал — новость для всех клиентов",
+        "x-enum-descriptions": [
+          "группа ОКВЭД компании, например «Ваш ОКВЭД 10.71 — производство хлеба»",
+          "сегмент: микро или малый бизнес",
+          "продукт в одной из заявок клиента",
+          "текущий статус одной из заявок клиента",
+          "ни один тег не совпал — новость для всех клиентов"
+        ]
+      },
+      "FeedResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FeedItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "ranking": {
+            "$ref": "#/components/schemas/FeedRanking"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "ranking"
+        ],
+        "title": "FeedResponse",
+        "description": "Лента: сверху события (свежие первыми), ниже новости по убыванию `score`."
       },
       "Grade": {
         "type": "string",
