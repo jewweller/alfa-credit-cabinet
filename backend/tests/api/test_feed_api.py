@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 from conftest import auth_headers
-from demo_flows import BAKERY, KOVALEV, MIRAGE, create_draft, submit_demo
+from demo_flows import BAKERY, KOVALEV, MELNIKOVA, MIRAGE, create_draft, submit_demo
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
@@ -208,13 +208,18 @@ def test_ml_reorders_news_and_reports_method(client: TestClient, ml_enabled) -> 
 
     def reverse(payload: dict) -> dict:
         seen.append(payload)
-        ids = [c["id"] for c in payload["candidates"]][::-1]
-        reason = [{"code": "general", "text": "Модель так решила"}]
+        candidates = payload["candidates"][::-1]
+        # Код причины — из реальных совпадений новости: иначе бэкенд её не покажет.
+        reason = [{"code": candidates[0]["matched"][0], "text": "Модель так решила"}]
         return {
             "model_version": "test-ranker-1",
             "ranking": [
-                {"id": i, "score": 1 - n / len(ids), "reasons": reason if n == 0 else []}
-                for n, i in enumerate(ids)
+                {
+                    "id": c["id"],
+                    "score": 1 - n / len(candidates),
+                    "reasons": reason if n == 0 else [],
+                }
+                for n, c in enumerate(candidates)
             ],
         }
 
@@ -224,10 +229,21 @@ def test_ml_reorders_news_and_reports_method(client: TestClient, ml_enabled) -> 
     assert body["ranking"] == {"method": "ml", "model_version": "test-ranker-1"}
     candidates = [c["id"] for c in seen[0]["candidates"]]
     assert [i["id"] for i in body["items"]] == candidates[::-1]
-    assert body["items"][0]["reasons"] == [{"code": "general", "text": "Модель так решила"}]
+    first_code = seen[0]["candidates"][-1]["matched"][0]
+    assert body["items"][0]["reasons"] == [{"code": first_code, "text": "Модель так решила"}]
     assert body["items"][1]["reasons"]  # модель причин не дала — остались причины правил
     profile = seen[0]["profile"]
-    assert "inn" not in profile and "name" not in profile
+    # Только поля RankerProfile: без ИНН, названия компании и данных БКИ.
+    assert set(profile) == {
+        "kind",
+        "okved_main",
+        "region",
+        "segment",
+        "registered_at",
+        "revenue",
+        "applications",
+    }
+    assert set(profile["applications"][0]) == {"status", "product_code", "purpose"}
     assert profile["revenue"] == {"2024": 21428571, "2025": 24000000}  # из ответа ФНС
     assert profile["applications"][0]["status"] == "APPROVED"
 
@@ -269,16 +285,160 @@ def test_slow_model_falls_back_to_rules(client: TestClient, ml_enabled) -> None:
     assert _feed(client, headers, kind="news")["ranking"]["method"] == "rules"
 
 
-def test_real_ml_stub_keeps_rules_order(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
-    """Настоящий пакет ml из репозитория: заглушка возвращает порядок бэкенда."""
+def test_real_model_ranks_feed(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
+    """Настоящая модель из ml/: логистическая регрессия переставляет те же новости и даёт
+    свои причины, которые проходят проверку бэкенда."""
     ml_enabled.syspath_prepend(str(REPO_ROOT))
-    headers = auth_headers(client, "bakery@demo.local")
+    _, headers = submit_demo(client, *MELNIKOVA)  # INFO_REQUESTED: есть подсказки к шагу
     ml_enabled.setattr(get_settings(), "ml_ranking_enabled", False)
-    expected = _rules_order(client, headers)
+    rules = _feed(client, headers, kind="news", news_limit=30)["items"]
     ml_enabled.setattr(get_settings(), "ml_ranking_enabled", True)
 
     body = _feed(client, headers, kind="news", news_limit=30)
 
-    assert body["ranking"]["method"] == "ml"
-    assert body["ranking"]["model_version"].startswith("feed-")
-    assert [i["id"] for i in body["items"]] == expected
+    assert body["ranking"] == {"method": "ml", "model_version": "feed-logreg-1.0.0"}
+    items = body["items"]
+    assert sorted(i["id"] for i in items) == sorted(i["id"] for i in rules)
+    scores = [i["score"] for i in items]
+    assert scores == sorted(scores, reverse=True) and all(0 < s < 1 for s in scores)
+    rule_codes = {i["id"]: {r["code"] for r in i["reasons"]} for i in rules}
+    for item in items:
+        assert 1 <= len(item["reasons"]) <= 2
+        assert {r["code"] for r in item["reasons"]} <= rule_codes[item["id"]]
+    assert any(
+        r["text"] == "Подсказка к текущему этапу вашей заявки" for i in items for r in i["reasons"]
+    )
+
+
+def test_broken_model_file_falls_back_to_rules(  # noqa: ANN001
+    client: TestClient, ml_enabled, tmp_path: Path
+) -> None:
+    ml_enabled.syspath_prepend(str(REPO_ROOT))
+    from ml.synth import ranking
+
+    bad = tmp_path / "model.json"
+    bad.write_text("{}")
+    ml_enabled.setattr(ranking, "MODEL_PATH", bad)
+    ranking._model.cache_clear()
+    try:
+        body = _feed(client, auth_headers(client, "bakery@demo.local"), kind="news")
+    finally:
+        ranking._model.cache_clear()
+
+    assert body["ranking"] == {"method": "rules", "model_version": MODEL_VERSION}
+    assert body["items"]
+
+
+def _same_order(payload: dict, **item) -> dict:  # noqa: ANN003
+    """Ответ модели в порядке бэкенда; `item` дописывается в каждый элемент."""
+    return {
+        "model_version": "test-ranker-1",
+        "ranking": [{"id": c["id"], "score": 0.5, **item} for c in payload["candidates"]],
+    }
+
+
+def _bad_ids(payload: dict, ids: list[str]) -> dict:
+    return {"model_version": "x", "ranking": [{"id": i, "score": 0.5} for i in ids]}
+
+
+@pytest.mark.parametrize(
+    "broken",
+    [
+        # повтор кандидата
+        lambda p: _bad_ids(p, [p["candidates"][0]["id"]] * len(p["candidates"])),
+        # чужая новость вместо одной из своих
+        lambda p: _bad_ids(
+            p, [c["id"] for c in p["candidates"][1:]] + ["00000000-0000-4000-8000-000000000000"]
+        ),
+        # пустая версия модели
+        lambda p: {**_same_order(p), "model_version": "  "},
+        # причина длиннее 120 символов
+        lambda p: _same_order(p, reasons=[{"code": "general", "text": "х" * 121}]),
+        # больше двух причин
+        lambda p: _same_order(p, reasons=[{"code": "general", "text": "да"}] * 3),
+        # неизвестный код причины
+        lambda p: _same_order(p, reasons=[{"code": "salary", "text": "да"}]),
+    ],
+    ids=["duplicate", "foreign", "no-version", "long-reason", "three-reasons", "unknown-code"],
+)
+def test_invalid_model_answer_falls_back_to_rules(  # noqa: ANN001
+    client: TestClient, ml_enabled, broken
+) -> None:
+    _, headers = submit_demo(client, *BAKERY)
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", False)
+    expected = _feed(client, headers, kind="news", news_limit=30)["items"]
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", True)
+    ml_enabled.setattr(feed_service, "_ranker", lambda: broken)
+
+    body = _feed(client, headers, kind="news", news_limit=30)
+
+    assert body["ranking"] == {"method": "rules", "model_version": MODEL_VERSION}
+    assert body["items"] == expected
+
+
+def test_model_reasons_are_checked_per_news(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
+    """Пустая причина и причина с несовпавшим кодом заменяются причинами правил;
+    причина ровно 120 символов принимается. Порядок модели при этом сохраняется."""
+    _, headers = submit_demo(client, *BAKERY)
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", False)
+    rules = {
+        i["id"]: i["reasons"] for i in _feed(client, headers, kind="news", news_limit=30)["items"]
+    }
+    ml_enabled.setattr(get_settings(), "ml_ranking_enabled", True)
+    long_text = "а" * 120
+
+    def answer(payload: dict) -> dict:
+        first, second, third = payload["candidates"][:3]
+        foreign = next(
+            code
+            for code in ("okved", "status", "product", "segment", "general")
+            if code not in second["matched"]
+        )
+        reasons = {
+            first["id"]: [{"code": first["matched"][0], "text": long_text}],
+            second["id"]: [{"code": foreign, "text": "Модель придумала совпадение"}],
+            third["id"]: [{"code": third["matched"][0], "text": "   "}],
+        }
+        return {
+            "model_version": "test-ranker-1",
+            "ranking": [
+                {"id": c["id"], "score": 0.5, "reasons": reasons.get(c["id"], [])}
+                for c in payload["candidates"]
+            ],
+        }
+
+    ml_enabled.setattr(feed_service, "_ranker", lambda: answer)
+    items = _feed(client, headers, kind="news", news_limit=30)["items"]
+
+    assert items[0]["reasons"] == [{"code": items[0]["reasons"][0]["code"], "text": long_text}]
+    assert items[1]["reasons"] == rules[items[1]["id"]]  # несовпавший код — причины правил
+    assert items[2]["reasons"] == rules[items[2]["id"]]  # пустой текст — причины правил
+
+
+def test_empty_feed_does_not_call_model(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
+    headers = auth_headers(client, "bakery@demo.local")
+    calls: list[dict] = []
+    ml_enabled.setattr(feed_service, "load_news", lambda: ())
+    ml_enabled.setattr(feed_service, "_ranker", lambda: calls.append)
+
+    body = _feed(client, headers, kind="news")
+
+    assert body == {"items": [], "ranking": {"method": "rules", "model_version": MODEL_VERSION}}
+    assert calls == []
+
+
+def test_ml_does_not_touch_credit_decision(client: TestClient, ml_enabled) -> None:  # noqa: ANN001
+    """Модель ленты не участвует в скоринге и решении: исход и оффер Пекарни те же."""
+    ml_enabled.setattr(feed_service, "_ranker", lambda: lambda p: 1 / 0)
+
+    app, headers = submit_demo(client, *BAKERY)
+    _feed(client, headers)
+
+    assert app["status"] == "APPROVED"
+    offer = app["active_offer"]
+    assert (offer["amount"], offer["term_months"], offer["rate"], offer["monthly_payment"]) == (
+        "3000000.00",
+        12,
+        "18.00",
+        "275039.98",
+    )

@@ -1,0 +1,98 @@
+{
+  "model_version": "feed-logreg-1.0.0",
+  "feature_version": "feed-features-1",
+  "features": [
+    "m_okved",
+    "m_status",
+    "m_product",
+    "m_segment",
+    "m_general",
+    "topic_product",
+    "topic_industry",
+    "topic_step",
+    "topic_support",
+    "fresh_7d",
+    "micro",
+    "young",
+    "no_apps",
+    "action_needed",
+    "product_known",
+    "growth",
+    "step_x_action",
+    "support_x_small_or_young",
+    "product_topic_x_no_apps",
+    "equipment_x_growth"
+  ],
+  "intercept": -2.4753604210046913,
+  "coef": [
+    0.20220872787565472,
+    0.6848972511332613,
+    0.14692471924516187,
+    0.44424361133604956,
+    -0.0558534804843011,
+    -0.17727076039813192,
+    0.20220872787565472,
+    -0.03190409746146352,
+    0.006966129983445678,
+    1.8490580394462757,
+    -0.0357978743855491,
+    -0.004339919895118674,
+    -0.08985940878208196,
+    -0.11047114651693453,
+    0.14692471924516187,
+    -0.25305244389136605,
+    1.6633911204175273,
+    1.2069216773312539,
+    0.0,
+    3.0741862788481993
+  ],
+  "C": 1.0,
+  "training": {
+    "method": "Newton, L2 (C·Σlogloss + ½‖w‖², intercept unpenalized), pure Python",
+    "data": "synthetic: ml/synth/make_requests.py seed 42 (4000 clients × 3 visits), clicks ml/synth/simulate.py seed 142, scenario mixed",
+    "data_sha256": {
+      "requests.jsonl": "1c45f4a8d9d7f52179451e9413a6224ce6738ef0002ec7b797518d416ec7d1d4",
+      "metadata.jsonl": "1c270807944c30cea705b44fe486389395b2b8958f761ce6089291c2ad95334d",
+      "clicks.csv": "f4a7b3caebd9318643c6dd6526ce28063fddfc4f0704dd035f6b1e3147c05e5b"
+    },
+    "train_rows": 44377,
+    "c_grid": [
+      {
+        "C": 0.1,
+        "validation_ndcg@5": 0.477327
+      },
+      {
+        "C": 1.0,
+        "validation_ndcg@5": 0.47759
+      },
+      {
+        "C": 10.0,
+        "validation_ndcg@5": 0.477503
+      }
+    ]
+  },
+  "test_seed_42": {
+    "queries": 1800,
+    "zero_click_share": 0.3661,
+    "logistic": {
+      "ndcg@3": 0.4415,
+      "ndcg@5": 0.4859,
+      "oracle_ndcg@5": 0.9867
+    },
+    "rules": {
+      "ndcg@3": 0.3249,
+      "ndcg@5": 0.3967,
+      "oracle_ndcg@5": 0.8428
+    },
+    "random": {
+      "ndcg@3": 0.3093,
+      "ndcg@5": 0.3859,
+      "oracle_ndcg@5": 0.832
+    },
+    "oracle": {
+      "ndcg@3": 0.4429,
+      "ndcg@5": 0.4876,
+      "oracle_ndcg@5": 1.0
+    }
+  }
+}
