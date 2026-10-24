@@ -15,5 +15,7 @@
   ["POST", "/api/v1/applications/{id}/documents"],
   ["GET", "/api/v1/documents/{id}"],
   ["POST", "/api/v1/applications/{id}/resubmit"],
-  ["GET", "/api/v1/applications/{id}/schedule"]
+  ["GET", "/api/v1/applications/{id}/schedule"],
+  ["POST", "/api/v1/applications/{id}/signing/code"],
+  ["POST", "/api/v1/applications/{id}/signing/confirm"]
 ]

@@ -11,8 +11,6 @@ from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_c
 
 PLANNED_OPERATIONS = {
     ("post", "/api/v1/products/recommend"),
-    ("post", "/api/v1/applications/{id}/signing/code"),
-    ("post", "/api/v1/applications/{id}/signing/confirm"),
     ("get", "/api/v1/bank/applications"),
     ("get", "/api/v1/bank/applications/{id}"),
     ("post", "/api/v1/bank/applications/{id}/assign"),
@@ -47,6 +45,8 @@ IMPLEMENTED_OPERATIONS = {
     ("get", "/api/v1/documents/{id}"),
     ("post", "/api/v1/applications/{id}/resubmit"),
     ("get", "/api/v1/applications/{id}/schedule"),
+    ("post", "/api/v1/applications/{id}/signing/code"),
+    ("post", "/api/v1/applications/{id}/signing/confirm"),
 }
 PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}

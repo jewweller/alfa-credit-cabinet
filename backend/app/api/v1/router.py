@@ -51,9 +51,10 @@ from app.schemas.companies import CompanyBrief, CompanyLookupResponse
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, DocumentInfo, DocumentKind
 from app.schemas.products import Product
 from app.schemas.schedule import PaymentSchedule
+from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 from app.security import create_access_token, verify_password
 from app.services import applications as service
-from app.services import companies, documents, offers, schedule
+from app.services import companies, documents, offers, schedule, signing
 from app.storage import Storage, get_storage
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -457,3 +458,54 @@ def get_payment_schedule(
 ) -> PaymentSchedule:
     """График платежей по офферу: для сравнения «просили / предлагаем» и экрана выдачи."""
     return schedule.build(session, user, id, offer_id)
+
+
+# ── Подписание договора и выдача (экраны C6–C7) ───────────────────────────────
+
+
+@api_v1_router.post(
+    "/applications/{id}/signing/code",
+    response_model=SigningCodeResponse,
+    operation_id="createSigningCode",
+    tags=["signing"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Код выдаётся только в статусе `SIGNING`.",
+    ),
+)
+def create_signing_code(id: UUID, user: ClientUser, session: SessionDep) -> SigningCodeResponse:
+    """Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.
+
+    Код действует 5 минут; новый запрос заменяет прежний код.
+    """
+    return signing.create_code(session, user, id)
+
+
+@api_v1_router.post(
+    "/applications/{id}/signing/confirm",
+    response_model=ApplicationDetail,
+    operation_id="confirmSigning",
+    tags=["signing"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_APP,
+        e404=_E404_APP,
+        e409=f"{_E409_TRANSITION} Подтверждение возможно только в статусе `SIGNING`.",
+        e422="`invalid_code` — код неверный или истёк; либо ошибка валидации тела.",
+    ),
+)
+def confirm_signing(
+    id: UUID,
+    body: SigningConfirmRequest,
+    user: ClientUser,
+    session: SessionDep,
+    idempotency_key: IdempotencyKey = None,
+) -> ApplicationDetail:
+    """Подтвердить подпись кодом: `SIGNING` → `SIGNED` → `ISSUED`.
+
+    Выдача (симуляция) проходит сразу, в том же запросе: ответ уже в статусе `ISSUED`.
+    На один код — 5 попыток, дальше нужен новый код.
+    """
+    return service.to_detail(session, signing.confirm(session, user, id, body.code))

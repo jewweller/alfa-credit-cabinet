@@ -1516,75 +1516,13 @@
         "x-implementation-status": "implemented"
       }
     },
-    "/api/v1/products/recommend": {
-      "post": {
-        "tags": [
-          "products"
-        ],
-        "summary": "Recommend Products",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
-        "operationId": "recommendProducts",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductRecommendRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProductRecommendation"
-                  },
-                  "type": "array",
-                  "title": "Response Recommendproducts"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Нет токена или он недействителен.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации; `field` указывает на поле.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "x-implementation-status": "planned"
-      }
-    },
     "/api/v1/applications/{id}/signing/code": {
       "post": {
         "tags": [
           "signing"
         ],
         "summary": "Create Signing Code",
-        "description": "**Только контракт — ещё не реализовано.**\n\nСгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.",
+        "description": "Сгенерировать одноразовый код подписи. Симуляция ПЭП: код показывается в интерфейсе.\n\nКод действует 5 минут; новый запрос заменяет прежний код.",
         "operationId": "createSigningCode",
         "security": [
           {
@@ -1665,7 +1603,7 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented"
       }
     },
     "/api/v1/applications/{id}/signing/confirm": {
@@ -1674,7 +1612,7 @@
           "signing"
         ],
         "summary": "Confirm Signing",
-        "description": "**Только контракт — ещё не реализовано.**\n\nПодтвердить подпись кодом: `SIGNING` → `SIGNED`. Дальше воркер проводит выдачу (`ISSUED`).",
+        "description": "Подтвердить подпись кодом: `SIGNING` → `SIGNED` → `ISSUED`.\n\nВыдача (симуляция) проходит сразу, в том же запросе: ответ уже в статусе `ISSUED`.\nНа один код — 5 попыток, дальше нужен новый код.",
         "operationId": "confirmSigning",
         "security": [
           {
@@ -1783,6 +1721,68 @@
             }
           }
         },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/products/recommend": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Recommend Products",
+        "description": "**Только контракт — ещё не реализовано.**\n\nПодбор продукта по цели, сумме и сроку (экран C3).\n\nВозвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят\nбез изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.",
+        "operationId": "recommendProducts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRecommendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductRecommendation"
+                  },
+                  "type": "array",
+                  "title": "Response Recommendproducts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "x-implementation-status": "planned"
       }
     },
