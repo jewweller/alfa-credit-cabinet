@@ -36,7 +36,8 @@ def respond(
             409, ErrorCode.OFFER_NOT_ACTIVE, "Предложение уже принято, отклонено или заменено"
         )
     target = ApplicationStatus.SIGNING if accept else ApplicationStatus.DECLINED_BY_CLIENT
-    change_status(session, application, target, user)  # 409 invalid_transition из других статусов
+    # 409 invalid_transition из других статусов
+    change_status(session, application, target, user, {"offer_id": str(offer.id)})
     offer.status = OfferStatus.ACCEPTED if accept else OfferStatus.DECLINED
     try:
         session.commit()

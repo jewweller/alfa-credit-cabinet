@@ -32,6 +32,7 @@ from app.db.models import (
     User,
 )
 from app.domain.state_machine import ApplicationStatus
+from app.schemas.admin import AuditAction
 from app.schemas.bank import (
     BankApplicationDetail,
     BankApplicationSummary,
@@ -52,6 +53,7 @@ from app.schemas.companies import CompanyBrief, CompanyLookupResponse
 from app.schemas.decisions import DecisionActor, DecisionOutcome
 from app.scoring.config import EngineConfig, load_config
 from app.scoring.finance import monthly_payment
+from app.services import audit
 from app.services.applications import _latest, to_detail
 from app.services.companies import _from_egrip, _from_egrul
 from app.services.status import change_status
@@ -315,6 +317,7 @@ def assign(session: Session, user: User, application_id: UUID) -> BankApplicatio
     _not_taken_by_other(application, user)
     if application.assignee_id != user.id:
         application.assignee_id = user.id
+        audit.record(session, AuditAction.BANK_ASSIGNED, user, application, user.full_name)
         _commit(session)
         session.refresh(application)
     return to_bank_detail(session, application)

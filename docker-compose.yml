@@ -33,6 +33,8 @@ services:
       # Ответы ЕГРЮЛ/ЕГРИП/ФНС/БКИ, пока нет сервиса mocks (черновик, mocks/fixtures/README.md).
       FIXTURES_DIR: /fixtures
       UPLOADS_DIR: /uploads
+      # Сброс демо-данных администратором (POST /admin/demo/reset).
+      DEMO_MODE: ${DEMO_MODE:-true}
     volumes:
       - ./seed:/seed:ro
       - ./mocks/fixtures:/fixtures:ro

@@ -4,6 +4,7 @@
 сгенерировал клиент по контракту, меняется только `x-implementation-status`.
 """
 
+from datetime import datetime
 from typing import Annotated
 from urllib.parse import quote
 from uuid import UUID
@@ -21,7 +22,7 @@ from fastapi import (
 )
 from sqlalchemy import func, select
 
-from app.api.deps import BankUser, ClientUser, CurrentUser, SessionDep
+from app.api.deps import AdminUser, BankUser, ClientUser, CurrentUser, SessionDep, UnderwriterUser
 from app.api.v1.contract import (
     _ALLOWED_TYPES,
     _E401,
@@ -39,6 +40,7 @@ from app.db.models import User
 from app.domain.state_machine import ApplicationStatus
 from app.integrations.base import SourceClient
 from app.integrations.fixtures import get_source_client
+from app.schemas.admin import AuditAction, AuditActorRole, AuditEntry, DemoResetResult
 from app.schemas.applications import (
     ApplicationCreate,
     ApplicationDetail,
@@ -56,12 +58,24 @@ from app.schemas.bank import (
 from app.schemas.common import INN_PATTERN
 from app.schemas.companies import CompanyBrief, CompanyLookupResponse
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, DocumentInfo, DocumentKind
+from app.schemas.feed import FeedItemKind, FeedResponse
 from app.schemas.products import Product, ProductRecommendation, ProductRecommendRequest
 from app.schemas.schedule import PaymentSchedule
 from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 from app.security import create_access_token, verify_password
+from app.services import (
+    admin,
+    audit,
+    bank,
+    companies,
+    documents,
+    feed,
+    offers,
+    products,
+    schedule,
+    signing,
+)
 from app.services import applications as service
-from app.services import bank, companies, documents, offers, products, schedule, signing
 from app.storage import Storage, get_storage
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -88,7 +102,20 @@ def login(body: LoginRequest, session: SessionDep) -> TokenResponse:
     user = session.scalar(select(User).where(func.lower(User.email) == body.email.lower()))
     # verify_password вызывается и для несуществующего email, чтобы время ответа не отличалось.
     if not verify_password(body.password, user.password_hash if user else None) or user is None:
+        # Пароль в журнал не пишем; имя — введённый логин (описание AuditAction).
+        audit.record(
+            session,
+            AuditAction.LOGIN_FAILED,
+            None,
+            None,
+            body.email,
+            actor_name=body.email,
+            actor_role=AuditActorRole.CLIENT,
+        )
+        session.commit()
         raise HTTPException(401, "Неверный email или пароль")
+    audit.record(session, AuditAction.LOGIN, user, None, user.email)
+    session.commit()
     return TokenResponse(access_token=create_access_token(user.id, user.role))
 
 
@@ -524,6 +551,11 @@ def confirm_signing(
 
 # ── Кабинет банка (экраны B2–B4) ──────────────────────────────────────────────
 
+_E403_UNDERWRITER = (
+    "Операция доступна только кредитному специалисту (роль underwriter). "
+    "Администратор видит кабинет банка только для просмотра."
+)
+
 
 @api_v1_router.get(
     "/bank/applications",
@@ -569,7 +601,7 @@ def get_bank_application(id: UUID, _: BankUser, session: SessionDep) -> BankAppl
     tags=["bank"],
     responses=_errors(
         e401=_E401,
-        e403=_E403_BANK,
+        e403=_E403_UNDERWRITER,
         e404=_E404_APP,
         e409=(
             f"{_E409_TRANSITION} Взять в работу можно только заявку в `MANUAL_REVIEW`. "
@@ -577,7 +609,9 @@ def get_bank_application(id: UUID, _: BankUser, session: SessionDep) -> BankAppl
         ),
     ),
 )
-def assign_bank_application(id: UUID, user: BankUser, session: SessionDep) -> BankApplicationDetail:
+def assign_bank_application(
+    id: UUID, user: UnderwriterUser, session: SessionDep
+) -> BankApplicationDetail:
     """Взять заявку в работу. Повторный вызов тем же специалистом ничего не меняет."""
     return bank.assign(session, user, id)
 
@@ -589,7 +623,7 @@ def assign_bank_application(id: UUID, user: BankUser, session: SessionDep) -> Ba
     tags=["bank"],
     responses=_errors(
         e401=_E401,
-        e403=_E403_BANK,
+        e403=_E403_UNDERWRITER,
         e404=_E404_APP,
         e409=(
             f"{_E409_TRANSITION} Решение принимается только в `MANUAL_REVIEW`. "
@@ -604,10 +638,109 @@ def assign_bank_application(id: UUID, user: BankUser, session: SessionDep) -> Ba
 def decide_bank_application(
     id: UUID,
     body: UnderwriterDecisionRequest,
-    user: BankUser,
+    user: UnderwriterUser,
     session: SessionDep,
     idempotency_key: IdempotencyKey = None,
 ) -> BankApplicationDetail:
     """Решение специалиста (экран B4): `MANUAL_REVIEW` → одобрение, другие условия, запрос
     документов или отказ. Клиент видит итог в карточке заявки и событие в ленте."""
     return bank.decide(session, user, id, body)
+
+
+# ── Лента (экраны C2, C8) ─────────────────────────────────────────────────────
+
+
+@api_v1_router.get(
+    "/feed",
+    response_model=FeedResponse,
+    operation_id="getFeed",
+    tags=["feed"],
+    responses=_errors(e401=_E401, e403=_E403_CLIENT, e422=_E422),
+)
+def get_feed(
+    user: ClientUser,
+    session: SessionDep,
+    kind: Annotated[
+        FeedItemKind | None,
+        Query(description="Только события или только новости (фильтр C8). Без фильтра — всё."),
+    ] = None,
+    news_limit: Annotated[
+        int, Query(ge=1, le=30, description="Сколько новостей вернуть, лучших по весу.")
+    ] = 10,
+) -> FeedResponse:
+    """Персональная лента клиента (план, раздел 11).
+
+    Сверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`
+    по убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое
+    модели — по формуле. У каждой новости есть `reasons` — строка «Почему вы это видите».
+    """
+    return feed.feed(session, user, kind, news_limit)
+
+
+@api_v1_router.post(
+    "/feed/events/{id}/read",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="markFeedEventRead",
+    tags=["feed"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_CLIENT,
+        e404="Событие не найдено или принадлежит другому клиенту.",
+    ),
+)
+def mark_feed_event_read(id: UUID, user: ClientUser, session: SessionDep) -> None:
+    """Отметить событие прочитанным. Повторный вызов ничего не меняет."""
+    feed.mark_read(session, user, id)
+
+
+# ── Журнал и сброс демо (экраны администратора, вкладка журнала в B3) ─────────
+
+_E403_ADMIN = "Операция доступна только роли admin."
+
+
+@api_v1_router.get(
+    "/bank/audit",
+    response_model=list[AuditEntry],
+    operation_id="listAuditEntries",
+    tags=["bank"],
+    responses=_errors(e401=_E401, e403=_E403_BANK, e422=_E422),
+)
+def list_audit_entries(
+    _: BankUser,
+    session: SessionDep,
+    application_id: Annotated[
+        UUID | None, Query(description="Только действия по этой заявке (вкладка журнала в B3).")
+    ] = None,
+    action: Annotated[
+        list[AuditAction] | None, Query(description="Фильтр по действиям; можно несколько.")
+    ] = None,
+    actor_role: Annotated[AuditActorRole | None, Query(description="Фильтр по роли.")] = None,
+    before: Annotated[
+        datetime | None,
+        Query(description="Записи строго раньше этого момента — следующая страница."),
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=500, description="Сколько записей вернуть.")] = 100,
+) -> list[AuditEntry]:
+    """Журнал действий (план, раздел 10), свежие сверху. Читают underwriter и admin."""
+    return audit.entries(session, application_id, action, actor_role, before, limit)
+
+
+@api_v1_router.post(
+    "/admin/demo/reset",
+    response_model=DemoResetResult,
+    operation_id="resetDemo",
+    tags=["admin"],
+    responses=_errors(
+        e401=_E401,
+        e403=_E403_ADMIN,
+        e409="`demo_mode_disabled` — стенд запущен без `DEMO_MODE=true`.",
+    ),
+)
+def reset_demo(user: AdminUser, session: SessionDep, storage: Files) -> DemoResetResult:
+    """Сбросить демо-данные перед показом (план, раздел 15).
+
+    Удаляет все заявки со всем, что к ним относится: документы и файлы, офферы, решения,
+    историю статусов, подписи, выдачи, события ленты. Учётки, компании и продукты остаются.
+    Журнал не очищается: в него дописывается `demo.reset`. Повторный вызов безопасен.
+    """
+    return admin.reset_demo(session, user, storage)

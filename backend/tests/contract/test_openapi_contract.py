@@ -9,13 +9,8 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_contract
 
-# Первая волна реализована; запланированные операции, которых ещё нет в router.py:
-PLANNED_OPERATIONS = {
-    ("get", "/api/v1/feed"),
-    ("post", "/api/v1/feed/events/{id}/read"),
-    ("get", "/api/v1/bank/audit"),
-    ("post", "/api/v1/admin/demo/reset"),
-}
+# Все операции контракта реализованы; новые запланированные добавляются сюда.
+PLANNED_OPERATIONS: set[tuple[str, str]] = set()
 IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/submit"),
     ("post", "/api/v1/applications/{id}/offers/{offer_id}/accept"),
@@ -52,6 +47,10 @@ IMPLEMENTED_OPERATIONS = {
     ("get", "/api/v1/bank/applications/{id}"),
     ("post", "/api/v1/bank/applications/{id}/assign"),
     ("post", "/api/v1/bank/applications/{id}/decision"),
+    ("get", "/api/v1/feed"),
+    ("post", "/api/v1/feed/events/{id}/read"),
+    ("get", "/api/v1/bank/audit"),
+    ("post", "/api/v1/admin/demo/reset"),
 }
 PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}

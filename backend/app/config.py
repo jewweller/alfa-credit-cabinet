@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     fixtures_dir: Path = _DEFAULT_FIXTURES_DIR
     # Файлы клиентов. В Docker — volume `uploads`; по умолчанию — вне репозитория.
     uploads_dir: Path = Path(tempfile.gettempdir()) / "alfa-credit-uploads"
+    # Сброс демо-данных (POST /admin/demo/reset) разрешён только на демо-стенде.
+    demo_mode: bool = False
 
 
 @lru_cache

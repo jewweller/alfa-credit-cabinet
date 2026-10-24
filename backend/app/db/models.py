@@ -2,7 +2,8 @@
 
 Есть: вход, черновик заявки и история (0001); обогащение, скоринг, решение, оффер и запрос
 документов (0002); документы (0003); подпись и выдача (0004); исполнитель заявки в банке
-(0005). Лента, аудит и очередь воркера — отдельными миграциями вместе с их функциональностью.
+(0005); события ленты (0006); журнал действий (0007). Очередь воркера — отдельной миграцией
+вместе с её функциональностью.
 """
 
 from datetime import UTC, date, datetime
@@ -245,3 +246,45 @@ class DisbursementRow(Base):
     amount: Mapped[Decimal] = mapped_column(MONEY)
     account_mask: Mapped[str] = mapped_column(String(16))
     executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class FeedEventRow(Base):
+    """Событие ленты клиента о смене статуса заявки (план, разделы 4 и 6: `feed_events`).
+
+    Это «уведомления» внутри продукта вместо email/SMS. Текст фиксируется при создании.
+    """
+
+    __tablename__ = "feed_events"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)  # заявитель
+    application_id: Mapped[UUID] = mapped_column(ForeignKey("applications.id"), index=True)
+    status: Mapped[str] = mapped_column(String(32))  # куда перешла заявка
+    title: Mapped[str] = mapped_column(String(255))
+    body: Mapped[str] = mapped_column(String(1000))
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AuditLogRow(Base):
+    """Журнал действий (план, разделы 6 и 10; схема AuditEntry). Только дописывается.
+
+    Без внешнего ключа на заявку: сброс демо удаляет заявки, а журнал остаётся вместе с
+    номером заявки.
+    """
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, index=True
+    )
+    action: Mapped[str] = mapped_column(String(40))
+    actor_role: Mapped[str] = mapped_column(String(16))
+    actor_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
+    actor_name: Mapped[str | None] = mapped_column(String(255))
+    application_id: Mapped[UUID | None] = mapped_column(Uuid, index=True)
+    application_number: Mapped[str | None] = mapped_column(String(16))
+    summary: Mapped[str] = mapped_column(String(200))
+    details: Mapped[dict] = mapped_column(DOCUMENT)
+    ip: Mapped[str | None] = mapped_column(String(64))

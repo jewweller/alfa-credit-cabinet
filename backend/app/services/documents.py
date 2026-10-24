@@ -14,9 +14,11 @@ from sqlalchemy.orm import Session
 from app.api.errors import ApiError
 from app.db.models import Application, DocumentRow, InfoRequestRow, User
 from app.domain.state_machine import ApplicationStatus
+from app.schemas.admin import AuditAction
 from app.schemas.auth import BANK_ROLES, UserRole
 from app.schemas.common import ErrorCode
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES
+from app.services import audit
 from app.services.applications import get_visible
 from app.storage import Storage
 
@@ -78,6 +80,15 @@ def upload(
         uploaded_by=user.id,
     )
     session.add(document)
+    session.flush()
+    audit.record(
+        session,
+        AuditAction.DOCUMENT_UPLOADED,
+        user,
+        application,
+        document.filename,
+        {"document_id": str(document.id), "kind": kind, "size_bytes": document.size},
+    )
     session.commit()
     return document
 
@@ -95,4 +106,13 @@ def download(
     content = storage.load(document.storage_path)
     if content is None:
         raise ApiError(404, ErrorCode.NOT_FOUND, "Файл не найден")
+    audit.record(
+        session,
+        AuditAction.DOCUMENT_DOWNLOADED,
+        user,
+        application,
+        document.filename,
+        {"document_id": str(document.id)},
+    )
+    session.commit()
     return document, content

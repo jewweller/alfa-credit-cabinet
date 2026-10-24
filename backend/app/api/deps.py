@@ -53,3 +53,22 @@ def require_bank_staff(user: CurrentUser) -> User:
 
 
 BankUser = Annotated[User, Depends(require_bank_staff)]
+
+
+def require_underwriter(user: CurrentUser) -> User:
+    """Действия в кабинете банка — только кредитный специалист; admin только смотрит."""
+    if user.role != UserRole.UNDERWRITER:
+        raise HTTPException(403, "Операция доступна только кредитному специалисту")
+    return user
+
+
+UnderwriterUser = Annotated[User, Depends(require_underwriter)]
+
+
+def require_admin(user: CurrentUser) -> User:
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(403, "Операция доступна только администратору")
+    return user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]

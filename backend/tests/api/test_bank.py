@@ -3,10 +3,14 @@
 from pathlib import Path
 
 import pytest
-from conftest import auth_headers
+from conftest import DEMO_PASSWORD, auth_headers
 from demo_flows import BAKERY, EXPRESS_WC, MIRAGE, SBOY, create_draft, steps, submit_demo
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
+from app.db.models import User
+from app.security import hash_password
 from app.storage import LocalStorage, get_storage
 
 UNDERWRITER = "underwriter@demo.local"
@@ -144,16 +148,45 @@ def test_assign_is_idempotent_for_same_employee(client: TestClient) -> None:
     assert _queue(client, headers).json()[0]["assignee"]["full_name"] == "Дмитрий Орлов"
 
 
-def test_assigned_application_is_closed_to_other_employee(client: TestClient) -> None:
+def _second_underwriter(engine: Engine) -> str:
+    with Session(engine) as session:
+        session.add(
+            User(
+                email="underwriter2@demo.local",
+                password_hash=hash_password(DEMO_PASSWORD),
+                role="underwriter",
+                full_name="Мария Лебедева",
+            )
+        )
+        session.commit()
+    return "underwriter2@demo.local"
+
+
+def test_assigned_application_is_closed_to_other_employee(
+    client: TestClient, engine: Engine
+) -> None:
     app, _ = submit_demo(client, *MIRAGE)
     _assign(client, app["id"], _bank(client))
-    admin = _bank(client, ADMIN)
+    other = _bank(client, _second_underwriter(engine))
 
-    taken = _assign(client, app["id"], admin)
-    decided = _decide(client, app["id"], admin, {"outcome": "rejected", "reason_code": "low_score"})
+    taken = _assign(client, app["id"], other)
+    decided = _decide(client, app["id"], other, {"outcome": "rejected", "reason_code": "low_score"})
 
     assert taken.status_code == decided.status_code == 409
     assert taken.json()["code"] == decided.json()["code"] == "assigned_to_other"
+
+
+def test_admin_only_views_bank_cabinet(client: TestClient) -> None:
+    """Вариант D: администратор видит очередь и карточку, но не берёт в работу и не решает."""
+    app, _ = submit_demo(client, *MIRAGE)
+    admin = _bank(client, ADMIN)
+
+    assert _card(client, app["id"], admin).status_code == 200
+    taken = _assign(client, app["id"], admin)
+    decided = _decide(client, app["id"], admin, {"outcome": "approved", "rate": "20.00"})
+
+    assert taken.status_code == decided.status_code == 403
+    assert _card(client, app["id"], admin).json()["application"]["status"] == "MANUAL_REVIEW"
 
 
 def test_assign_outside_manual_review_is_invalid_transition(client: TestClient) -> None:

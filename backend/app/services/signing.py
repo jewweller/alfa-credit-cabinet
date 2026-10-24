@@ -10,7 +10,7 @@
   * счёт зачисления синтетический — ****4521, как на экране C7.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -19,16 +19,20 @@ from sqlalchemy.orm.exc import StaleDataError
 from app.api.errors import ApiError
 from app.db.models import Application, DisbursementRow, OfferRow, SignatureRow, User
 from app.domain.state_machine import ApplicationStatus, ensure_transition
+from app.schemas.admin import AuditAction
 from app.schemas.applications import OfferStatus
 from app.schemas.common import ErrorCode
 from app.schemas.signing import SigningCodeResponse
 from app.security import hash_signing_code, new_signing_code, verify_signing_code
+from app.services import audit
 from app.services.applications import _latest, get_visible
 from app.services.status import change_status, now
 
 CODE_TTL = timedelta(minutes=5)
 MAX_ATTEMPTS = 5
 ACCOUNT_MASK = "****4521"
+# Время в тексте журнала — московское, как даты новостей в seed/news.json.
+DISPLAY_TZ = timezone(timedelta(hours=3))
 
 _INVALID_CODE = "Код неверный или истёк. Запросите новый код"
 
@@ -74,6 +78,15 @@ def create_code(session: Session, user: User, application_id: UUID) -> SigningCo
             attempts=0,
             expires_at=expires_at,
         )
+    )
+    local = expires_at.astimezone(DISPLAY_TZ)
+    audit.record(
+        session,
+        AuditAction.SIGNING_CODE_ISSUED,
+        user,
+        application,
+        f"действует до {local:%H:%M:%S}",
+        {"expires_at": expires_at.isoformat()},  # сам код в журнал не пишется
     )
     session.commit()
     return SigningCodeResponse(code=code, expires_at=expires_at)

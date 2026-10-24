@@ -22,5 +22,9 @@
   ["GET", "/api/v1/bank/applications"],
   ["GET", "/api/v1/bank/applications/{id}"],
   ["POST", "/api/v1/bank/applications/{id}/assign"],
-  ["POST", "/api/v1/bank/applications/{id}/decision"]
+  ["POST", "/api/v1/bank/applications/{id}/decision"],
+  ["GET", "/api/v1/feed"],
+  ["POST", "/api/v1/feed/events/{id}/read"],
+  ["GET", "/api/v1/bank/audit"],
+  ["POST", "/api/v1/admin/demo/reset"]
 ]

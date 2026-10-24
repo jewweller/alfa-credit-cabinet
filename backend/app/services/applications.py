@@ -25,6 +25,7 @@ from app.db.models import (
 from app.domain.inn import is_valid_inn
 from app.domain.state_machine import ApplicationStatus, InvalidTransitionError
 from app.integrations.base import SourceClient
+from app.schemas.admin import AuditAction
 from app.schemas.applications import (
     ApplicationCreate,
     ApplicationDetail,
@@ -37,6 +38,7 @@ from app.schemas.auth import BANK_ROLES, UserRole
 from app.schemas.common import ErrorCode
 from app.schemas.decisions import ClientDecision, DecisionOutcome
 from app.schemas.documents import DocumentInfo, InfoRequest, InfoRequestItem
+from app.services import audit
 from app.services.pipeline import process_submitted
 from app.services.status import add_history, change_status, now
 
@@ -108,6 +110,7 @@ def create_draft(session: Session, user: User, data: ApplicationCreate) -> Appli
                 raise
             continue
         add_history(session, application, None, user)
+        audit.record(session, AuditAction.APPLICATION_CREATED, user, application, "DRAFT")
         session.commit()
         return application
     raise AssertionError("unreachable")
