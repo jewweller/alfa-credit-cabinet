@@ -55,7 +55,8 @@ services:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+        # /ready: база, миграции и файлы на месте — API готов принимать запросы.
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)"
       interval: 10s
       timeout: 3s
       retries: 5

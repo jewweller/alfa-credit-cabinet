@@ -1,0 +1,89 @@
+# Проверки backend (план, раздел 12: «PR в main через CI»): линтер, формат, актуальность
+# docs/api/openapi.json, тесты и миграции на настоящем PostgreSQL.
+name: backend
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "docs/api/**"
+      - "seed/**"
+      - "mocks/fixtures/**"
+      - "frontend/src/mocks/real-operations.json"
+      - ".github/workflows/backend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "docs/api/**"
+      - "seed/**"
+      - "mocks/fixtures/**"
+      - "frontend/src/mocks/real-operations.json"
+      - ".github/workflows/backend.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  checks:
+    name: lint, contract, tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # Та же версия uv, что в backend/Dockerfile; Python — из backend/.python-version.
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.4"
+      - run: uv sync --frozen
+      - run: uv run --frozen ruff check .
+      - run: uv run --frozen ruff format --check .
+      - name: docs/api/openapi.json соответствует коду
+        run: uv run --frozen python -m app.openapi --check
+      - run: uv run --frozen pytest -q
+
+  migrations:
+    name: migrations on PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      db:
+        # Тот же образ, что в docker-compose.yml.
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: alfa
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: alfa
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U alfa -d alfa"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://alfa:ci-only@127.0.0.1:5432/alfa
+      JWT_SECRET: ci-only-secret-0123456789abcdef0123456789
+      SEED_DEMO_DATA: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.4"
+      - run: uv sync --frozen
+      - name: upgrade → downgrade → upgrade
+        run: |
+          uv run --frozen alembic upgrade head
+          uv run --frozen alembic downgrade base
+          uv run --frozen alembic upgrade head
+      - name: демо-данные загружаются, повторная загрузка безопасна
+        run: |
+          uv run --frozen python -m app.seed
+          uv run --frozen python -m app.seed

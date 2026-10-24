@@ -23,6 +23,8 @@ IDEMPOTENT_OPERATIONS = {
 IMPLEMENTED_OPERATIONS = {
     ("get", "/health"),
     ("get", "/api/v1/health"),
+    ("get", "/ready"),
+    ("get", "/api/v1/ready"),
     ("post", "/api/v1/auth/login"),
     ("get", "/api/v1/auth/me"),
     ("get", "/api/v1/products"),
@@ -52,7 +54,12 @@ IMPLEMENTED_OPERATIONS = {
     ("get", "/api/v1/bank/audit"),
     ("post", "/api/v1/admin/demo/reset"),
 }
-PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
+PUBLIC_IMPLEMENTED = {
+    ("get", "/health"),
+    ("get", "/api/v1/health"),
+    ("get", "/ready"),
+    ("get", "/api/v1/ready"),
+}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}
 
 
@@ -75,7 +82,7 @@ def test_contract_contains_exactly_planned_and_implemented_operations(spec: dict
 
 def test_api_paths_use_v1_prefix(spec: dict) -> None:
     for path in spec["paths"]:
-        assert path == "/health" or path.startswith("/api/v1/")
+        assert path in ("/health", "/ready") or path.startswith("/api/v1/")
 
 
 def test_implementation_status_marks(spec: dict) -> None:
