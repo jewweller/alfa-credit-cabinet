@@ -80,9 +80,7 @@ export function AdminPage() {
       <SplitLayout
         stickyAside={false}
         asideFirst
-        main={
-<AuditPanel title={A.title} filter={{ actions: A.groupActions[group] }} />
-        }
+        main={<AuditPanel title={A.title} filter={{ actions: A.groupActions[group] }} />}
         aside={<ResetPanel />}
       />
     </AppShell>
