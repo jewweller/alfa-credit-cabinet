@@ -1,8 +1,8 @@
 """SQLAlchemy-модели (план, раздел 6).
 
 Есть: вход, черновик заявки и история (0001); обогащение, скоринг, решение, оффер и запрос
-документов (0002); документы (0003); подпись и выдача (0004). Лента, аудит и очередь
-воркера — отдельными миграциями вместе с их функциональностью.
+документов (0002); документы (0003); подпись и выдача (0004); исполнитель заявки в банке
+(0005). Лента, аудит и очередь воркера — отдельными миграциями вместе с их функциональностью.
 """
 
 from datetime import UTC, date, datetime
@@ -100,9 +100,12 @@ class Application(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # Сотрудник банка, который взял заявку в работу (экран B2, «взять в работу»).
+    assignee_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
 
     company: Mapped[Company] = relationship(lazy="joined")
     product: Mapped[Product | None] = relationship(lazy="joined")
+    assignee: Mapped[User | None] = relationship(foreign_keys=[assignee_id], lazy="joined")
 
     # Оптимистическая блокировка (план, раздел 9): SQLAlchemy сам увеличивает version
     # и бросает StaleDataError, если запись успели изменить параллельно.

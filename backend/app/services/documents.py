@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.api.errors import ApiError
 from app.db.models import Application, DocumentRow, InfoRequestRow, User
 from app.domain.state_machine import ApplicationStatus
-from app.schemas.auth import UserRole
+from app.schemas.auth import BANK_ROLES, UserRole
 from app.schemas.common import ErrorCode
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES
 from app.services.applications import get_visible
@@ -90,7 +90,7 @@ def download(
         raise ApiError(404, ErrorCode.NOT_FOUND, "Файл не найден")
     application = session.get(Application, document.application_id)
     own = user.role == UserRole.CLIENT and application.company_id == user.company_id
-    if not (own or user.role == UserRole.UNDERWRITER):
+    if not (own or user.role in BANK_ROLES):
         raise ApiError(403, ErrorCode.FORBIDDEN, "Нет доступа к файлу")  # контракт: 403
     content = storage.load(document.storage_path)
     if content is None:

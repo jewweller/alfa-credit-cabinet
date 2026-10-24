@@ -15,6 +15,10 @@ class UserRole(StrEnum):
     ADMIN = "admin"
 
 
+# Сотрудники банка: кабинет банка, история и файлы любых заявок (план, разделы 2 и 9).
+BANK_ROLES = frozenset({UserRole.UNDERWRITER, UserRole.ADMIN})
+
+
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

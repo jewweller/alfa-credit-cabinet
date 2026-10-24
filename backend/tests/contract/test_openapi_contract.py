@@ -9,12 +9,8 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_contract
 
-PLANNED_OPERATIONS = {
-    ("get", "/api/v1/bank/applications"),
-    ("get", "/api/v1/bank/applications/{id}"),
-    ("post", "/api/v1/bank/applications/{id}/assign"),
-    ("post", "/api/v1/bank/applications/{id}/decision"),
-}
+# Все операции первой волны реализованы; новые запланированные добавляются сюда.
+PLANNED_OPERATIONS: set[tuple[str, str]] = set()
 IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/submit"),
     ("post", "/api/v1/applications/{id}/offers/{offer_id}/accept"),
@@ -47,6 +43,10 @@ IMPLEMENTED_OPERATIONS = {
     ("get", "/api/v1/applications/{id}/schedule"),
     ("post", "/api/v1/applications/{id}/signing/code"),
     ("post", "/api/v1/applications/{id}/signing/confirm"),
+    ("get", "/api/v1/bank/applications"),
+    ("get", "/api/v1/bank/applications/{id}"),
+    ("post", "/api/v1/bank/applications/{id}/assign"),
+    ("post", "/api/v1/bank/applications/{id}/decision"),
 }
 PUBLIC_IMPLEMENTED = {("get", "/health"), ("get", "/api/v1/health")}
 PUBLIC_OPERATIONS = {("post", "/api/v1/auth/login"), *PUBLIC_IMPLEMENTED}
