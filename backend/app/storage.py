@@ -21,6 +21,10 @@ class Storage(Protocol):
         """Содержимое по ключу или None, если файла нет."""
         ...
 
+    def delete(self, key: str) -> None:
+        """Удаляет файл; нет файла — ничего не делает."""
+        ...
+
 
 class LocalStorage:
     def __init__(self, root: Path) -> None:
@@ -38,6 +42,10 @@ class LocalStorage:
         if not key.isalnum() or not path.is_file():
             return None
         return path.read_bytes()
+
+    def delete(self, key: str) -> None:
+        if key.isalnum():
+            (self._root / key).unlink(missing_ok=True)
 
 
 @lru_cache
