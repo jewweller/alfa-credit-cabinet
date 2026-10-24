@@ -13,6 +13,8 @@ from app.openapi import CONTRACT_PATH, PLANNED, build_contract_openapi, render_c
 PLANNED_OPERATIONS = {
     ("get", "/api/v1/feed"),
     ("post", "/api/v1/feed/events/{id}/read"),
+    ("get", "/api/v1/bank/audit"),
+    ("post", "/api/v1/admin/demo/reset"),
 }
 IDEMPOTENT_OPERATIONS = {
     ("post", "/api/v1/applications/{id}/submit"),

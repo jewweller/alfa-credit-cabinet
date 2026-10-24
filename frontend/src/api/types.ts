@@ -46,6 +46,10 @@ export type RuleCheck = Schemas['RuleCheck'];
 export type UnderwriterOutcome = Schemas['UnderwriterOutcome'];
 export type UnderwriterDecisionRequest = Schemas['UnderwriterDecisionRequest'];
 export type CompanyBrief = Schemas['CompanyBrief'];
+export type AuditEntry = Schemas['AuditEntry'];
+export type AuditAction = Schemas['AuditAction'];
+export type AuditActorRole = Schemas['AuditActorRole'];
+export type DemoResetResult = Schemas['DemoResetResult'];
 export type ApiErrorBody = Schemas['ErrorResponse'];
 export type ErrorCode = Schemas['ErrorCode'];
 

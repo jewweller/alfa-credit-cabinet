@@ -10,6 +10,8 @@ export const ROUTES = {
   /** Кабинет банка: очередь (B2) и карточка заявки с решением (B3–B4). */
   bank: '/bank',
   bankApplication: (id: string) => `/bank/applications/${id}`,
+  /** Администратор: сброс демо и журнал действий. */
+  admin: '/admin',
   application: (id: string) => `/applications/${id}`,
   applicationEdit: (id: string) => `/applications/${id}/edit`,
   signing: (id: string) => `/applications/${id}/signing`,
@@ -29,7 +31,7 @@ export function screenPath(screen: Screen, applicationId: string): string {
   }
 }
 
-/** Куда вести после входа: клиента — на главную, сотрудника банка — в очередь. */
+/** Куда вести после входа: клиента — на главную, специалиста — в очередь, администратора — к себе. */
 export function homeFor(role: UserRole): string {
-  return role === 'client' ? ROUTES.home : ROUTES.bank;
+  return role === 'client' ? ROUTES.home : role === 'admin' ? ROUTES.admin : ROUTES.bank;
 }

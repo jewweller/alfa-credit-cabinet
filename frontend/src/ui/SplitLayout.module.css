@@ -32,4 +32,8 @@
   .sticky {
     position: static;
   }
+
+  .asideFirst .aside {
+    order: -1;
+  }
 }

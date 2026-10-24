@@ -2360,6 +2360,219 @@
         },
         "x-implementation-status": "planned"
       }
+    },
+    "/api/v1/bank/audit": {
+      "get": {
+        "tags": [
+          "bank"
+        ],
+        "summary": "List Audit Entries",
+        "description": "**Только контракт — ещё не реализовано.**\n\nЖурнал действий (план, раздел 10), свежие сверху. Читают underwriter и admin.",
+        "operationId": "listAuditEntries",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Только действия по этой заявке (вкладка журнала в B3).",
+              "title": "Application Id"
+            },
+            "description": "Только действия по этой заявке (вкладка журнала в B3)."
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditAction"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по действиям; можно несколько.",
+              "title": "Action"
+            },
+            "description": "Фильтр по действиям; можно несколько."
+          },
+          {
+            "name": "actor_role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditActorRole"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по роли.",
+              "title": "Actor Role"
+            },
+            "description": "Фильтр по роли."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Записи строго раньше этого момента — следующая страница.",
+              "title": "Before"
+            },
+            "description": "Записи строго раньше этого момента — следующая страница."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "description": "Сколько записей вернуть.",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Сколько записей вернуть."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEntry"
+                  },
+                  "title": "Response Listauditentries"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только сотрудникам банка (роли underwriter и admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации; `field` указывает на поле.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "planned"
+      }
+    },
+    "/api/v1/admin/demo/reset": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Reset Demo",
+        "description": "**Только контракт — ещё не реализовано.**\n\nСбросить демо-данные перед показом (план, раздел 15).\n\nУдаляет все заявки со всем, что к ним относится: документы и файлы, офферы, решения,\nисторию статусов, подписи, выдачи, события ленты. Учётки, компании и продукты остаются.\nЖурнал не очищается: в него дописывается `demo.reset`. Повторный вызов безопасен.",
+        "operationId": "resetDemo",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoResetResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет токена или он недействителен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Операция доступна только роли admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`demo_mode_disabled` — стенд запущен без `DEMO_MODE=true`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-implementation-status": "planned"
+      }
     }
   },
   "components": {
@@ -2850,6 +3063,192 @@
         ],
         "title": "ApplicationUpdate",
         "description": "Автосохранение черновика. Передаются только изменяемые поля.\n\n`version` обязателен: если заявку уже изменили, ответ 409 `version_conflict` (план, раздел 9).\nВ каких статусах разрешено изменение — TBD."
+      },
+      "AuditAction": {
+        "type": "string",
+        "enum": [
+          "auth.login",
+          "auth.login_failed",
+          "application.created",
+          "application.submitted",
+          "application.resubmitted",
+          "application.cancelled",
+          "application.status_changed",
+          "document.uploaded",
+          "document.downloaded",
+          "offer.accepted",
+          "offer.declined",
+          "signing.code_issued",
+          "signing.confirmed",
+          "loan.issued",
+          "bank.assigned",
+          "bank.decision",
+          "demo.reset"
+        ],
+        "title": "AuditAction",
+        "description": "Что произошло. Автосохранение черновика (`PATCH`) в журнал не пишется — слишком частое.\n\n- `auth.login` — вход в систему\n- `auth.login_failed` — неудачная попытка входа; `actor_name` — введённый логин\n- `application.created` — создан черновик заявки\n- `application.submitted` — клиент отправил заявку\n- `application.resubmitted` — клиент отправил заявку повторно после запроса документов\n- `application.cancelled` — клиент отменил заявку\n- `application.status_changed` — конвейер сменил статус (обогащение, скоринг, решение движка)\n- `document.uploaded` — клиент загрузил файл\n- `document.downloaded` — кто-то открыл или скачал файл клиента\n- `offer.accepted` — клиент принял предложение\n- `offer.declined` — клиент отказался от предложения\n- `signing.code_issued` — выдан код подписи\n- `signing.confirmed` — договор подписан\n- `loan.issued` — кредит выдан\n- `bank.assigned` — специалист взял заявку в работу\n- `bank.decision` — специалист принял решение\n- `demo.reset` — администратор сбросил демо-данные",
+        "x-enum-descriptions": [
+          "вход в систему",
+          "неудачная попытка входа; `actor_name` — введённый логин",
+          "создан черновик заявки",
+          "клиент отправил заявку",
+          "клиент отправил заявку повторно после запроса документов",
+          "клиент отменил заявку",
+          "конвейер сменил статус (обогащение, скоринг, решение движка)",
+          "клиент загрузил файл",
+          "кто-то открыл или скачал файл клиента",
+          "клиент принял предложение",
+          "клиент отказался от предложения",
+          "выдан код подписи",
+          "договор подписан",
+          "кредит выдан",
+          "специалист взял заявку в работу",
+          "специалист принял решение",
+          "администратор сбросил демо-данные"
+        ]
+      },
+      "AuditActorRole": {
+        "type": "string",
+        "enum": [
+          "client",
+          "underwriter",
+          "admin",
+          "system"
+        ],
+        "title": "AuditActorRole",
+        "description": "- `client` — клиент\n- `underwriter` — кредитный специалист\n- `admin` — администратор\n- `system` — система: конвейер, движок решения, выдача",
+        "x-enum-descriptions": [
+          "клиент",
+          "кредитный специалист",
+          "администратор",
+          "система: конвейер, движок решения, выдача"
+        ]
+      },
+      "AuditEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AuditAction"
+          },
+          "actor_role": {
+            "$ref": "#/components/schemas/AuditActorRole"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id",
+            "description": "null — система или неудачный вход."
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name",
+            "examples": [
+              "Дмитрий Орлов"
+            ]
+          },
+          "application_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id",
+            "description": "Заявка, к которой относится действие."
+          },
+          "application_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Number",
+            "description": "Номер заявки; сохраняется и после сброса демо.",
+            "examples": [
+              "1051"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Summary",
+            "description": "Коротко, что изменилось: статусы, имя файла, исход решения. Формирует сервер.",
+            "examples": [
+              "SCORING → APPROVED"
+            ]
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details",
+            "description": "Подробности как есть (payload). Для отладки, интерфейс их не разбирает.",
+            "examples": [
+              {
+                "from_status": "SCORING",
+                "to_status": "APPROVED"
+              }
+            ]
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip",
+            "examples": [
+              "172.18.0.1"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "action",
+          "actor_role",
+          "actor_id",
+          "actor_name",
+          "application_id",
+          "application_number",
+          "summary",
+          "details",
+          "ip"
+        ],
+        "title": "AuditEntry",
+        "description": "Строка журнала (таблица `audit_log`)."
       },
       "BankApplicationDetail": {
         "properties": {
@@ -3381,6 +3780,26 @@
         ],
         "title": "DecisionOutcome"
       },
+      "DemoResetResult": {
+        "properties": {
+          "reset_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reset At"
+          },
+          "applications_deleted": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Applications Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reset_at",
+          "applications_deleted"
+        ],
+        "title": "DemoResetResult"
+      },
       "DocumentInfo": {
         "properties": {
           "id": {
@@ -3558,6 +3977,7 @@
           "unsupported_media_type",
           "invalid_code",
           "assigned_to_other",
+          "demo_mode_disabled",
           "http_error"
         ],
         "title": "ErrorCode",

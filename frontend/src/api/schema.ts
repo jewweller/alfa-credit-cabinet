@@ -549,6 +549,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bank/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audit Entries
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Журнал действий (план, раздел 10), свежие сверху. Читают underwriter и admin.
+         */
+        get: operations["listAuditEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/demo/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Demo
+         * @description **Только контракт — ещё не реализовано.**
+         *
+         *     Сбросить демо-данные перед показом (план, раздел 15).
+         *
+         *     Удаляет все заявки со всем, что к ним относится: документы и файлы, офферы, решения,
+         *     историю статусов, подписи, выдачи, события ленты. Учётки, компании и продукты остаются.
+         *     Журнал не очищается: в него дописывается `demo.reset`. Повторный вызов безопасен.
+         */
+        post: operations["resetDemo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -702,6 +750,100 @@ export interface components {
              * @description Согласие на запрос в БКИ.
              */
             bki_consent?: boolean | null;
+        };
+        /**
+         * AuditAction
+         * @description Что произошло. Автосохранение черновика (`PATCH`) в журнал не пишется — слишком частое.
+         *
+         *     - `auth.login` — вход в систему
+         *     - `auth.login_failed` — неудачная попытка входа; `actor_name` — введённый логин
+         *     - `application.created` — создан черновик заявки
+         *     - `application.submitted` — клиент отправил заявку
+         *     - `application.resubmitted` — клиент отправил заявку повторно после запроса документов
+         *     - `application.cancelled` — клиент отменил заявку
+         *     - `application.status_changed` — конвейер сменил статус (обогащение, скоринг, решение движка)
+         *     - `document.uploaded` — клиент загрузил файл
+         *     - `document.downloaded` — кто-то открыл или скачал файл клиента
+         *     - `offer.accepted` — клиент принял предложение
+         *     - `offer.declined` — клиент отказался от предложения
+         *     - `signing.code_issued` — выдан код подписи
+         *     - `signing.confirmed` — договор подписан
+         *     - `loan.issued` — кредит выдан
+         *     - `bank.assigned` — специалист взял заявку в работу
+         *     - `bank.decision` — специалист принял решение
+         *     - `demo.reset` — администратор сбросил демо-данные
+         * @enum {string}
+         */
+        AuditAction: "auth.login" | "auth.login_failed" | "application.created" | "application.submitted" | "application.resubmitted" | "application.cancelled" | "application.status_changed" | "document.uploaded" | "document.downloaded" | "offer.accepted" | "offer.declined" | "signing.code_issued" | "signing.confirmed" | "loan.issued" | "bank.assigned" | "bank.decision" | "demo.reset";
+        /**
+         * AuditActorRole
+         * @description - `client` — клиент
+         *     - `underwriter` — кредитный специалист
+         *     - `admin` — администратор
+         *     - `system` — система: конвейер, движок решения, выдача
+         * @enum {string}
+         */
+        AuditActorRole: "client" | "underwriter" | "admin" | "system";
+        /**
+         * AuditEntry
+         * @description Строка журнала (таблица `audit_log`).
+         */
+        AuditEntry: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            action: components["schemas"]["AuditAction"];
+            actor_role: components["schemas"]["AuditActorRole"];
+            /**
+             * Actor Id
+             * @description null — система или неудачный вход.
+             */
+            actor_id: string | null;
+            /**
+             * Actor Name
+             * @example Дмитрий Орлов
+             */
+            actor_name: string | null;
+            /**
+             * Application Id
+             * @description Заявка, к которой относится действие.
+             */
+            application_id: string | null;
+            /**
+             * Application Number
+             * @description Номер заявки; сохраняется и после сброса демо.
+             * @example 1051
+             */
+            application_number: string | null;
+            /**
+             * Summary
+             * @description Коротко, что изменилось: статусы, имя файла, исход решения. Формирует сервер.
+             * @example SCORING → APPROVED
+             */
+            summary: string;
+            /**
+             * Details
+             * @description Подробности как есть (payload). Для отладки, интерфейс их не разбирает.
+             * @example {
+             *       "from_status": "SCORING",
+             *       "to_status": "APPROVED"
+             *     }
+             */
+            details: {
+                [key: string]: unknown;
+            };
+            /**
+             * Ip
+             * @example 172.18.0.1
+             */
+            ip: string | null;
         };
         /**
          * BankApplicationDetail
@@ -932,6 +1074,16 @@ export interface components {
          * @enum {string}
          */
         DecisionOutcome: "approved" | "counter_offer" | "rejected" | "info_requested" | "manual_review";
+        /** DemoResetResult */
+        DemoResetResult: {
+            /**
+             * Reset At
+             * Format: date-time
+             */
+            reset_at: string;
+            /** Applications Deleted */
+            applications_deleted: number;
+        };
         /**
          * DocumentInfo
          * @description Загруженный файл. Скачивание — `GET /api/v1/documents/{id}`.
@@ -1028,7 +1180,7 @@ export interface components {
          * @description Технические коды ошибок. Предварительный контракт: в плане не закреплены, TBD.
          * @enum {string}
          */
-        ErrorCode: "validation_error" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "invalid_transition" | "version_conflict" | "company_not_found" | "upstream_unavailable" | "offer_not_active" | "documents_required" | "file_too_large" | "unsupported_media_type" | "invalid_code" | "assigned_to_other" | "http_error";
+        ErrorCode: "validation_error" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "invalid_transition" | "version_conflict" | "company_not_found" | "upstream_unavailable" | "offer_not_active" | "documents_required" | "file_too_large" | "unsupported_media_type" | "invalid_code" | "assigned_to_other" | "demo_mode_disabled" | "http_error";
         /**
          * ErrorResponse
          * @description Единый формат ошибки `{code, message, field?}` (план, раздел 10).
@@ -3253,6 +3405,111 @@ export interface operations {
             };
             /** @description Validation Error */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listAuditEntries: {
+        parameters: {
+            query?: {
+                /** @description Только действия по этой заявке (вкладка журнала в B3). */
+                application_id?: string | null;
+                /** @description Фильтр по действиям; можно несколько. */
+                action?: components["schemas"]["AuditAction"][] | null;
+                /** @description Фильтр по роли. */
+                actor_role?: components["schemas"]["AuditActorRole"] | null;
+                /** @description Записи строго раньше этого момента — следующая страница. */
+                before?: string | null;
+                /** @description Сколько записей вернуть. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntry"][];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только сотрудникам банка (роли underwriter и admin). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации; `field` указывает на поле. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resetDemo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoResetResult"];
+                };
+            };
+            /** @description Нет токена или он недействителен. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Операция доступна только роли admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `demo_mode_disabled` — стенд запущен без `DEMO_MODE=true`. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

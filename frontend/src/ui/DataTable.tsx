@@ -76,13 +76,17 @@ export function DataTable<T>({
   );
 }
 
-/** Главная ячейка строки: ссылка, подпись под ней и то, что на узкой таблице заменяет спрятанные колонки. */
-export function DataTableTitle({ to, title, meta, narrow }: { to: string; title: string; meta?: string; narrow?: ReactNode }) {
+/** Главная ячейка строки: ссылка (или текст, если вести некуда), подпись под ней и то, что на узкой таблице заменяет спрятанные колонки. */
+export function DataTableTitle({ to, title, meta, narrow }: { to?: string; title: string; meta?: string; narrow?: ReactNode }) {
   return (
     <>
-      <Link to={to} className={styles.title} onClick={(e) => e.stopPropagation()}>
-        {title}
-      </Link>
+      {to ? (
+        <Link to={to} className={styles.title} onClick={(e) => e.stopPropagation()}>
+          {title}
+        </Link>
+      ) : (
+        <span className={styles.title}>{title}</span>
+      )}
       {meta && <span className={styles.meta}>{meta}</span>}
       {narrow && <span className={styles.narrowOnly}>{narrow}</span>}
     </>

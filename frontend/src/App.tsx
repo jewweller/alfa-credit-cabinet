@@ -5,6 +5,7 @@ import { ApiError, clearToken } from './api/client';
 import type { UserRole } from './api/types';
 import { ROUTES } from './features/routes';
 import { RequireAuth } from './features/session/RequireAuth';
+import { AdminPage } from './pages/admin/AdminPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ApplicationEditPage } from './pages/client/ApplicationEditPage';
 import { ApplicationPage } from './pages/client/ApplicationPage';
@@ -38,9 +39,11 @@ const queryClient = new QueryClient({
 
 const CLIENT: UserRole[] = ['client'];
 const BANK: UserRole[] = ['underwriter', 'admin'];
+const ADMIN: UserRole[] = ['admin'];
 
 const client = (page: ReactNode) => <RequireAuth roles={CLIENT}>{page}</RequireAuth>;
 const bank = (page: ReactNode) => <RequireAuth roles={BANK}>{page}</RequireAuth>;
+const admin = (page: ReactNode) => <RequireAuth roles={ADMIN}>{page}</RequireAuth>;
 
 export function App() {
   return (
@@ -57,6 +60,7 @@ export function App() {
           <Route path="/feed" element={client(<ComingSoonPage code="C8" />)} />
           <Route path={ROUTES.bank} element={bank(<QueuePage />)} />
           <Route path="/bank/applications/:id" element={bank(<BankApplicationPage />)} />
+          <Route path={ROUTES.admin} element={admin(<AdminPage />)} />
           <Route path="*" element={client(<ComingSoonPage code="404" />)} />
         </Routes>
       </BrowserRouter>
