@@ -28,6 +28,7 @@ import type {
 } from '../api/types';
 import { formatMoney } from '../features/format';
 import { entry, filterAudit, owner, seedAudit, staff, SYSTEM, type Actor, type AuditFilter } from './audit';
+import { clearFiles, getFile, putFile } from './fileStore';
 import { makeOffer, me as bakery, products, seedApplications, seedFeed, users, type MockApplication } from './data';
 import { decide, evaluate, REVENUE_INFO_REQUEST, sourcesOf, type Verdict } from './decision';
 import { rawRegistry } from './sources';
@@ -99,6 +100,7 @@ function load(): boolean {
 
 function reset() {
   apps.clear();
+  void clearFiles();
   for (const app of seedApplications()) apps.set(app.detail.id, app);
   feed = seedFeed();
   auditLog = seedAudit([...apps.values()]);
@@ -643,6 +645,7 @@ export const db = {
       uploaded_at: new Date().toISOString(),
     };
     files.set(doc.id, file);
+    void putFile(doc.id, file);
     app.detail = { ...app.detail, documents: [...app.detail.documents, doc], version: app.detail.version + 1 };
     log('document.uploaded', owner(app), app, doc.filename, { document_id: doc.id, kind, size_bytes: doc.size_bytes });
     save();
@@ -650,11 +653,12 @@ export const db = {
   },
 
   /** Файл заявки: клиенту — только своей компании (чужой → 403, как на бэке), банку — любой. */
-  file(documentId: string, user: Me): { blob: Blob; doc: DocumentInfo } {
+  async file(documentId: string, user: Me): Promise<{ blob: Blob; doc: DocumentInfo }> {
     const companyId = user.role === 'client' ? (user.company?.id ?? null) : null;
+    const blob = files.get(documentId) ?? (await getFile(documentId));
+    if (blob) files.set(documentId, blob);
     for (const app of apps.values()) {
       const doc = app.detail.documents.find((d) => d.id === documentId);
-      const blob = files.get(documentId);
       if (doc && companyId && app.detail.company_id !== companyId) {
         throw new MockHttpError(403, 'forbidden', 'Нет доступа к файлу');
       }
@@ -803,6 +807,7 @@ export const db = {
     const deleted = apps.size;
     apps.clear();
     files.clear();
+    void clearFiles();
     signingCodes.clear();
     idempotent.clear();
     for (const app of seedApplications()) apps.set(app.detail.id, app);

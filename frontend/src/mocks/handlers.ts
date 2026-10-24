@@ -270,7 +270,7 @@ export const handlers = [
     const user = currentUser(request);
     if (!user) return errorJson(401, 'unauthorized', 'Войдите заново');
     try {
-      const { blob, doc } = db.file(String(params.id), user);
+      const { blob, doc } = await db.file(String(params.id), user);
       return new HttpResponse(blob, {
         headers: {
           'Content-Type': doc.mime,
