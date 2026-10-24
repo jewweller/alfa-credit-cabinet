@@ -29,6 +29,11 @@ _SOURCE_LABELS = {
 }
 
 
+def _rub(value: Decimal) -> str:
+    """Сумма для текста правил на экране B3: «24 000 000 ₽»."""
+    return f"{value:,.0f} ₽".replace(",", " ")
+
+
 @dataclass(frozen=True)
 class Offer:
     product: ProductTerms
@@ -210,7 +215,7 @@ class _Engine:
         declared = self.request.revenue_12m
         # ФНС ≤ 0 при ненулевой выручке в анкете — расхождение заведомо больше порога (TBD).
         mismatch = abs(declared - fns) / fns * 100 if fns > 0 else None
-        detail = f"анкета {declared:.0f} ₽, ФНС {fns:.0f} ₽, расхождение " + (
+        detail = f"анкета {_rub(declared)}, ФНС {_rub(fns)}, расхождение " + (
             f"{mismatch:.1f}%" if mismatch is not None else "не определено (ФНС ≤ 0)"
         )
         if mismatch is not None and mismatch <= r4.mismatch_pct_gt:
@@ -227,9 +232,9 @@ class _Engine:
     def r5(self) -> None:
         limit = self.config.rules.R5["amount_rub_gt"]
         fired = self.request.amount > limit
-        self._check("R5", fired, f"сумма {self.request.amount:.0f} ₽, порог {limit:.0f} ₽")
+        self._check("R5", fired, f"сумма {_rub(self.request.amount)}, порог {_rub(limit)}")
         if fired:
-            raise _Fired("R5_LARGE_AMOUNT", f"сумма {self.request.amount:.0f} ₽")
+            raise _Fired("R5_LARGE_AMOUNT", f"сумма {_rub(self.request.amount)}")
 
     def _grade_rule(self, rule: str, grades: Sequence[str], code: str) -> None:
         fired = self.scoring.grade in grades
@@ -253,7 +258,7 @@ class _Engine:
         if offer is None:
             self._check("R8", True, "грейд C, предложение сформировать нельзя")
             raise _Fired("R8_NO_OFFER", "предложение сформировать нельзя")
-        detail = f"грейд C, {offer.amount:.0f} ₽ на {offer.term_months} мес под {offer.rate}%"
+        detail = f"грейд C, {_rub(offer.amount)} на {offer.term_months} мес под {offer.rate}%"
         self._check("R8", True, detail)
         raise _Fired("R8_COUNTER_OFFER", detail, offer=offer)
 
@@ -308,7 +313,7 @@ class _Engine:
             self._check("R10", True, "ни срок, ни сумма, ни другой продукт не подошли")
             raise _Fired("R10_NO_OFFER", "условий с нагрузкой до порога нет")
         detail = (
-            f"{offer.product.code}: {offer.amount:.0f} ₽ на {offer.term_months} мес "
+            f"{offer.product.code}: {_rub(offer.amount)} на {offer.term_months} мес "
             f"под {offer.rate}%, нагрузка {offer.debt_load_pct:.1f}%"
         )
         self._check("R10", True, detail)

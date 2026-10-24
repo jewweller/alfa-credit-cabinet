@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     uploads_dir: Path = Path(tempfile.gettempdir()) / "alfa-credit-uploads"
     # Сброс демо-данных (POST /admin/demo/reset) разрешён только на демо-стенде.
     demo_mode: bool = False
+    # Порядок новостей в ленте моделью ML-команды (docs/ml-ranking.md); при сбое — правила.
+    ml_ranking_enabled: bool = False
+    ml_timeout_sec: float = Field(default=1.0, gt=0)
 
 
 @lru_cache

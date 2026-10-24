@@ -20,6 +20,9 @@ RUN uv sync --frozen --no-dev
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
+# Ранжирование ленты моделью ML: только стандартная библиотека и веса в JSON (docs/ml-howto.md).
+# Контекст `ml` задаёт docker-compose.yml (additional_contexts).
+COPY --from=ml . ./ml
 
 RUN useradd --system --uid 10001 --no-create-home app \
     && mkdir /uploads && chown app /uploads
@@ -29,4 +32,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
 # При старте: миграции, демо-данные (только при SEED_DEMO_DATA=true), затем API (план, раздел 9).
-CMD ["sh", "-c", "alembic upgrade head && python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# --proxy-headers: адрес клиента — из X-Forwarded-For от nginx фронта (IP в журнале действий).
+# API опубликован только на 127.0.0.1, снаружи к нему ходят через nginx.
+CMD ["sh", "-c", "alembic upgrade head && python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"]
