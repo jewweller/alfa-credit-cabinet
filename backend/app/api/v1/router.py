@@ -34,7 +34,6 @@ from app.api.v1.contract import (
     IdempotencyKey,
     _errors,
 )
-from app.db.models import Product as ProductRow
 from app.db.models import User
 from app.integrations.base import SourceClient
 from app.integrations.fixtures import get_source_client
@@ -49,12 +48,12 @@ from app.schemas.auth import LoginRequest, MeResponse, TokenResponse
 from app.schemas.common import INN_PATTERN
 from app.schemas.companies import CompanyBrief, CompanyLookupResponse
 from app.schemas.documents import ALLOWED_UPLOAD_MIME_TYPES, DocumentInfo, DocumentKind
-from app.schemas.products import Product
+from app.schemas.products import Product, ProductRecommendation, ProductRecommendRequest
 from app.schemas.schedule import PaymentSchedule
 from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
 from app.security import create_access_token, verify_password
 from app.services import applications as service
-from app.services import companies, documents, offers, schedule, signing
+from app.services import companies, documents, offers, products, schedule, signing
 from app.storage import Storage, get_storage
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -125,21 +124,25 @@ def get_me(user: CurrentUser) -> MeResponse:
 )
 def list_products(_: CurrentUser, session: SessionDep) -> list[Product]:
     """Каталог кредитных продуктов."""
-    rows = session.scalars(select(ProductRow).order_by(ProductRow.code))
-    return [
-        Product(
-            id=row.id,
-            code=row.code,
-            name=row.name,
-            purpose_tags=row.purpose_tags,
-            min_amount=row.min_amount,
-            max_amount=row.max_amount,
-            min_term=row.min_term,
-            max_term=row.max_term,
-            base_rate=row.base_rate,
-        )
-        for row in rows
-    ]
+    return [products.to_product(row) for row in products.catalog(session)]
+
+
+@api_v1_router.post(
+    "/products/recommend",
+    response_model=list[ProductRecommendation],
+    operation_id="recommendProducts",
+    tags=["products"],
+    responses=_errors(e401=_E401, e422=_E422),
+)
+def recommend_products(
+    body: ProductRecommendRequest, _: CurrentUser, session: SessionDep
+) -> list[ProductRecommendation]:
+    """Подбор продукта по цели, сумме и сроку (экран C3).
+
+    Возвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят
+    без изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.
+    """
+    return products.recommend(session, body)
 
 
 # ── Автозаполнение компании ───────────────────────────────────────────────────

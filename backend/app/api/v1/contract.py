@@ -23,7 +23,6 @@ from app.schemas.documents import (
     ALLOWED_UPLOAD_MIME_TYPES,
     MAX_UPLOAD_BYTES,
 )
-from app.schemas.products import ProductRecommendation, ProductRecommendRequest
 
 _bearer = HTTPBearer(description="JWT из `POST /api/v1/auth/login`.")
 _AUTH = [Depends(_bearer)]
@@ -54,22 +53,6 @@ IdempotencyKey = Annotated[
 ]
 
 contract_router = APIRouter(prefix="/api/v1")
-
-
-@contract_router.post(
-    "/products/recommend",
-    response_model=list[ProductRecommendation],
-    operation_id="recommendProducts",
-    tags=["products"],
-    dependencies=_AUTH,
-    responses=_errors(e401=_E401, e422=_E422),
-)
-def recommend_products(body: ProductRecommendRequest) -> None:
-    """Подбор продукта по цели, сумме и сроку (экран C3).
-
-    Возвращает 0–3 продукта, у которых цель есть в `purpose_tags`. Сначала те, что подходят
-    без изменений, затем с меньшим платежом. Пустой список — под эту цель продуктов нет.
-    """
 
 
 # ── Карточка заявки (экран C5) ────────────────────────────────────────────────
