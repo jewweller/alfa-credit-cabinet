@@ -56,14 +56,9 @@ export type ErrorCode = Schemas['ErrorCode'];
 /** Строкой с двумя знаками: "3000000.00". */
 export type Money = string;
 
-/** Лента пока не описана в контракте (план: день 5) — тип держим здесь. */
-export interface FeedItem {
-  id: string;
-  kind: 'event' | 'news';
-  title: string;
-  body: string;
-  created_at: string;
-  application_id?: string | null;
-  reason?: string | null;
-  read: boolean;
-}
+export type FeedItem = Schemas['FeedItem'];
+export type FeedItemKind = Schemas['FeedItemKind'];
+export type FeedReason = Schemas['FeedReason'];
+export type FeedReasonCode = Schemas['FeedReasonCode'];
+export type FeedRanking = Schemas['FeedRanking'];
+export type FeedResponse = Schemas['FeedResponse'];

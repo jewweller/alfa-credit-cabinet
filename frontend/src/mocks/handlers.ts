@@ -78,7 +78,9 @@ async function respond<T>(request: Request, run: (user: Me) => T, { status = 200
   const user = currentUser(request);
   if (!user) return errorJson(401, 'unauthorized', 'Войдите заново');
   try {
-    return HttpResponse.json(run(user) as object, { status });
+    const body = run(user);
+    // У 204 тела быть не может — Response с телом при таком статусе падает.
+    return status === 204 ? new HttpResponse(null, { status }) : HttpResponse.json(body as object, { status });
   } catch (error) {
     if (error instanceof MockHttpError) return errorJson(error.status, error.code, error.message, error.field);
     throw error;
@@ -355,14 +357,26 @@ export const handlers = [
     respond(
       request,
       (user) => {
-        const items = db.feed(clientOf(user).company.id);
+        const params = new URL(request.url).searchParams;
+        const kind = params.get('kind');
+        const newsLimit = Math.min(30, Math.max(1, Number(params.get('news_limit') ?? 10) || 10));
+        const feed = db.feed(clientOf(user).company, kind === 'event' || kind === 'news' ? kind : null, newsLimit);
         // В mixed заявки настоящие, а события моков — про выдуманные: оставляем только новости.
         const newsOnly = scenario() === 'empty' || apiMode() === 'mixed';
-        return newsOnly ? items.filter((f) => f.kind === 'news') : items;
+        return newsOnly ? { ...feed, items: feed.items.filter((f) => f.kind === 'news') } : feed;
       },
       { wait: 300 },
     ),
   ),
 
-  http.post(`${API}/feed/events/:id/read`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API}/feed/events/:id/read`, ({ params, request }) =>
+    respond(
+      request,
+      (user) => {
+        db.markFeedRead(String(params.id), clientOf(user).company.id);
+        return null;
+      },
+      { status: 204, wait: 150 },
+    ),
+  ),
 ];

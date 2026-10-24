@@ -10,6 +10,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { ApplicationEditPage } from './pages/client/ApplicationEditPage';
 import { ApplicationPage } from './pages/client/ApplicationPage';
 import { ComingSoonPage } from './pages/client/ComingSoonPage';
+import { FeedPage } from './pages/client/FeedPage';
 import { HomePage } from './pages/client/HomePage';
 import { ProductsPage } from './pages/client/ProductsPage';
 import { BankApplicationPage } from './pages/bank/BankApplicationPage';
@@ -57,7 +58,7 @@ export function App() {
           <Route path="/applications/:id" element={client(<ApplicationPage />)} />
           <Route path="/applications/:id/signing" element={client(<SigningPage />)} />
           <Route path="/applications/:id/result" element={client(<ResultPage />)} />
-          <Route path="/feed" element={client(<ComingSoonPage code="C8" />)} />
+          <Route path="/feed" element={client(<FeedPage />)} />
           <Route path={ROUTES.bank} element={bank(<QueuePage />)} />
           <Route path="/bank/applications/:id" element={bank(<BankApplicationPage />)} />
           <Route path={ROUTES.admin} element={admin(<AdminPage />)} />

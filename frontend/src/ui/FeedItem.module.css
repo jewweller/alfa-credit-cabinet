@@ -75,6 +75,11 @@
   color: var(--color-text-faint);
 }
 
+.action {
+  display: flex;
+  margin-top: var(--space-1);
+}
+
 .srOnly {
   position: absolute;
   width: 1px;

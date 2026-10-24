@@ -152,3 +152,11 @@ def test_ml_response_validation() -> None:
         ProductRankItem.model_validate({"product_id": same, "score": 1.5})
     with pytest.raises(ValidationError):
         ProductRankItem.model_validate({"product_id": same, "score": 0.5, "reasons": ["я" * 121]})
+
+
+def test_frontend_mock_news_match_seed() -> None:
+    # Docker собирает фронт только из frontend/, поэтому моки держат копию новостей.
+    mock = Path(__file__).resolve().parents[3] / "frontend" / "src" / "mocks" / "news.json"
+    assert json.loads(mock.read_text()) == json.loads((SEED / "news.json").read_text()), (
+        "frontend/src/mocks/news.json расходится с seed/news.json — скопируйте заново"
+    )

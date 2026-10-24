@@ -21,6 +21,8 @@ import type {
   DocumentKind,
   ApplicationUpdate,
   FeedItem,
+  FeedItemKind,
+  FeedResponse,
   Me,
   Offer,
   SigningCode,
@@ -28,8 +30,9 @@ import type {
 } from '../api/types';
 import { formatMoney } from '../features/format';
 import { entry, filterAudit, owner, seedAudit, staff, SYSTEM, type Actor, type AuditFilter } from './audit';
+import { MODEL_VERSION, rankNews } from './feedRanking';
 import { clearFiles, getFile, putFile } from './fileStore';
-import { makeOffer, me as bakery, products, seedApplications, seedFeed, users, type MockApplication } from './data';
+import { makeOffer, products, seedApplications, seedFeed, users, type MockApplication } from './data';
 import { decide, evaluate, REVENUE_INFO_REQUEST, sourcesOf, type Verdict } from './decision';
 import { rawRegistry } from './sources';
 
@@ -68,7 +71,7 @@ export class MockHttpError extends Error {
   }
 }
 
-const STORAGE_KEY = 'mock-db-v5';
+const STORAGE_KEY = 'mock-db-v6';
 const apps = new Map<string, MockApplication>();
 const files = new Map<string, Blob>();
 const idempotent = new Map<string, unknown>();
@@ -160,8 +163,12 @@ function notify(app: MockApplication, status: ApplicationStatus) {
       title: text[0],
       body: text[1],
       created_at: new Date().toISOString(),
-      application_id: app.detail.id,
       read: false,
+      application_id: app.detail.id,
+      application_number: app.detail.number,
+      status,
+      reasons: [],
+      score: null,
     },
     ...feed,
   ];
@@ -718,14 +725,47 @@ export const db = {
   },
 
   /** События — только по своим заявкам. Исходные новости подобраны под Пекарню, другим их не показываем. */
-  feed(companyId: string): FeedItem[] {
-    return feed.filter((item) =>
-      item.kind === 'event'
-        ? item.application_id !== null &&
-          item.application_id !== undefined &&
-          apps.get(item.application_id)?.detail.company_id === companyId
-        : companyId === bakery.company!.id,
+  /** Лента клиента: события по его заявкам (свежие первыми), ниже новости по весу. */
+  feed(company: NonNullable<Me['company']>, kind: FeedItemKind | null, newsLimit: number): FeedResponse {
+    const own = [...apps.values()].filter((a) => a.detail.company_id === company.id && a.detail.status !== 'CANCELLED');
+    const events = feed
+      .filter((item) => item.application_id && apps.get(item.application_id)?.detail.company_id === company.id)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const productNames = Object.fromEntries(
+      own.flatMap((a) => {
+        const product = products.find((p) => p.id === a.detail.product_id);
+        return product ? [[product.code, product.name]] : [];
+      }),
     );
+    const news: FeedItem[] = rankNews(
+      { okvedMain: company.okved_main, segment: company.segment, products: productNames, statuses: new Set(own.map((a) => a.detail.status)) },
+      Date.now(),
+      newsLimit,
+    ).map(({ news: n, score, reasons }) => ({
+      id: n.id,
+      kind: 'news',
+      title: n.title,
+      body: n.body,
+      created_at: n.published_at,
+      read: true,
+      application_id: null,
+      application_number: null,
+      status: null,
+      reasons,
+      score,
+    }));
+    const items = kind === 'event' ? events : kind === 'news' ? news : [...events, ...news];
+    return { items, ranking: { method: 'rules', model_version: MODEL_VERSION } };
+  },
+
+  /** Отметить событие прочитанным; чужое или несуществующее — 404. */
+  markFeedRead(eventId: string, companyId: string) {
+    const item = feed.find((f) => f.id === eventId && f.kind === 'event');
+    if (!item || !item.application_id || apps.get(item.application_id)?.detail.company_id !== companyId) {
+      throw new MockHttpError(404, 'not_found', 'Событие не найдено');
+    }
+    feed = feed.map((f) => (f.id === eventId ? { ...f, read: true } : f));
+    save();
   },
 
   // ── Кабинет банка (B2–B4) ──

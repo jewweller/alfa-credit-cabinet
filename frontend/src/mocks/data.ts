@@ -3,6 +3,7 @@
 import type {
   ApplicationDetail,
   CompanyLookup,
+  ApplicationStatus,
   Employee,
   FeedItem,
   Me,
@@ -528,52 +529,23 @@ export function seedApplications(): MockApplication[] {
   ];
 }
 
+/** События ленты в исходных данных. Новости не хранятся: моки ранжируют seed/news.json на лету. */
 export function seedFeed(): FeedItem[] {
+  const event = (id: string, title: string, body: string, minutes: number, appId: string, number: string, status: ApplicationStatus, read: boolean): FeedItem => ({
+    id,
+    kind: 'event',
+    title,
+    body,
+    created_at: minutesAgo(minutes),
+    read,
+    application_id: appId,
+    application_number: number,
+    status,
+    reasons: [],
+    score: null,
+  });
   return [
-    {
-      id: 'e-1',
-      kind: 'event',
-      title: 'Нужны документы по заявке №1042',
-      body: 'Загрузите налоговую декларацию за 2025 год, чтобы мы продолжили рассмотрение.',
-      created_at: minutesAgo(10),
-      application_id: 'a-1042',
-      read: false,
-    },
-    {
-      id: 'e-2',
-      kind: 'event',
-      title: 'Заявка №1051 отправлена',
-      body: 'Проверяем данные о компании. Ничего делать не нужно.',
-      created_at: minutesAgo(3),
-      application_id: 'a-1051',
-      read: true,
-    },
-    {
-      id: 'n-1',
-      kind: 'news',
-      title: 'Как подготовить декларацию для банка',
-      body: 'Какие страницы нужны, в каком формате загружать и что делать, если декларация уточнённая.',
-      created_at: minutesAgo(60 * 5),
-      reason: 'Ваша заявка ждёт документы',
-      read: false,
-    },
-    {
-      id: 'n-2',
-      kind: 'news',
-      title: 'Цены на муку: чего ждать пекарням осенью',
-      body: 'Короткий обзор для производителей хлеба и выпечки.',
-      created_at: minutesAgo(60 * 20),
-      reason: 'Ваш ОКВЭД 10.71 — производство хлеба',
-      read: false,
-    },
-    {
-      id: 'n-3',
-      kind: 'news',
-      title: 'Лизинг или кредит на оборудование',
-      body: 'Сравниваем два способа купить печь или линию упаковки.',
-      created_at: minutesAgo(60 * 48),
-      reason: 'У вас заявка на «Инвест-оборудование»',
-      read: true,
-    },
+    event('e-1', 'По заявке №1042 нужны документы', 'Загрузите налоговую декларацию за 2025 год, чтобы мы продолжили рассмотрение.', 10, 'a-1042', '1042', 'INFO_REQUESTED', false),
+    event('e-2', 'Заявка №1051 отправлена', 'Проверяем данные о компании. Ничего делать не нужно.', 3, 'a-1051', '1051', 'SUBMITTED', true),
   ];
 }

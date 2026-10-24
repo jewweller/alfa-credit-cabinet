@@ -5,6 +5,8 @@ import type {
   CompanyRegistryStatus,
   DocumentKind,
   EnrichmentSource,
+  FeedItemKind,
+  FeedRanking,
   Grade,
   InfoRequest,
   LoanPurpose,
@@ -236,7 +238,43 @@ export const FEED = {
   empty: 'Пока здесь пусто',
   loadError: 'Не удалось загрузить ленту',
   unread: 'Новое',
+  retry: 'Повторить',
+  markRead: 'Отметить прочитанным',
+  page: {
+    eyebrow: 'Лента',
+    title: 'События и новости',
+    subtitle: 'Что происходит с вашими заявками и что полезно вашему бизнесу. Уведомления приходят сюда — без писем и SMS.',
+    back: 'На главную',
+    filter: 'Что показать',
+    filters: { all: 'Всё', event: 'Заявки', news: 'Новости' } as Record<FeedFilter, string>,
+    panel: { all: 'Всё по порядку', event: 'События по заявкам', news: 'Новости по вашему профилю' } as Record<FeedFilter, string>,
+    caption: { all: 'сначала заявки', event: 'свежие первыми', news: 'самые подходящие первыми' } as Record<FeedFilter, string>,
+    empty: {
+      all: 'Пока здесь пусто',
+      event: 'Событий пока нет — они появятся, когда вы отправите заявку',
+      news: 'Новостей под ваш профиль пока нет',
+    } as Record<FeedFilter, string>,
+    stats: { unread: 'новых событий', news: 'новостей подобрано' },
+  },
+  how: {
+    eyebrow: 'Прозрачно',
+    title: 'Как подбираются новости',
+    text: 'Новости — из каталога банка. Каждую мы сверяем с профилем компании и заявками и складываем совпадения:',
+    weights: [
+      { label: 'Отрасль по ОКВЭД', value: '+3' },
+      { label: 'Шаг, на котором сейчас заявка', value: '+3' },
+      { label: 'Продукт из вашей заявки', value: '+2' },
+      { label: 'Сегмент: микро или малый бизнес', value: '+2' },
+      { label: 'Свежесть: за 30 дней падает до нуля', value: 'до +1' },
+    ],
+    filters: 'Заметки для другой отрасли и подсказки к чужому шагу мы не показываем вовсе.',
+    noBki: 'Данные кредитной истории для подбора не используются.',
+    ml: 'Порядок предложила модель; если она не ответит вовремя, сработают правила выше.',
+    version: (method: FeedRanking['method'], v: string) => `Подбор ${method === 'ml' ? 'моделью' : 'по правилам'} · ${v}`,
+  },
 };
+
+export type FeedFilter = 'all' | FeedItemKind;
 
 export const HEADER = {
   product: 'Кредитный кабинет',

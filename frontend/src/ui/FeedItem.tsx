@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router';
 import styles from './FeedItem.module.css';
 
@@ -11,14 +11,19 @@ export interface FeedItemProps {
   time: string;
   unread: boolean;
   unreadLabel: string;
-  reason?: { label: string; text: string } | null;
+  /** «Почему вы это видите»: самое сильное совпадение первым. */
+  reasons?: { label: string; items: string[] } | null;
   to?: string | null;
+  /** Переход по ссылке — например, чтобы отметить событие прочитанным. */
+  onOpen?: () => void;
+  /** Кнопка под записью. */
+  action?: ReactNode;
   index?: number;
 }
 
 export function FeedItem(props: FeedItemProps) {
   const title = props.to ? (
-    <Link to={props.to} className={styles.link}>
+    <Link to={props.to} className={styles.link} onClick={props.onOpen}>
       {props.title}
     </Link>
   ) : (
@@ -38,12 +43,15 @@ export function FeedItem(props: FeedItemProps) {
       </p>
       <h3 className={styles.title}>{title}</h3>
       {props.body && <p className={styles.body}>{props.body}</p>}
-      {props.reason && (
-        <p className={styles.reason}>
-          <span className={styles.reasonLabel}>{props.reason.label}</span>
-          {props.reason.text}
-        </p>
+      {props.reasons && props.reasons.items.length > 0 && (
+        <div className={styles.reason}>
+          <span className={styles.reasonLabel}>{props.reasons.label}</span>
+          {props.reasons.items.map((text) => (
+            <span key={text}>{text}</span>
+          ))}
+        </div>
       )}
+      {props.action && <div className={styles.action}>{props.action}</div>}
     </article>
   );
 }
