@@ -21,6 +21,7 @@ import { DEMO_PASSWORD, products, registry, users } from './data';
 import { buildSchedule } from './loanMath';
 import { db, MockHttpError } from './db';
 import { apiMode } from './mode';
+import { readUpload } from './multipart';
 import { recommend } from './recommend';
 
 const API = '/api/v1';
@@ -241,11 +242,10 @@ export const handlers = [
   }),
 
   http.post(`${API}/applications/:id/documents`, async ({ params, request }) => {
-    const form = await request.formData();
-    const file = form.get('file');
-    const kind = form.get('kind');
-    const infoRequestId = form.get('info_request_id');
-    if (!(file instanceof File)) {
+    const { file, fields } = await readUpload(request);
+    const kind = fields.kind;
+    const infoRequestId = fields.info_request_id;
+    if (!file) {
       await delay(200);
       return errorJson(422, 'validation_error', 'Выберите файл', 'file');
     }
