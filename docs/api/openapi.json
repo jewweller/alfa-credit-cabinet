@@ -32,6 +32,38 @@
         "x-implementation-status": "implemented"
       }
     },
+    "/ready": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Ready",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`upstream_unavailable` — API не готов (healthcheck Docker).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -51,6 +83,39 @@
                   },
                   "type": "object",
                   "title": "Response Health"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/ready": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Ready",
+        "description": "Готовность API: база, миграции, файлы источников и новостей (план, раздел 10).",
+        "operationId": "ready",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`upstream_unavailable` — API не готов; в `message` — что именно не прошло проверку.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4773,6 +4838,38 @@
         ],
         "title": "ProductRecommendation",
         "description": "Подходящий продукт с примерным платежом.\n\nСумма и срок приведены к лимитам продукта; что изменено — в `adjusted`.\nПлатёж — аннуитет по базовой ставке, итоговую ставку определит решение банка."
+      },
+      "ReadyResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ready",
+            "title": "Status"
+          },
+          "checks": {
+            "additionalProperties": {
+              "type": "string",
+              "const": "ok"
+            },
+            "type": "object",
+            "title": "Checks",
+            "description": "Что проверено: база, миграции, файлы ответов источников и новостей.",
+            "examples": [
+              {
+                "database": "ok",
+                "fixtures": "ok",
+                "migrations": "ok",
+                "news": "ok"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "checks"
+        ],
+        "title": "ReadyResponse"
       },
       "RecommendationAdjustment": {
         "type": "string",

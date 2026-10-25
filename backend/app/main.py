@@ -4,10 +4,14 @@ from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 
+from app.api.deps import SessionDep
 from app.api.errors import install_error_handlers
+from app.api.v1.contract import _errors
 from app.api.v1.router import api_v1_router
 from app.config import get_settings
 from app.openapi import install_openapi
+from app.schemas.system import ReadyResponse
+from app.services import readiness
 from app.services.audit import client_ip
 
 
@@ -37,6 +41,15 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["system"])
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get(
+        "/ready",
+        tags=["system"],
+        response_model=ReadyResponse,
+        responses=_errors(e503="`upstream_unavailable` — API не готов (healthcheck Docker)."),
+    )
+    def ready(session: SessionDep) -> ReadyResponse:
+        return readiness.check(session)
 
     app.include_router(api_v1_router)
     install_error_handlers(app)

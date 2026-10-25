@@ -62,6 +62,7 @@ from app.schemas.feed import FeedItemKind, FeedResponse
 from app.schemas.products import Product, ProductRecommendation, ProductRecommendRequest
 from app.schemas.schedule import PaymentSchedule
 from app.schemas.signing import SigningCodeResponse, SigningConfirmRequest
+from app.schemas.system import ReadyResponse
 from app.security import create_access_token, verify_password
 from app.services import (
     admin,
@@ -72,6 +73,7 @@ from app.services import (
     feed,
     offers,
     products,
+    readiness,
     schedule,
     signing,
 )
@@ -85,6 +87,21 @@ api_v1_router = APIRouter(prefix="/api/v1")
 def health() -> dict[str, str]:
     """Живость API (план, раздел 10). Корневой `/health` остаётся для Docker healthcheck."""
     return {"status": "ok"}
+
+
+_E503_READY = "`upstream_unavailable` — API не готов; в `message` — что именно не прошло проверку."
+
+
+@api_v1_router.get(
+    "/ready",
+    response_model=ReadyResponse,
+    tags=["system"],
+    operation_id="ready",
+    responses=_errors(e503=_E503_READY),
+)
+def ready(session: SessionDep) -> ReadyResponse:
+    """Готовность API: база, миграции, файлы источников и новостей (план, раздел 10)."""
+    return readiness.check(session)
 
 
 # ── Вход ──────────────────────────────────────────────────────────────────────
