@@ -1,0 +1,36 @@
+.scroll {
+  height: 100%;
+  overflow: auto;
+  padding: var(--space-4);
+  overscroll-behavior: contain;
+}
+
+.pages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.pages[hidden] {
+  display: none;
+}
+
+.page {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+}
+
+.status {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: var(--space-5);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
