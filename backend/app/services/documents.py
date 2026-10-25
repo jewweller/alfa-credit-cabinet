@@ -46,7 +46,7 @@ def upload(
 ) -> DocumentRow:
     application = get_visible(session, user, application_id)
     if application.status != ApplicationStatus.INFO_REQUESTED:
-        # TBD (контракт): загрузка в DRAFT. Пока — только в ответ на запрос документов.
+        # Решение backend B4: загрузка только в ответ на запрос документов (INFO_REQUESTED).
         raise ApiError(409, ErrorCode.CONFLICT, "Документы загружаются только по запросу банка")
     if info_request_id is not None:
         request = session.get(InfoRequestRow, info_request_id)
