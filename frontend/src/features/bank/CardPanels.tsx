@@ -193,6 +193,8 @@ function DocumentPreview({ doc, onClose }: { doc: ClientDocument | null; onClose
       kind={kind}
       src={file.url}
       placeholder={placeholder}
+      pdfError={D.viewer.pdfError}
+      pageLabel={D.viewer.page}
       closeLabel={D.viewer.close}
       onClose={onClose}
       actions={

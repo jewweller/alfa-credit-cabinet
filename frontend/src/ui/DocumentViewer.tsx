@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import styles from './DocumentViewer.module.css';
+import { PdfView } from './PdfView';
 
 export type DocumentViewerKind = 'pdf' | 'image' | 'other';
 
@@ -12,16 +13,20 @@ interface DocumentViewerProps {
   src: string | null;
   /** Что показать вместо файла: загрузка, ошибка, неподдерживаемый формат. */
   placeholder: ReactNode;
+  /** PDF не удалось показать на странице. */
+  pdfError: ReactNode;
+  /** Подпись страницы PDF для чтения с экрана. */
+  pageLabel: (page: number, total: number) => string;
   actions: ReactNode;
   closeLabel: string;
   onClose: () => void;
 }
 
 /**
- * Просмотр файла во всплывающем окне: PDF — встроенным просмотрщиком браузера, картинка — как есть.
+ * Просмотр файла во всплывающем окне: PDF — страницами через pdf.js, картинка — как есть.
  * Нативный <dialog>: фокус внутри окна, Esc и клик по фону закрывают.
  */
-export function DocumentViewer({ open, title, meta, kind, src, placeholder, actions, closeLabel, onClose }: DocumentViewerProps) {
+export function DocumentViewer({ open, title, meta, kind, src, placeholder, pdfError, pageLabel, actions, closeLabel, onClose }: DocumentViewerProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -54,7 +59,7 @@ export function DocumentViewer({ open, title, meta, kind, src, placeholder, acti
             </span>
           </header>
           <div className={styles.body}>
-            {src && kind === 'pdf' && <iframe className={styles.pdf} src={src} title={title} />}
+            {src && kind === 'pdf' && <PdfView src={src} loading={placeholder} error={pdfError} pageLabel={pageLabel} />}
             {src && kind === 'image' && <img className={styles.image} src={src} alt={title} />}
             {(!src || kind === 'other') && <div className={styles.placeholder}>{placeholder}</div>}
           </div>
