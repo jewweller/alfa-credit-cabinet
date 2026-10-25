@@ -1,0 +1,8 @@
+# В образ API (backend/Dockerfile, COPY --from=ml) — только код и веса, без локальных окружений и данных.
+.venv/
+.uv-cache/
+data/
+runs/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
