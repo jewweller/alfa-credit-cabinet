@@ -90,7 +90,7 @@ class DescribedStrEnum(StrEnum):
 
 
 class ErrorCode(StrEnum):
-    """Технические коды ошибок. Предварительный контракт: в плане не закреплены, TBD."""
+    """Технические коды ошибок. В плане не закреплены: набор — решение backend (A6)."""
 
     VALIDATION_ERROR = "validation_error"
     UNAUTHORIZED = "unauthorized"
@@ -115,7 +115,7 @@ class ErrorCode(StrEnum):
 class ErrorResponse(BaseModel):
     """Единый формат ошибки `{code, message, field?}` (план, раздел 10)."""
 
-    code: ErrorCode = Field(description="Машинный код ошибки (список предварительный, TBD).")
+    code: ErrorCode = Field(description="Машинный код ошибки (набор — решение backend, A6).")
     message: str = Field(description="Понятный текст ошибки.")
     field: str | None = Field(
         default=None,

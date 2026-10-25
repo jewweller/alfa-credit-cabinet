@@ -32,7 +32,7 @@
 
 ## Как вызывается
 
-Предложение по умолчанию (согласовать с backend): пакет `ml` экспортирует две функции **JSON → JSON**:
+Так это сделано: пакет `ml` экспортирует две функции **JSON → JSON**:
 
 ```python
 def rank_feed(payload: dict) -> dict: ...      # FeedRankRequest → FeedRankResponse
@@ -41,7 +41,8 @@ def rank_products(payload: dict) -> dict: ...  # ProductRankRequest → ProductR
 
 - бэкенд вызывает их в своём процессе, таймаут 1 с;
 - модель не ходит в сеть и БД, веса — файл в репозитории, лицензия открытая;
-- включается переменной `ML_RANKING_ENABLED=true`; по умолчанию выключено.
+- включается переменной `ML_RANKING_ENABLED=true`: в Docker Compose по умолчанию включено, в коде
+  по умолчанию выключено (тесты и запуск вне Docker); при сбое — порядок по правилам.
 
 ## Вход: лента (`FeedRankRequest`)
 

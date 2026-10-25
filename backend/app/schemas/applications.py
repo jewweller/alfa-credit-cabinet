@@ -12,7 +12,10 @@ from app.schemas.decisions import ClientDecision
 from app.schemas.documents import DocumentInfo, InfoRequest
 from app.schemas.products import LoanPurpose
 
-_NUMBER_DESCRIPTION = "Номер заявки. В плане тип string, формат не определён (TBD)."
+_NUMBER_DESCRIPTION = (
+    "Номер заявки: сквозной счётчик, не короче четырёх цифр (`0001`, `0002`, …). "
+    "В плане тип string, формат — решение backend (A4)."
+)
 _STATUS_CHANGED_AT = "Когда заявка перешла в текущий статус («обновлено 10 мин назад»)."
 _INFO_REQUEST = "Открытый запрос документов; null, если банк ничего не ждёт от клиента."
 
@@ -20,8 +23,8 @@ _INFO_REQUEST = "Открытый запрос документов; null, ес�
 class ApplicationCreate(BaseModel):
     """Создание черновика (`DRAFT`).
 
-    TBD: как определяется компания заявки — из профиля пользователя или по ИНН,
-    введённому в мастере, — не согласовано. Поле для ИНН может быть добавлено.
+    Компания заявки — компания текущего пользователя (один пользователь на компанию, план,
+    раздел 2); ИНН в теле запроса нет и подать заявку на чужой ИНН нельзя. Решение backend (A1).
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -36,7 +39,8 @@ class ApplicationUpdate(BaseModel):
     """Автосохранение черновика. Передаются только изменяемые поля.
 
     `version` обязателен: если заявку уже изменили, ответ 409 `version_conflict` (план, раздел 9).
-    В каких статусах разрешено изменение — TBD.
+    Изменять можно только черновик (`DRAFT`); в другом статусе — 409 `conflict`. Решение
+    backend (A3).
     """
 
     model_config = ConfigDict(extra="forbid")

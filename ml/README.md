@@ -10,8 +10,11 @@
 | `synth/ranking.py` | работа модели и причины показа; только стандартная библиотека |
 | `synth/features.py` | 20 признаков — общие для обучения и работы |
 | `synth/logreg.py` | обучение и оценка на чистом Python |
-| `synth/make_requests.py`, `synth/simulate.py` | синтетические запросы и клики (ML-команда, PR #27) |
+| `synth/make_requests.py`, `synth/simulate.py` | синтетические запросы и клики (ML-команда, ветка `feat/ml-stub`, PR #27) |
 | `models/feed_logreg.json` | веса `feed-logreg-1.0.0`, хеши данных, метрики |
 
 Данные синтетические. Эксперимент, метрики, ограничения и как воспроизвести —
 [docs/ml-experiment.md](../docs/ml-experiment.md).
+
+Источники данных, гипотезы симулятора кликов, защита от утечек и область применимости —
+[DATA_CARD.md](DATA_CARD.md) (текст ML-команды, перенесён из ветки `feat/ml-stub`, PR #27, без изменений).

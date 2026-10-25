@@ -211,7 +211,7 @@ Sources = Annotated[SourceClient, Depends(get_source_client)]
         e401=_E401,
         e404="Компания не найдена в реестре (`company_not_found`).",
         e422="ИНН не из 10 или 12 цифр.",
-        e503="Реестр недоступен (`upstream_unavailable`). Предварительно, TBD.",
+        e503="Реестр недоступен (`upstream_unavailable`). Решение backend (A8).",
     ),
 )
 def lookup_company(
@@ -274,7 +274,10 @@ def get_application(id: UUID, user: ClientUser, session: SessionDep) -> Applicat
         e401=_E401,
         e403="Нет доступа к заявке.",
         e404=_E404_APP,
-        e409="`version_conflict` — заявку уже изменили; или статус не позволяет изменение (TBD).",
+        e409=(
+            "`version_conflict` — заявку уже изменили; `conflict` — заявка не в `DRAFT`, "
+            "изменять можно только черновик (A3)."
+        ),
         e422=_E422,
     ),
 )
@@ -410,7 +413,10 @@ Files = Annotated[Storage, Depends(get_storage)]
         e401=_E401,
         e403=_E403_APP,
         e404=_E404_APP,
-        e409="Загрузка разрешена только в `INFO_REQUESTED` (в `DRAFT` — TBD).",
+        e409=(
+            "`conflict` — загрузка разрешена только в `INFO_REQUESTED`, в других статусах, "
+            "в том числе в `DRAFT`, нельзя (решение backend, B4)."
+        ),
         e413=f"`file_too_large` — файл больше {_MAX_MB} МБ.",
         e415=f"`unsupported_media_type` — допустимы только {_ALLOWED_TYPES}.",
         e422=_E422,
