@@ -22,7 +22,7 @@ class CompanySegment(StrEnum):
 class CompanyRegistryStatus(StrEnum):
     """Статус в реестре.
 
-    Значения взяты из контракта ЕГРЮЛ; для ЕГРИП в плане не перечислены (TBD).
+    Значения взяты из контракта ЕГРЮЛ; для ЕГРИП те же — решение backend (A7).
     """
 
     ACTIVE = "ACTIVE"

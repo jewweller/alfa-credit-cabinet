@@ -10,7 +10,12 @@ REAL_OPERATIONS = (
     Path(__file__).resolve().parents[3] / "frontend" / "src" / "mocks" / "real-operations.json"
 )
 # Служебные эндпоинты фронт не вызывает.
-_NOT_FOR_FRONTEND = {("get", "/health"), ("get", "/api/v1/health")}
+_NOT_FOR_FRONTEND = {
+    ("get", "/health"),
+    ("get", "/api/v1/health"),
+    ("get", "/ready"),
+    ("get", "/api/v1/ready"),
+}
 
 
 def test_frontend_real_operations_match_implemented_contract() -> None:

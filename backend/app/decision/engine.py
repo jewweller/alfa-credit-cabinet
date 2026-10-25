@@ -213,7 +213,7 @@ class _Engine:
             self._check("R4", False, "нет выручки ФНС за последний год")
             return
         declared = self.request.revenue_12m
-        # ФНС ≤ 0 при ненулевой выручке в анкете — расхождение заведомо больше порога (TBD).
+        # ФНС ≤ 0 при ненулевой выручке в анкете — расхождение заведомо больше порога (решение K7).
         mismatch = abs(declared - fns) / fns * 100 if fns > 0 else None
         detail = f"анкета {_rub(declared)}, ФНС {_rub(fns)}, расхождение " + (
             f"{mismatch:.1f}%" if mismatch is not None else "не определено (ФНС ≤ 0)"
@@ -287,7 +287,7 @@ class _Engine:
         offer = self._fit_terms(product, request.amount, request.term_months)
         offer = offer or self._max_affordable_amount(product, product.max_term, request.amount)
         # Шаг 3 — другие продукты той же цели. Порядок перебора в требованиях не задан:
-        # по возрастанию базовой ставки, затем по коду (TBD).
+        # по возрастанию базовой ставки, затем по коду (решения R-8, K5).
         if offer is None and r10.search_other_products:
             others = sorted(
                 (

@@ -3,7 +3,7 @@
   "info": {
     "title": "Alfa Credit Cabinet API",
     "version": "0.1.0",
-    "description": "Контракт API умного кредитного кабинета. Генерируется из кода backend.\n\nУ каждой операции есть `x-implementation-status`: `implemented` — работает в приложении, `planned` — только контракт. Значения с пометкой TBD требуют согласования."
+    "description": "Контракт API умного кредитного кабинета. Генерируется из кода backend.\n\nУ каждой операции есть `x-implementation-status`: `implemented` — работает в приложении, `planned` — только контракт. Правила, которых нет в плане, решены командой backend и аналитиком не подтверждены: решения и их статус — docs/analyst-questions.md."
   },
   "paths": {
     "/health": {
@@ -32,6 +32,38 @@
         "x-implementation-status": "implemented"
       }
     },
+    "/ready": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Ready",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`upstream_unavailable` — API не готов (healthcheck Docker).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -51,6 +83,39 @@
                   },
                   "type": "object",
                   "title": "Response Health"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/api/v1/ready": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Ready",
+        "description": "Готовность API: база, миграции, файлы источников и новостей (план, раздел 10).",
+        "operationId": "ready",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`upstream_unavailable` — API не готов; в `message` — что именно не прошло проверку.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -323,7 +388,7 @@
             }
           },
           "503": {
-            "description": "Реестр недоступен (`upstream_unavailable`). Предварительно, TBD.",
+            "description": "Реестр недоступен (`upstream_unavailable`). Решение backend (A8).",
             "content": {
               "application/json": {
                 "schema": {
@@ -501,7 +566,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -589,7 +654,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -599,7 +664,7 @@
             }
           },
           "409": {
-            "description": "`version_conflict` — заявку уже изменили; или статус не позволяет изменение (TBD).",
+            "description": "`version_conflict` — заявку уже изменили; `conflict` — заявка не в `DRAFT`, изменять можно только черновик (A3).",
             "content": {
               "application/json": {
                 "schema": {
@@ -697,7 +762,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -791,7 +856,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -889,7 +954,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1225,7 +1290,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1235,7 +1300,7 @@
             }
           },
           "409": {
-            "description": "Загрузка разрешена только в `INFO_REQUESTED` (в `DRAFT` — TBD).",
+            "description": "`conflict` — загрузка разрешена только в `INFO_REQUESTED`, в других статусах, в том числе в `DRAFT`, нельзя (решение backend, B4).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1446,7 +1511,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1635,7 +1700,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1753,7 +1818,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1965,7 +2030,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2045,7 +2110,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2163,7 +2228,7 @@
             }
           },
           "404": {
-            "description": "Заявка не найдена. Ответ на чужую заявку (403 или 404) — TBD.",
+            "description": "Заявка не найдена или принадлежит другой компании (чужая — тоже 404, решение A2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2633,7 +2698,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ApplicationCreate",
-        "description": "Создание черновика (`DRAFT`).\n\nTBD: как определяется компания заявки — из профиля пользователя или по ИНН,\nвведённому в мастере, — не согласовано. Поле для ИНН может быть добавлено."
+        "description": "Создание черновика (`DRAFT`).\n\nКомпания заявки — компания текущего пользователя (один пользователь на компанию, план,\nраздел 2); ИНН в теле запроса нет и подать заявку на чужой ИНН нельзя. Решение backend (A1)."
       },
       "ApplicationDetail": {
         "properties": {
@@ -2645,7 +2710,7 @@
           "number": {
             "type": "string",
             "title": "Number",
-            "description": "Номер заявки. В плане тип string, формат не определён (TBD)."
+            "description": "Номер заявки: сквозной счётчик, не короче четырёх цифр (`0001`, `0002`, …). В плане тип string, формат — решение backend (A4)."
           },
           "company_id": {
             "type": "string",
@@ -2864,7 +2929,7 @@
           "number": {
             "type": "string",
             "title": "Number",
-            "description": "Номер заявки. В плане тип string, формат не определён (TBD)."
+            "description": "Номер заявки: сквозной счётчик, не короче четырёх цифр (`0001`, `0002`, …). В плане тип string, формат — решение backend (A4)."
           },
           "status": {
             "$ref": "#/components/schemas/ApplicationStatus"
@@ -3062,7 +3127,7 @@
           "version"
         ],
         "title": "ApplicationUpdate",
-        "description": "Автосохранение черновика. Передаются только изменяемые поля.\n\n`version` обязателен: если заявку уже изменили, ответ 409 `version_conflict` (план, раздел 9).\nВ каких статусах разрешено изменение — TBD."
+        "description": "Автосохранение черновика. Передаются только изменяемые поля.\n\n`version` обязателен: если заявку уже изменили, ответ 409 `version_conflict` (план, раздел 9).\nИзменять можно только черновик (`DRAFT`); в другом статусе — 409 `conflict`. Решение\nbackend (A3)."
       },
       "AuditAction": {
         "type": "string",
@@ -3751,7 +3816,7 @@
           "LIQUIDATED"
         ],
         "title": "CompanyRegistryStatus",
-        "description": "Статус в реестре.\n\nЗначения взяты из контракта ЕГРЮЛ; для ЕГРИП в плане не перечислены (TBD)."
+        "description": "Статус в реестре.\n\nЗначения взяты из контракта ЕГРЮЛ; для ЕГРИП те же — решение backend (A7)."
       },
       "CompanySegment": {
         "type": "string",
@@ -3870,7 +3935,7 @@
           "other"
         ],
         "title": "DocumentKind",
-        "description": "Тип документа. Набор предварительный (TBD): R4 просит декларацию или выписку."
+        "description": "Тип документа.\n\nНабор — решение backend (K4), аналитиком не подтверждён. Правило R4 принимает декларацию\n(`tax_return`) или выписку по счёту (`bank_statement`): любой из двух закрывает пункт запроса."
       },
       "Employee": {
         "properties": {
@@ -3981,13 +4046,13 @@
           "http_error"
         ],
         "title": "ErrorCode",
-        "description": "Технические коды ошибок. Предварительный контракт: в плане не закреплены, TBD."
+        "description": "Технические коды ошибок. В плане не закреплены: набор — решение backend (A6)."
       },
       "ErrorResponse": {
         "properties": {
           "code": {
             "$ref": "#/components/schemas/ErrorCode",
-            "description": "Машинный код ошибки (список предварительный, TBD)."
+            "description": "Машинный код ошибки (набор — решение backend, A6)."
           },
           "message": {
             "type": "string",
@@ -4328,7 +4393,7 @@
           "cash_gap"
         ],
         "title": "LoanPurpose",
-        "description": "Цель кредита: оборотные средства / оборудование / кассовый разрыв (план, раздел 4).\n\nКоды — предварительный контракт: в плане цели названы только по-русски, TBD."
+        "description": "Цель кредита: оборотные средства / оборудование / кассовый разрыв (план, раздел 4).\n\nВ плане цели названы только по-русски; латинские коды — решение backend (A5), их же\nиспользуют фронт, seed продуктов и правила решения."
       },
       "LoginRequest": {
         "properties": {
@@ -4542,7 +4607,7 @@
           "items"
         ],
         "title": "PaymentSchedule",
-        "description": "Аннуитетный график.\n\nСуммы округляются до копеек, последний платёж закрывает остаток целиком.\nДата первого платежа — через месяц после выдачи, до выдачи — от текущей даты (TBD)."
+        "description": "Аннуитетный график.\n\nСуммы округляются до копеек, последний платёж закрывает остаток целиком.\nДата первого платежа — через месяц после выдачи (`ISSUED`), до выдачи — от текущей даты;\nследующие — то же число месяца, а если его нет — последний день месяца, выходные не\nпереносятся. Решение backend (M6)."
       },
       "PaymentScheduleItem": {
         "properties": {
@@ -4773,6 +4838,38 @@
         ],
         "title": "ProductRecommendation",
         "description": "Подходящий продукт с примерным платежом.\n\nСумма и срок приведены к лимитам продукта; что изменено — в `adjusted`.\nПлатёж — аннуитет по базовой ставке, итоговую ставку определит решение банка."
+      },
+      "ReadyResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ready",
+            "title": "Status"
+          },
+          "checks": {
+            "additionalProperties": {
+              "type": "string",
+              "const": "ok"
+            },
+            "type": "object",
+            "title": "Checks",
+            "description": "Что проверено: база, миграции, файлы ответов источников и новостей.",
+            "examples": [
+              {
+                "database": "ok",
+                "fixtures": "ok",
+                "migrations": "ok",
+                "news": "ok"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "checks"
+        ],
+        "title": "ReadyResponse"
       },
       "RecommendationAdjustment": {
         "type": "string",

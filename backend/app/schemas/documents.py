@@ -11,7 +11,11 @@ ALLOWED_UPLOAD_MIME_TYPES = ("application/pdf", "image/jpeg", "image/png")
 
 
 class DocumentKind(StrEnum):
-    """Тип документа. Набор предварительный (TBD): R4 просит декларацию или выписку."""
+    """Тип документа.
+
+    Набор — решение backend (K4), аналитиком не подтверждён. Правило R4 принимает декларацию
+    (`tax_return`) или выписку по счёту (`bank_statement`): любой из двух закрывает пункт запроса.
+    """
 
     TAX_RETURN = "tax_return"
     BANK_STATEMENT = "bank_statement"

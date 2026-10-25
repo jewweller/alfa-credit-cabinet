@@ -30,7 +30,8 @@ _FASTAPI_VALIDATION_SCHEMAS = ("HTTPValidationError", "ValidationError")
 _CONTRACT_DESCRIPTION = (
     "Контракт API умного кредитного кабинета. Генерируется из кода backend.\n\n"
     "У каждой операции есть `x-implementation-status`: `implemented` — работает в приложении, "
-    "`planned` — только контракт. Значения с пометкой TBD требуют согласования."
+    "`planned` — только контракт. Правила, которых нет в плане, решены командой backend и "
+    "аналитиком не подтверждены: решения и их статус — docs/analyst-questions.md."
 )
 
 

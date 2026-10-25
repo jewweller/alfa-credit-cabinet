@@ -46,7 +46,7 @@ _NUMBER_ATTEMPTS = 3
 
 
 def _not_found() -> ApiError:
-    # TBD (вопрос A2): чужая заявка — 403 или 404. Пока 404: не раскрываем, что она существует.
+    # Решение backend A2: чужая заявка — 404, не раскрываем, что она существует.
     return ApiError(404, ErrorCode.NOT_FOUND, "Заявка не найдена")
 
 
@@ -55,7 +55,7 @@ def _invalid(field: str, message: str) -> ApiError:
 
 
 def _next_number(session: Session) -> str:
-    # TBD (вопрос A4): формат номера не определён. Пока сквозной счётчик из 4+ цифр, как в моках.
+    # Решение backend A4: сквозной счётчик из 4+ цифр, как в моках фронта.
     last = session.scalar(select(func.max(cast(Application.number, Integer))))
     return f"{(last or 0) + 1:04d}"
 
@@ -123,7 +123,7 @@ def update_draft(
     if data.version != application.version:
         raise ApiError(409, ErrorCode.VERSION_CONFLICT, "Заявку уже изменили, обновите страницу")
     if application.status != ApplicationStatus.DRAFT:
-        # TBD (вопрос A3): разрешать ли изменения в INFO_REQUESTED. Пока — только черновик.
+        # Решение backend A3: изменять можно только черновик.
         raise ApiError(409, ErrorCode.CONFLICT, "Изменять можно только черновик")
 
     changes = data.model_dump(exclude_unset=True, exclude={"version"})

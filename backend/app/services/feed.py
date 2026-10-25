@@ -5,8 +5,10 @@
 
 Порядок новостей может менять модель ML-команды (`ml.rank_feed`, docs/ml-ranking.md): только
 при ML_RANKING_ENABLED=true, с таймаутом ML_TIMEOUT_SEC. Модель получает уже отфильтрованные
-правилами новости и только переставляет их. Исключение, таймаут, ответ не по схеме или не те
-кандидаты — порядок по правилам и предупреждение в лог; клиент разницы не заметит.
+правилами новости и только переставляет их. Исключение, таймаут, ответ не по схеме, не те или
+повторяющиеся кандидаты, пустая версия модели — порядок по правилам и предупреждение в лог;
+клиент разницы не заметит. Причины показа модели проверяются по каждой новости
+(`_model_reasons`). Эксперимент и метрики — docs/ml-experiment.md.
 
 Временные решения backend (L1–L3, docs/analyst-questions.md, раздел 8) — аналитиком не
 подтверждены:
@@ -44,6 +46,7 @@ from app.schemas.feed import (
     FeedItemKind,
     FeedRanking,
     FeedRankingMethod,
+    FeedReason,
     FeedReasonCode,
     FeedResponse,
     NewsItem,
@@ -201,16 +204,36 @@ def _rank_with_ml(
     if not is_permutation([item.id for item in response.ranking], by_id):
         log.warning("ML-ранжирование ленты: в ответе не те кандидаты, порядок по правилам")
         return None
+    version = response.model_version.strip()
+    if not version:
+        log.warning("ML-ранжирование ленты: нет версии модели, порядок по правилам")
+        return None
     ranked = [
         RankedNews(
             news=by_id[item.id].news,
             score=item.score,
-            # Свои причины модели — если есть; иначе остаются причины по правилам.
-            reasons=item.reasons or by_id[item.id].reasons,
+            reasons=_model_reasons(item.reasons, by_id[item.id]),
         )
         for item in response.ranking
     ]
-    return ranked, response.model_version
+    return ranked, version
+
+
+def _model_reasons(reasons: list[FeedReason], rules: RankedNews) -> list[FeedReason]:
+    """Причины модели, если они честные; иначе — причины по правилам.
+
+    Длину (до 120 символов), число (до двух) и коды проверяет схема FeedRankResponse. Здесь —
+    содержание: пустой текст не показываем, а код причины должен совпадать с тем, что реально
+    совпало у новости по правилам (модель не может сказать «ваш ОКВЭД», если тег ОКВЭД не
+    совпал). Если честных причин не осталось — показываем причины правил.
+    """
+    matched = {reason.code for reason in rules.reasons}
+    honest = [
+        FeedReason(code=reason.code, text=reason.text.strip())
+        for reason in reasons
+        if reason.text.strip() and reason.code in matched
+    ]
+    return honest or rules.reasons
 
 
 def _ranked_news(

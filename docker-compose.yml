@@ -39,8 +39,9 @@ services:
       UPLOADS_DIR: /uploads
       # Сброс демо-данных администратором (POST /admin/demo/reset).
       DEMO_MODE: ${DEMO_MODE:-true}
-      # Порядок новостей в ленте моделью ML (docs/ml-ranking.md); при сбое — правила.
-      ML_RANKING_ENABLED: ${ML_RANKING_ENABLED:-false}
+      # Порядок новостей в ленте логистической регрессией из ml/ (docs/ml-experiment.md);
+      # при любом сбое модели — правила, ranking.method = rules.
+      ML_RANKING_ENABLED: ${ML_RANKING_ENABLED:-true}
     volumes:
       - ./seed:/seed:ro
       - ./mocks/fixtures:/fixtures:ro
@@ -55,7 +56,8 @@ services:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+        # /ready: база, миграции и файлы на месте — API готов принимать запросы.
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)"
       interval: 10s
       timeout: 3s
       retries: 5
