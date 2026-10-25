@@ -20,7 +20,6 @@ import type {
 import { DEMO_PASSWORD, products, registry, users } from './data';
 import { buildSchedule } from './loanMath';
 import { db, MockHttpError } from './db';
-import { apiMode } from './mode';
 import { readUpload } from './multipart';
 import { recommend } from './recommend';
 
@@ -361,9 +360,8 @@ export const handlers = [
         const kind = params.get('kind');
         const newsLimit = Math.min(30, Math.max(1, Number(params.get('news_limit') ?? 10) || 10));
         const feed = db.feed(clientOf(user).company, kind === 'event' || kind === 'news' ? kind : null, newsLimit);
-        // В mixed заявки настоящие, а события моков — про выдуманные: оставляем только новости.
-        const newsOnly = scenario() === 'empty' || apiMode() === 'mixed';
-        return newsOnly ? { ...feed, items: feed.items.filter((f) => f.kind === 'news') } : feed;
+        // Сценарий «пусто» — у клиента нет заявок, значит, и событий.
+        return scenario() === 'empty' ? { ...feed, items: feed.items.filter((f) => f.kind === 'news') } : feed;
       },
       { wait: 300 },
     ),

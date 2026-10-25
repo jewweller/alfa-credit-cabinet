@@ -510,9 +510,7 @@ export interface paths {
         };
         /**
          * Get Feed
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Персональная лента клиента (план, раздел 11).
+         * @description Персональная лента клиента (план, раздел 11).
          *
          *     Сверху все события по заявкам клиента, свежие первыми. Ниже — новости из `seed/news.json`
          *     по убыванию веса. Вес — по формуле плана или моделью ML (`ranking.method`), при сбое
@@ -538,9 +536,7 @@ export interface paths {
         put?: never;
         /**
          * Mark Feed Event Read
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Отметить событие прочитанным. Повторный вызов ничего не меняет.
+         * @description Отметить событие прочитанным. Повторный вызов ничего не меняет.
          */
         post: operations["markFeedEventRead"];
         delete?: never;
@@ -558,9 +554,7 @@ export interface paths {
         };
         /**
          * List Audit Entries
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Журнал действий (план, раздел 10), свежие сверху. Читают underwriter и admin.
+         * @description Журнал действий (план, раздел 10), свежие сверху. Читают underwriter и admin.
          */
         get: operations["listAuditEntries"];
         put?: never;
@@ -582,9 +576,7 @@ export interface paths {
         put?: never;
         /**
          * Reset Demo
-         * @description **Только контракт — ещё не реализовано.**
-         *
-         *     Сбросить демо-данные перед показом (план, раздел 15).
+         * @description Сбросить демо-данные перед показом (план, раздел 15).
          *
          *     Удаляет все заявки со всем, что к ним относится: документы и файлы, офферы, решения,
          *     историю статусов, подписи, выдачи, события ленты. Учётки, компании и продукты остаются.
@@ -3194,7 +3186,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Операция доступна только сотрудникам банка (роли underwriter и admin). */
+            /** @description Операция доступна только кредитному специалисту (роль underwriter). Администратор видит кабинет банка только для просмотра. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3268,7 +3260,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Операция доступна только сотрудникам банка (роли underwriter и admin). */
+            /** @description Операция доступна только кредитному специалисту (роль underwriter). Администратор видит кабинет банка только для просмотра. */
             403: {
                 headers: {
                     [name: string]: unknown;
