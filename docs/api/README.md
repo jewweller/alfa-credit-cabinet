@@ -9,6 +9,7 @@ CI (`python -m app.openapi --check`). Здесь — как этим польз�
 | --- | --- |
 | Swagger UI | `http://localhost:8000/api/docs` (в Docker также `http://localhost:8080/api/docs`) |
 | Схема OpenAPI | `/api/openapi.json` (рабочая схема запущенного приложения) и файл `docs/api/openapi.json` (контракт: то же плюс пометки `x-implementation-status` и вводное описание) |
+| Коллекция запросов | [collection.postman.json](collection.postman.json): путь демо-клиентов, специалиста и администратора с проверками; из корня репозитория `npx newman run docs/api/collection.postman.json` (последняя папка сбрасывает демо-данные) |
 | Префикс | `/api/v1` (служебные `GET /health` и `GET /ready` есть и без префикса) |
 | Операций | 32: 30 под `/api/v1` и 2 служебных без префикса (`/health`, `/ready`); у всех `x-implementation-status: implemented` |
 

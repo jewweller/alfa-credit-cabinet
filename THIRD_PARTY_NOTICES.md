@@ -1,39 +1,74 @@
-# Third-party notices — offline synthetic ranking module
+# Сторонние компоненты
 
-The generator does not use real customer datasets, paid APIs, SDV, or closed models.
-All distribution parameters are synthetic assumptions documented in `ml/DATA_CARD.md`.
-The XGBoost model is trained on these synthetic records only.
+Что использует проверяемая версия (`docker compose up --build`), под какими лицензиями и что в ней только смоделировано. Платных сервисов, закрытых лицензий, покупных данных и внешних API нет. Точные версии всех пакетов, включая транзитивные, — в lock-файлах: `backend/uv.lock`, `frontend/package-lock.json`.
 
-Direct dependencies are pinned in `ml/pyproject.toml`; direct and transitive
-versions and package hashes are recorded in `ml/uv.lock`. Packages retain their
-copyright and license notices in the installed distributions.
+## Образы Docker
 
-| Component | Version | License | Purpose |
-|---|---|---|---|
-| NumPy | 2.2.6 | BSD-3-Clause | Seeded random generation and numerical arrays |
-| SciPy | 1.15.3 | BSD-3-Clause | Normal CDF/copula and logistic probabilities |
-| pandas | 2.2.3 | BSD-3-Clause | Categoricals, model matrices, evaluation |
-| Apache Arrow / PyArrow | 19.0.1 | Apache-2.0 | Deterministic Parquet journals |
-| Faker | 37.3.0 | MIT | Synthetic Russian names, addresses, valid INNs |
-| PyYAML | 6.0.2 | MIT | Safe configuration loading |
-| scikit-learn | 1.6.1 | BSD-3-Clause | Company-group split and estimator interface |
-| XGBoost | 3.0.2 | Apache-2.0 | Learning to rank, JSON model artifact |
-| pytest | 8.3.5 | MIT | Tests |
-| Ruff | 0.11.13 | MIT | Lint and formatting |
+| Образ | Где | Лицензия |
+| --- | --- | --- |
+| `postgres:16.4-alpine` | сервис `db` | PostgreSQL License |
+| `python:3.12-slim` | сборка и запуск `api` | PSF License (Python), пакеты Debian — свои свободные лицензии |
+| `node:20-alpine` | сборка фронта (только этап build) | MIT (Node.js) |
+| `nginx:1.27-alpine` | сервис `frontend` | BSD-2-Clause (nginx) |
 
-Transitive Python components: cloudpickle (BSD-3-Clause), colorama (BSD-3-Clause),
-iniconfig (MIT), joblib
-(BSD-3-Clause), packaging (Apache-2.0 OR BSD-2-Clause), pluggy (MIT), python-dateutil
-(Apache-2.0 OR BSD-3-Clause), pytz (MIT), six (MIT), threadpoolctl (BSD-3-Clause),
-tzdata (Apache-2.0 with public-domain IANA data). Linux XGBoost wheels may include
-the separately licensed `nvidia-nccl-cu12` runtime (BSD-3-Clause); GPU execution
-is not used. Binary scientific wheels contain additional bundled notices for
-their numerical libraries; preserve those notices when redistributing wheels.
+## Backend (Python 3.12)
 
-Simulated integrations: EGRUL/EGRIP company registration data, FNS financial data,
-BKI credit reports, manual underwriting, customer consent, acceptance and issuance.
-No requests are sent to these services, no credit is issued, and no external
-person is contacted by this module.
+Прямые зависимости из `backend/pyproject.toml`, версии — из `backend/uv.lock`.
 
-The TypeScript reference in `ml/synth/reference/loanMath.ts` is copied from this
-same repository at the commit recorded in `ml/DATA_CARD.md`, solely for parity tests.
+| Пакет | Версия | Лицензия | Зачем |
+| --- | --- | --- | --- |
+| FastAPI | 0.156.8 | MIT | HTTP API, OpenAPI |
+| Starlette | 1.9.0 | BSD-3-Clause | основа FastAPI |
+| Pydantic, pydantic-settings | 2.14.1, 2.16.1 | MIT | схемы, настройки из окружения |
+| uvicorn (`[standard]`) | 0.54.0 | BSD-3-Clause | сервер приложения |
+| SQLAlchemy | 2.1.6 | MIT | работа с БД |
+| Alembic | 1.20.1 | MIT | миграции |
+| psycopg (`[binary]`) | 3.3.6 | LGPL-3.0-only | драйвер PostgreSQL, используется без изменений как библиотека |
+| PyJWT | 2.15.1 | MIT | токены входа |
+| bcrypt | 5.0.0 | Apache-2.0 | хэши паролей |
+| python-multipart | 0.0.32 | Apache-2.0 | загрузка файлов |
+| PyYAML | 6.0.3 | MIT | конфиг скоринга и правил |
+
+Только для разработки и тестов, в образ не входят: pytest 9.1.1 (MIT), httpx 0.28.1 (BSD-3-Clause), Ruff 0.17.1 (MIT).
+
+## Frontend (React, TypeScript)
+
+Версии — из `frontend/package-lock.json`.
+
+| Пакет | Версия | Лицензия | Зачем |
+| --- | --- | --- | --- |
+| React, React DOM | 19.3.1 | MIT | интерфейс |
+| React Router | 8.5.0 | MIT | маршруты |
+| TanStack Query | 5.104.5 | MIT | запросы к API, кеш, опрос |
+| `@fontsource-variable/inter` | 5.3.0 | OFL-1.1 | шрифт Inter |
+| `@fontsource/geist-mono` | 5.3.0 | OFL-1.1 | моноширинный шрифт Geist Mono |
+| Vite, `@vitejs/plugin-react` | 8.3.4, 6.1.2 | MIT | сборка (в образ попадает только результат) |
+| TypeScript | 7.0.2 | Apache-2.0 | типы, проверка при сборке |
+| MSW (Mock Service Worker) | 3.0.3 | MIT | моки API в браузере для разработки; в Docker по умолчанию (`VITE_API_MODE=real`) не загружается |
+
+## Модель ML и данные
+
+- **Модель ленты** — собственная логистическая регрессия `feed-logreg-1.0.0` (`ml/models/feed_logreg.json`). Обучение и работа — на стандартной библиотеке Python, без сторонних пакетов и предобученных моделей. Описание — `docs/ml-experiment.md`, `ml/DATA_CARD.md`.
+- **LLM не используются.**
+- **Датасеты не используются.** Все данные синтетические и созданы командой:
+  - компании, учётки, продукты, новости ленты — `seed/`;
+  - ответы реестров и бюро — `mocks/fixtures/`;
+  - образец декларации — `seed/demo-files/declaration.pdf` (шрифт Inter, OFL-1.1);
+  - обучающие запросы и клики для модели — генерируются скриптами `ml/synth/`.
+
+## Смоделированные интеграции
+
+Ни один запрос не уходит во внешние системы, в том числе в системы Альфа-Банка. Ответы берутся из локальных синтетических файлов `mocks/fixtures/`.
+
+| Что моделируется | Как |
+| --- | --- |
+| ЕГРЮЛ / ЕГРИП — регистрация и статус компании | фикстуры по 8 тестовым ИНН |
+| ФНС «Прозрачный бизнес» — выручка, признаки риска | фикстуры |
+| БКИ — кредитная история, просрочки | фикстуры; у «Сбой-Теста» источник намеренно недоступен |
+| Простая электронная подпись | 6-значный код показывается в интерфейсе, без SMS |
+| Выдача кредита | смена статуса и график платежей, деньги не перечисляются |
+| Уведомления клиенту | события в ленте внутри кабинета, без email, SMS и мессенджеров |
+
+## Инструменты разработки
+
+Для разработки использовались ассистенты программирования. В проверяемую версию они не входят, и для запуска, проверки и работы прототипа не нужны. Коллекцию запросов `docs/api/collection.postman.json` можно запустить бесплатным Newman (Apache-2.0) через `npx`, в проект он не входит.
