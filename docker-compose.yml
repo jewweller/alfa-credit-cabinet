@@ -70,8 +70,8 @@ services:
       args:
         # Режим данных: mocks — всё на моках в браузере (весь путь клиента и банка);
         # mixed — реализованное на бэке идёт в api, остальное — моки; real — всё в api.
-        # По умолчанию mixed: на моках остаётся только то, чего ещё нет на бэке (лента).
-        VITE_API_MODE: ${VITE_API_MODE:-mixed}
+        # По умолчанию real: все операции контракта реализованы на бэке, моки в браузер не грузятся.
+        VITE_API_MODE: ${VITE_API_MODE:-real}
         VITE_USE_MOCKS: ${VITE_USE_MOCKS:-true}
         VITE_DEMO_MODE: ${VITE_DEMO_MODE:-true}
     ports:
